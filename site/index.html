@@ -9,6 +9,8 @@
 <meta property="og:title" content="CFB Sundays">
 <meta property="og:description" content="See which former players from your college teams are in each NFL game this week.">
 <meta property="og:url" content="https://cfbsundays.com/">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-180.png">
 <style>
 /* Layout: one narrow column, scoreboard-style condensed display type, chips per school */
 :root{
@@ -120,6 +122,9 @@ td.num,th.num{text-align:right}
 <script>
 let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},sel=[],curWeek=1,tab='games',openGame=null,rankCat='starters';
 const CATS={active:'Active players',total:'In the league (incl. IR/PS)',starters:'Starters',
+  pos_QB:'Active QBs',pos_RB:'Active RBs',pos_WR:'Active WRs',pos_TE:'Active TEs',
+  pos_OL:'Active OL',pos_DL:'Active DL',pos_LB:'Active LBs',pos_DB:'Active DBs',
+  pos_K:'Active kickers',pos_P:'Active punters',
   start_QB:'Starting QBs',start_RB:'Starting RBs',start_WR:'Starting WRs',start_TE:'Starting TEs',
   start_OL:'Starting OL',start_DL:'Starting DL',start_LB:'Starting LBs',start_DB:'Starting DBs',
   start_K:'Starting kickers',start_P:'Starting punters',
