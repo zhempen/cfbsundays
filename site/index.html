@@ -84,6 +84,13 @@ td.expand .row{padding:2px 0}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:0 0 12px}
 .empty{color:var(--muted);padding:24px 0;text-align:center}
 .foot{color:var(--muted);font-size:12px;margin-top:28px}
+.contact{margin-top:28px;color:var(--muted);font-size:13px}
+.contact summary{cursor:pointer;color:var(--accent)}
+.contact form{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-width:440px}
+.contact textarea,.contact input[type=email]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%}
+.formrow{display:flex;align-items:center;gap:10px}
+.contact button{font-family:"Barlow Condensed";font-size:17px;text-transform:uppercase;letter-spacing:.6px;background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:9px 22px;cursor:pointer}
+.contact button:disabled{opacity:.6}
 @media (prefers-reduced-motion:no-preference){.game{transition:border-color .15s}}
 @media (max-width:640px){
   body{font-size:16px}
@@ -123,7 +130,16 @@ td.expand .row{padding:2px 0}
 </nav>
 
 <div id="view"></div>
-<p class="foot">Questions, bugs, or a school nickname I missed? <a href="#" id="mailLink" style="color:var(--accent)">Send me a note</a>.<br><br>Data: nflverse rosters, weekly stats, team depth charts &amp; schedule (free, open NFL data). Position labels like QB1 or LCB2 are the team's own depth chart slot. College history from NFL roster records; the school listed first is where the player finished. Data refreshes automatically every day and after game days.</p>
+<details class="contact" id="contact">
+<summary>Questions, bugs, or a school nickname I missed? Send me a note</summary>
+<form id="noteForm">
+  <textarea name="message" required rows="4" placeholder="What's up? Bug, missing nickname, idea&hellip;"></textarea>
+  <input type="email" name="email" placeholder="Your email (only if you want a reply)" autocomplete="email">
+  <input type="checkbox" name="botcheck" tabindex="-1" style="display:none" aria-hidden="true">
+  <div class="formrow"><button type="submit" id="noteSend">Send</button><span class="hint" id="noteStatus"></span></div>
+</form>
+</details>
+<p class="foot">Data: nflverse rosters, weekly stats, team depth charts &amp; schedule (free, open NFL data). Position labels like QB1 or LCB2 are the team's own depth chart slot. College history from NFL roster records; the school listed first is where the player finished. Data refreshes automatically every day and after game days.</p>
 </div>
 
 <script>
@@ -416,7 +432,23 @@ function boardsView(){
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 boot();
-document.getElementById('mailLink').onclick=e=>{e.preventDefault();location.href='mailto:'+atob('emhlbXBlbitjZmJzdW5kYXlzQGdtYWlsLmNvbQ==')};
+document.getElementById('noteForm').onsubmit=async e=>{
+  e.preventDefault();
+  const f=e.target,st=document.getElementById('noteStatus'),btn=document.getElementById('noteSend');
+  if(f.botcheck.checked)return;
+  btn.disabled=true;st.textContent='Sending\u2026';
+  try{
+    const r=await fetch('https://api.web3forms.com/submit',{method:'POST',
+      headers:{'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify({access_key:'2d582f24-7f07-459c-9c05-45d6bdf53959',
+        subject:'CFB Sundays note',from_name:'cfbsundays.com',
+        message:f.message.value,email:f.email.value||undefined})});
+    const d=await r.json();
+    if(d.success){st.textContent='Sent. Thanks!';f.reset()}
+    else{st.textContent='Something went wrong \u2014 try again in a minute.'}
+  }catch(err){st.textContent='Something went wrong \u2014 try again in a minute.'}
+  btn.disabled=false;
+};
 </script>
 </body>
 </html>
