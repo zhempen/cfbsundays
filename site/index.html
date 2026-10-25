@@ -123,7 +123,7 @@ td.expand .row{padding:2px 0}
 </nav>
 
 <div id="view"></div>
-<p class="foot">Questions, bugs, or a school nickname I missed? Email <a href="mailto:zhempen+cfbsundays@gmail.com" style="color:var(--accent)">zhempen+cfbsundays@gmail.com</a>.<br><br>Data: nflverse rosters, weekly stats, team depth charts &amp; schedule (free, open NFL data). Position labels like QB1 or LCB2 are the team's own depth chart slot. College history from NFL roster records; the school listed first is where the player finished. Data refreshes automatically every day and after game days.</p>
+<p class="foot">Questions, bugs, or a school nickname I missed? <a href="#" id="mailLink" style="color:var(--accent)">Send me a note</a>.<br><br>Data: nflverse rosters, weekly stats, team depth charts &amp; schedule (free, open NFL data). Position labels like QB1 or LCB2 are the team's own depth chart slot. College history from NFL roster records; the school listed first is where the player finished. Data refreshes automatically every day and after game days.</p>
 </div>
 
 <script>
@@ -416,6 +416,7 @@ function boardsView(){
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 boot();
+document.getElementById('mailLink').onclick=e=>{e.preventDefault();location.href='mailto:'+atob('emhlbXBlbitjZmJzdW5kYXlzQGdtYWlsLmNvbQ==')};
 </script>
 </body>
 </html>
