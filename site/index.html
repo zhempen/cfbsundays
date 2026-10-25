@@ -1,5 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CFB Sundays - your college team's players, by NFL game</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Pick your college teams and see which former players are in each NFL game this week: depth chart spots, game and season stats, transfers marked, school rankings. Fast, free, no ads.">
 <link rel="canonical" href="https://cfbsundays.com/">
 <meta property="og:title" content="CFB Sundays">
@@ -39,7 +43,7 @@ nav button.on{color:var(--ink);border-bottom-color:var(--accent)}
 .chip{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:13px;cursor:pointer}
 .chip.sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .chip .x{margin-left:6px;opacity:.7}
-input[type=search]{width:100%;padding:9px 12px;font:inherit;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+input[type=search]{width:100%;padding:12px 14px;font:inherit;font-size:16px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
 .hint{color:var(--muted);font-size:13px;margin:4px 0 0}
 .weekbar{display:flex;gap:4px;overflow-x:auto;padding:2px 0 8px}
 .weekbar button{min-width:40px;padding:5px 0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;font-family:"Barlow Condensed";font-size:15px;cursor:pointer}
@@ -72,8 +76,26 @@ td.num,th.num{text-align:right}
 .empty{color:var(--muted);padding:24px 0;text-align:center}
 .foot{color:var(--muted);font-size:12px;margin-top:28px}
 @media (prefers-reduced-motion:no-preference){.game{transition:border-color .15s}}
+@media (max-width:640px){
+  body{font-size:16px}
+  h1{font-size:40px}
+  nav button{font-size:19px;padding:12px 12px}
+  .chip{padding:9px 16px;font-size:15px}
+  .weekbar button{min-width:48px;padding:11px 0;font-size:17px}
+  .game{padding:14px 16px}
+  .game .teams{font-size:22px}
+  .game .meta{font-size:14px}
+  .count{font-size:26px}
+  .player{padding:12px 0}
+  .pos{min-width:48px;font-size:14px}
+  .badge{font-size:12.5px;padding:3px 9px}
+  .stat{font-size:14px;padding-left:0}
+  table{font-size:15px}
+}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@500;600&display=swap">
+</head>
+<body>
 <div class="wrap">
 <h1>CFB Sundays</h1>
 <p class="sub">Pick your schools. See where your guys are playing on Sundays.</p>
@@ -92,7 +114,7 @@ td.num,th.num{text-align:right}
 </nav>
 
 <div id="view"></div>
-<p class="foot">Data: nflverse rosters, weekly stats, team depth charts &amp; schedule (free, open NFL data). Position labels like QB1 or LCB2 are the team's own depth chart slot. College history from NFL roster records; the school listed first is where the player finished. Data refreshes automatically every day and after game days.</p>
+<p class="foot">Questions, bugs, or a school nickname I missed? Email <a href="mailto:zhempen+cfbsundays@gmail.com" style="color:var(--accent)">zhempen+cfbsundays@gmail.com</a>.<br><br>Data: nflverse rosters, weekly stats, team depth charts &amp; schedule (free, open NFL data). Position labels like QB1 or LCB2 are the team's own depth chart slot. College history from NFL roster records; the school listed first is where the player finished. Data refreshes automatically every day and after game days.</p>
 </div>
 
 <script>
@@ -342,3 +364,5 @@ function boardsView(){
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 boot();
 </script>
+</body>
+</html>
