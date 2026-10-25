@@ -1,0 +1,344 @@
+<title>CFB Sundays - your college team's players, by NFL game</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Pick your college teams and see which former players are in each NFL game this week: depth chart spots, game and season stats, transfers marked, school rankings. Fast, free, no ads.">
+<link rel="canonical" href="https://cfbsundays.com/">
+<meta property="og:title" content="CFB Sundays">
+<meta property="og:description" content="See which former players from your college teams are in each NFL game this week.">
+<meta property="og:url" content="https://cfbsundays.com/">
+<style>
+/* Layout: one narrow column, scoreboard-style condensed display type, chips per school */
+:root{
+  --bg:#f6f5f1; --surface:#ffffff; --ink:#1b1b18; --muted:#6e6a60;
+  --line:#dedacf; --accent:#a3261e; --accent-ink:#ffffff; --chip:#eceadf;
+  --badge:#8a6d00; --badge-bg:#f5ecc8;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#16150f; --surface:#201f17; --ink:#ece9df; --muted:#a09a8a;
+  --line:#37352a; --accent:#d9544a; --accent-ink:#1b0d0c; --chip:#2b2a1f;
+  --badge:#e3c45a; --badge-bg:#352e14; color-scheme:dark
+}}
+:root[data-theme="dark"]{
+  --bg:#16150f; --surface:#201f17; --ink:#ece9df; --muted:#a09a8a;
+  --line:#37352a; --accent:#d9544a; --accent-ink:#1b0d0c; --chip:#2b2a1f;
+  --badge:#e3c45a; --badge-bg:#352e14; color-scheme:dark
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 Barlow,system-ui,sans-serif;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 48px}
+.wrap{max-width:720px;margin:0 auto}
+h1,h2,h3,.disp{font-family:"Barlow Condensed",Barlow,system-ui,sans-serif;text-wrap:balance}
+h1{font-size:34px;line-height:1.05;margin:20px 0 2px;text-transform:uppercase;letter-spacing:.5px}
+.sub{color:var(--muted);margin:0 0 14px;font-size:14px}
+nav{display:flex;gap:6px;margin:0 0 16px;border-bottom:2px solid var(--line);flex-wrap:wrap}
+nav button{font-family:"Barlow Condensed";font-size:17px;text-transform:uppercase;letter-spacing:.6px;
+  background:none;border:none;color:var(--muted);padding:8px 10px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+nav button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.chip{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:13px;cursor:pointer}
+.chip.sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip .x{margin-left:6px;opacity:.7}
+input[type=search]{width:100%;padding:9px 12px;font:inherit;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.hint{color:var(--muted);font-size:13px;margin:4px 0 0}
+.weekbar{display:flex;gap:4px;overflow-x:auto;padding:2px 0 8px}
+.weekbar button{min-width:40px;padding:5px 0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;font-family:"Barlow Condensed";font-size:15px;cursor:pointer}
+.weekbar button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.game{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 8px;cursor:pointer}
+.game:hover{border-color:var(--accent)}
+.game .teams{font-family:"Barlow Condensed";font-size:19px;letter-spacing:.4px;min-width:0}
+.game .meta{color:var(--muted);font-size:12.5px}
+.game .mine{margin-left:auto;text-align:right;flex-shrink:0}
+.count{font-family:"Barlow Condensed";font-size:22px;line-height:1;color:var(--accent)}
+.count.zero{color:var(--muted);opacity:.45}
+.countlbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.score{font-variant-numeric:tabular-nums}
+.back{background:none;border:none;color:var(--accent);font:inherit;cursor:pointer;padding:0;margin:14px 0 6px}
+.side h3{margin:16px 0 6px;font-size:20px;text-transform:uppercase;letter-spacing:.5px}
+.player{display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.player .nm{font-weight:600}
+.pos{color:var(--muted);font-size:12.5px;min-width:42px}
+.badge{font-size:11px;padding:1px 7px;border-radius:5px;background:var(--badge-bg);color:var(--badge);white-space:nowrap}
+.badge.status{background:var(--chip);color:var(--muted)}
+.schooltag{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.stat{width:100%;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;padding-left:34px}
+.stat b{color:var(--ink);font-weight:600}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th{font-family:"Barlow Condensed";text-transform:uppercase;letter-spacing:.5px;font-size:13.5px;color:var(--muted);text-align:left;padding:6px 10px 6px 0;border-bottom:2px solid var(--line)}
+td{padding:6px 10px 6px 0;border-bottom:1px solid var(--line)}
+td.num,th.num{text-align:right}
+.tablewrap{overflow-x:auto}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:0 0 12px}
+.empty{color:var(--muted);padding:24px 0;text-align:center}
+.foot{color:var(--muted);font-size:12px;margin-top:28px}
+@media (prefers-reduced-motion:no-preference){.game{transition:border-color .15s}}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@500;600&display=swap">
+<div class="wrap">
+<h1>CFB Sundays</h1>
+<p class="sub">Pick your schools. See where your guys are playing on Sundays.</p>
+
+<div id="pickerArea">
+  <div class="chips" id="selChips"></div>
+  <input type="search" id="schoolSearch" placeholder="Search a school (UGA, Ole Miss, Bama…)" autocomplete="off">
+  <div class="chips" id="schoolResults"></div>
+  <p class="hint" id="pickHint"></p>
+</div>
+
+<nav id="tabs">
+  <button data-v="games" class="on">This week</button>
+  <button data-v="boards">Leaderboards</button>
+  <button data-v="rank">School rankings</button>
+</nav>
+
+<div id="view"></div>
+<p class="foot">Data: nflverse rosters, weekly stats, team depth charts &amp; schedule (free, open NFL data). Position labels like QB1 or LCB2 are the team's own depth chart slot. College history from NFL roster records; the school listed first is where the player finished. Prototype, updates when rebuilt.</p>
+</div>
+
+<script>
+let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},sel=[],curWeek=1,tab='games',openGame=null,rankCat='starters';
+const CATS={active:'Active players',total:'In the league (incl. IR/PS)',starters:'Starters',
+  start_QB:'Starting QBs',start_RB:'Starting RBs',start_WR:'Starting WRs',start_TE:'Starting TEs',
+  start_OL:'Starting OL',start_DL:'Starting DL',start_LB:'Starting LBs',start_DB:'Starting DBs',
+  start_K:'Starting kickers',start_P:'Starting punters',
+  py:'Pass yds',ry:'Rush yds',recy:'Rec yds',tds:'Rush+rec TDs',sk:'Sacks',tkl:'Tackles',dint:'INTs',fgm:'FG made'};
+
+function loadSel(){try{const s=JSON.parse(localStorage.getItem('schools')||'[]');if(Array.isArray(s))sel=s}catch(e){}}
+function saveSel(){try{localStorage.setItem('schools',JSON.stringify(sel))}catch(e){}}
+
+async function boot(){
+  const [s,p,g,st,rk]=await Promise.all(['schools','players','games','stats','rankings'].map(n=>fetch('data/'+n+'.json').then(r=>r.json())));
+  SCHOOLS=s;PLAYERS=p;GAMES=g;STATS=st;RANKS=rk;
+  loadSel();
+  const today=new Date().toISOString().slice(0,10);
+  const wks=[...new Set(GAMES.map(g=>g.wk))].sort((a,b)=>a-b);
+  curWeek=wks.find(w=>GAMES.filter(x=>x.wk===w).some(x=>x.date>=today))||wks[wks.length-1];
+  const h=location.hash.replace('#','');
+  if(h==='boards')tab='boards';
+  renderPicker();render();
+}
+
+function playersOf(school){
+  const out=[];
+  for(const [pid,p] of Object.entries(PLAYERS)){
+    const i=p.c.indexOf(school);
+    if(i>=0)out.push({pid,p,primary:i===0});
+  }
+  return out;
+}
+function teamIndex(){
+  const byTeam={};
+  for(const sc of sel){
+    for(const e of playersOf(sc)){
+      (byTeam[e.p.t]=byTeam[e.p.t]||[]).push({...e,school:sc});
+    }
+  }
+  return byTeam;
+}
+
+function renderPicker(){
+  const selDiv=document.getElementById('selChips');
+  selDiv.innerHTML=sel.map(s=>`<button class="chip sel" data-s="${esc(s)}">${esc(s)}<span class="x">×</span></button>`).join('');
+  selDiv.querySelectorAll('button').forEach(b=>b.onclick=()=>{sel=sel.filter(x=>x!==b.dataset.s);saveSel();renderPicker();render()});
+  document.getElementById('pickHint').textContent=sel.length?'':'Nothing picked yet. Search above — add more than one for watch parties.';
+}
+document.addEventListener('input',e=>{
+  if(e.target.id!=='schoolSearch')return;
+  const q=e.target.value.trim().toLowerCase(),box=document.getElementById('schoolResults');
+  if(q.length<2){box.innerHTML='';return}
+  const match=s=>s.name.toLowerCase().includes(q)||(s.alias||[]).some(a=>a.toLowerCase().includes(q));
+  const hits=SCHOOLS.filter(s=>match(s)&&!sel.includes(s.name)).slice(0,12);
+  box.innerHTML=hits.map(s=>{
+    const via=!s.name.toLowerCase().includes(q)?(s.alias||[]).find(a=>a.toLowerCase().includes(q)):null;
+    return `<button class="chip" data-s="${esc(s.name)}">${esc(s.name)}${via?` <span style="opacity:.65">(${esc(via)})</span>`:''} · ${s.count}</button>`;
+  }).join('')||'<span class="hint">No school matches.</span>';
+  box.querySelectorAll('button').forEach(b=>b.onclick=()=>{sel.push(b.dataset.s);saveSel();
+    document.getElementById('schoolSearch').value='';box.innerHTML='';renderPicker();render()});
+});
+document.getElementById('tabs').onclick=e=>{
+  const b=e.target.closest('button');if(!b)return;
+  tab=b.dataset.v;openGame=null;
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  render();
+};
+
+function render(){
+  const v=document.getElementById('view');
+  if(!sel.length&&tab!=='rank'){v.innerHTML='<div class="empty">Add a school to get started.</div>';return}
+  if(tab==='games')v.innerHTML=openGame?gameDetail(openGame):weekView();
+  else if(tab==='rank')v.innerHTML=rankView();
+  else v.innerHTML=boardsView();
+  wire(v);
+}
+function wire(v){
+  v.querySelectorAll('[data-g]').forEach(el=>el.onclick=()=>{openGame=el.dataset.g;render();scrollTo(0,0)});
+  v.querySelectorAll('[data-w]').forEach(el=>el.onclick=()=>{curWeek=+el.dataset.w;render()});
+  const bk=v.querySelector('.back');if(bk)bk.onclick=()=>{openGame=null;render()};
+  const cs=v.querySelector('#catSel');if(cs)cs.onchange=()=>{rankCat=cs.value;render()};
+}
+
+function compRank(rows,i){ // competition ranking: rank = 1 + schools with a strictly higher value
+  let r=i; while(r>0&&rows[r-1][1]===rows[i][1])r--;
+  return r+1;
+}
+function tiedAt(rows,val){return rows.filter(x=>x[1]===val)}
+function rankLabel(rows,i){
+  const rk=compRank(rows,i);
+  return (tiedAt(rows,rows[i][1]).length>1?'T-':'#')+rk;
+}
+function rankOf(cat,school){
+  const r=RANKS[cat]||[];const i=r.findIndex(x=>x[0]===school);
+  if(i<0)return null;
+  return {rows:r,i,rank:compRank(r,i),val:r[i][1],label:rankLabel(r,i)};
+}
+function leaderCtx(rows){
+  if(!rows.length)return'–';
+  const tops=tiedAt(rows,rows[0][1]);
+  if(tops.length===1)return `#1: ${esc(tops[0][0])} · ${tops[0][1].toLocaleString()}`;
+  const names=tops.slice(0,3).map(x=>esc(x[0])).join(', ');
+  return `T-1: ${names}${tops.length>3?` +${tops.length-3} more`:''} · ${tops[0][1].toLocaleString()}`;
+}
+function topList(cat,n){
+  const rows=RANKS[cat]||[];
+  let cut=Math.min(n,rows.length);
+  while(cut<rows.length&&rows[cut][1]===rows[n-1]?.[1])cut++; // include ties at the cutoff
+  cut=Math.min(cut,n+8);
+  return rows.slice(0,cut).map((x,i)=>
+    `<tr${sel.includes(x[0])?' style="color:var(--accent);font-weight:600"':''}><td style="width:40px">${rankLabel(rows,i)}</td><td>${esc(x[0])}</td><td class="num">${x[1].toLocaleString()}</td></tr>`
+  ).join('');
+}
+function rankView(){
+  let h='';
+  for(const sc of sel){
+    const rows=Object.keys(CATS).map(cat=>{
+      const r=rankOf(cat,sc);
+      if(!r)return `<tr><td>${CATS[cat]}</td><td class="num">–</td><td class="num">0</td><td class="hint">${leaderCtx(RANKS[cat]||[])}</td></tr>`;
+      const tops=tiedAt(r.rows,r.rows[0][1]);
+      let ctx;
+      if(r.rank===1){
+        const co=tops.filter(x=>x[0]!==sc);
+        ctx=co.length?`tied with ${co.slice(0,3).map(x=>esc(x[0])).join(', ')}${co.length>3?` +${co.length-3} more`:''}`
+          :(r.rows[tops.length]?`then ${esc(r.rows[tops.length][0])} · ${r.rows[tops.length][1].toLocaleString()}`:'');
+      }else ctx=leaderCtx(r.rows);
+      return `<tr><td>${CATS[cat]}</td><td class="num"><b>${r.label}</b></td><td class="num">${r.val.toLocaleString()}</td><td class="hint">${ctx}</td></tr>`;
+    }).join('');
+    h+=`<div class="card"><h2 style="margin:0 0 8px">${esc(sc)}</h2>
+      <div class="tablewrap"><table>
+      <tr><th>Category</th><th class="num">Rank</th><th class="num">Value</th><th>Context</th></tr>${rows}</table></div></div>`;
+  }
+  if(!sel.length){
+    h+=`<p class="hint" style="margin:0 0 12px">Top 10 in every category. Pick schools above to see their full rank cards.</p>`;
+    for(const [cat,lbl] of Object.entries(CATS)){
+      h+=`<div class="card"><h2 style="margin:0 0 8px">${lbl}</h2>
+        <div class="tablewrap"><table>${topList(cat,10)}</table></div></div>`;
+    }
+  }else{
+    h+=`<div class="card"><h2 style="margin:0 0 8px">Top 10 ·
+      <select id="catSel" style="font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:4px 8px">
+      ${Object.entries(CATS).map(([k,lbl])=>`<option value="${k}" ${k===rankCat?'selected':''}>${lbl}</option>`).join('')}</select></h2>
+      <div class="tablewrap"><table>${topList(rankCat,10)}</table></div></div>`;
+  }
+  h+=`<p class="hint">Ties share a rank (T-1 means tied for first). Rankings credit the school a player finished at. A starter is anyone taking 50%+ of his team's offensive or defensive snaps on average, minimum two games.</p>`;
+  return h;
+}
+
+function weekView(){
+  const idx=teamIndex();
+  const wks=[...new Set(GAMES.map(g=>g.wk))].sort((a,b)=>a-b);
+  let h=`<div class="weekbar">`+wks.map(w=>`<button data-w="${w}" class="${w===curWeek?'on':''}">${w}</button>`).join('')+`</div>`;
+  const gs=GAMES.filter(g=>g.wk===curWeek);
+  h+=gs.map(g=>{
+    const n=(idx[g.away]||[]).length+(idx[g.home]||[]).length;
+    const played=g.as!=='';
+    return `<div class="game" data-g="${g.id}">
+      <div><div class="teams">${g.away} @ ${g.home} ${played?`<span class="score">${g.as}–${g.hs}</span>`:''}</div>
+      <div class="meta">${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
+      <div class="mine"><div class="count ${n?'':'zero'}">${n}</div><div class="countlbl">your guys</div></div>
+    </div>`;
+  }).join('');
+  return h;
+}
+
+function fmtDate(d){const dt=new Date(d+'T12:00:00');return dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}
+function fmtTime(t){if(!t)return'';const[h,m]=t.split(':').map(Number);const ap=h>=12?'PM':'AM';return`${((h+11)%12)+1}:${String(m).padStart(2,'0')} ${ap}`}
+
+function statLine(pid,wk,played){
+  const st=STATS[pid];if(!st)return'';
+  const w=played?st.w[wk]:null,s=st.s,g=st.g;
+  const f=(o,pre)=>{if(!o)return'';const parts=[];
+    if(o.py)parts.push(`<b>${o.py}</b> pass yds, ${o.ptd||0} TD${o.int?`, ${o.int} INT`:''}`);
+    if(o.ry)parts.push(`<b>${o.ry}</b> rush yds${o.rtd?`, ${o.rtd} TD`:''}`);
+    if(o.recy||o.rec)parts.push(`<b>${o.rec||0}</b> rec, <b>${o.recy||0}</b> yds${o.rectd?`, ${o.rectd} TD`:''}`);
+    if(o.sk)parts.push(`<b>${o.sk}</b> sacks`);
+    if((o.tk||o.ast)&&!o.py&&!o.ry&&!o.recy)parts.push(`<b>${(o.tk||0)+(o.ast||0)}</b> tackles`);
+    if(o.dint)parts.push(`<b>${o.dint}</b> INT`);
+    if(o.fgm!==undefined)parts.push(`<b>${o.fgm}/${o.fga||0}</b> FG`);
+    return parts.length?pre+parts.join(' · '):'';
+  };
+  const gm=w?f(w,'This game: '):'';
+  const sn=f(s,`Season (${g} gm): `);
+  if(!gm&&!sn)return'';
+  return `<div class="stat">${gm}${gm&&sn?'<br>':''}${sn}</div>`;
+}
+
+function playerRow(e,wk,played){
+  const p=e.p;
+  const xfer=!e.primary?`<span class="badge">finished at ${esc(p.c[0])}</span>`:'';
+  const stops=e.primary&&p.c.length>1?`<span class="badge">also ${esc(p.c.slice(1).join(', '))}</span>`:'';
+  const stat={RES:'IR',DEV:'practice squad',INA:'inactive',TRT:'returning'}[p.s];
+  const st=p.st?`<span class="badge" style="background:var(--chip);color:var(--ink)">starter</span>`:'';
+  return `<div class="player">
+    <span class="pos" title="team depth chart">${p.d||p.p}</span><span class="nm">${esc(p.n)}</span>${st}
+    ${sel.length>1?`<span class="schooltag">${esc(e.school)}</span>`:''}
+    ${xfer}${stops}${stat?`<span class="badge status">${stat}</span>`:''}
+    ${statLine(e.pid,wk,played)}
+  </div>`;
+}
+
+function gameDetail(id){
+  const g=GAMES.find(x=>x.id===id);if(!g)return'';
+  const idx=teamIndex(),played=g.as!=='';
+  const side=t=>{
+    const dr=e=>e.p.d?+(e.p.d.match(/\d+$/)||[9])[0]:9;
+    const list=(idx[t]||[]).sort((a,b)=>(a.p.s==='ACT'?0:1)-(b.p.s==='ACT'?0:1)||dr(a)-dr(b)||a.p.n.localeCompare(b.p.n));
+    return `<div class="side"><h3>${t}${played?` · ${t===g.away?g.as:g.hs}`:''}</h3>`+
+      (list.length?list.map(e=>playerRow(e,g.wk,played)).join(''):'<p class="hint">None of your guys here.</p>')+`</div>`;
+  };
+  return `<button class="back">← Week ${g.wk}</button>
+    <div class="card"><div class="teams disp" style="font-size:24px">${g.away} @ ${g.home}
+    ${played?`<span class="score">${g.as}–${g.hs}</span>`:''}</div>
+    <div class="meta">${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
+    ${side(g.away)}${side(g.home)}`;
+}
+
+function boardsView(){
+  let h='';
+  for(const sc of sel){
+    const ps=playersOf(sc);
+    const act=ps.filter(e=>e.p.s==='ACT');
+    const byPos={};act.forEach(e=>{byPos[e.p.p]=(byPos[e.p.p]||0)+1});
+    const top=cat=>ps.map(e=>({e,v:(STATS[e.pid]?.s||{})[cat]||0})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,5);
+    const row=(x,unit)=>`<tr><td>${esc(x.e.p.n)}${!x.e.primary?' <span class="badge">finished at '+esc(x.e.p.c[0])+'</span>':''}</td><td>${x.e.p.t}</td><td class="num">${x.v.toLocaleString()} ${unit}</td></tr>`;
+    h+=`<div class="card"><h2 style="margin:0 0 4px">${esc(sc)}</h2>
+      <p class="sub" style="margin:0 0 10px">${act.length} on active rosters · ${ps.length} in the league overall (IR &amp; practice squads included)</p>
+      <div class="chips">${Object.entries(byPos).sort((a,b)=>b[1]-a[1]).map(([p,n])=>`<span class="chip">${p} · ${n}</span>`).join('')}</div>
+      <div class="tablewrap"><table>
+      <tr><th colspan="3">Season leaders</th></tr>
+      ${top('py').slice(0,2).map(x=>row(x,'pass yds')).join('')}
+      ${top('ry').slice(0,3).map(x=>row(x,'rush yds')).join('')}
+      ${top('recy').slice(0,3).map(x=>row(x,'rec yds')).join('')}
+      ${top('sk').slice(0,2).map(x=>row(x,'sacks')).join('')}
+      ${top('fgm').slice(0,1).map(x=>row(x,'FG')).join('')}
+      </table></div></div>`;
+  }
+  const tally=SCHOOLS.slice(0,15);
+  h+=`<div class="card"><h2 style="margin:0 0 8px">Most players in the NFL, by school</h2>
+    <div class="tablewrap"><table><tr><th>School</th><th class="num">Players</th><th class="num">Finished there</th></tr>
+    ${tally.map(s=>`<tr><td>${esc(s.name)}</td><td class="num">${s.count}</td><td class="num">${s.primary}</td></tr>`).join('')}
+    </table></div></div>`;
+  return h;
+}
+
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+boot();
+</script>

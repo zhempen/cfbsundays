@@ -1,0 +1,5 @@
+site/data/
+site/s/
+site/sitemap.xml
+site/robots.txt
+__pycache__/

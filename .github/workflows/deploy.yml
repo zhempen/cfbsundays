@@ -1,0 +1,37 @@
+name: Build and deploy
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # UTC. Daily morning refresh, plus evening refreshes on game days
+    # (Sun/Mon/Thu nights ET land on 00:00-09:00 UTC Mon/Tue/Fri).
+    - cron: "17 10 * * *"
+    - cron: "17 2 * * 1,2,5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build data files
+        run: python3 scripts/build.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
