@@ -74,6 +74,13 @@ th{font-family:"Barlow Condensed";text-transform:uppercase;letter-spacing:.5px;f
 td{padding:6px 10px 6px 0;border-bottom:1px solid var(--line)}
 td.num,th.num{text-align:right}
 .tablewrap{overflow-x:auto}
+tr.rk{cursor:pointer}
+tr.rk:hover td{background:var(--chip)}
+tr.rk .chev{display:inline-block;width:14px;color:var(--muted);transition:transform .12s}
+tr.rk.open .chev{transform:rotate(90deg)}
+td.expand{padding:4px 0 10px 14px;color:var(--muted);font-size:13.5px}
+td.expand b{color:var(--ink);font-weight:600}
+td.expand .row{padding:2px 0}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:0 0 12px}
 .empty{color:var(--muted);padding:24px 0;text-align:center}
 .foot{color:var(--muted);font-size:12px;margin-top:28px}
@@ -120,7 +127,7 @@ td.num,th.num{text-align:right}
 </div>
 
 <script>
-let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},sel=[],curWeek=1,tab='games',openGame=null,rankCat='starters';
+let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},sel=[],curWeek=1,tab='games',openGame=null,rankCat='starters',expanded=null;
 const CATS={active:'Active players',total:'In the league (incl. IR/PS)',starters:'Starters',
   pos_QB:'Active QBs',pos_RB:'Active RBs',pos_WR:'Active WRs',pos_TE:'Active TEs',
   pos_OL:'Active OL',pos_DL:'Active DL',pos_LB:'Active LBs',pos_DB:'Active DBs',
@@ -202,6 +209,10 @@ function wire(v){
   v.querySelectorAll('[data-w]').forEach(el=>el.onclick=()=>{curWeek=+el.dataset.w;render()});
   const bk=v.querySelector('.back');if(bk)bk.onclick=()=>{openGame=null;render()};
   const cs=v.querySelector('#catSel');if(cs)cs.onchange=()=>{rankCat=cs.value;render()};
+  v.querySelectorAll('tr.rk').forEach(el=>el.onclick=()=>{
+    const k=el.dataset.sc+'|'+el.dataset.cat;
+    expanded=expanded===k?null:k;render();
+  });
 }
 
 function compRank(rows,i){ // competition ranking: rank = 1 + schools with a strictly higher value
@@ -234,12 +245,49 @@ function topList(cat,n){
     `<tr${sel.includes(x[0])?' style="color:var(--accent);font-weight:600"':''}><td style="width:40px">${rankLabel(rows,i)}</td><td>${esc(x[0])}</td><td class="num">${x[1].toLocaleString()}</td></tr>`
   ).join('');
 }
+const GRP=p=>({T:'OL',G:'OL',C:'OL',OT:'OL',OG:'OL',DE:'DL',DT:'DL',NT:'DL',EDGE:'DL',
+  ILB:'LB',OLB:'LB',MLB:'LB',CB:'DB',S:'DB',FS:'DB',SS:'DB',FB:'RB',LS:'ST'}[p]||p);
+const STATV={py:s=>s.py||0,ry:s=>s.ry||0,recy:s=>s.recy||0,sk:s=>s.sk||0,
+  tkl:s=>(s.tk||0)+(s.ast||0),dint:s=>s.dint||0,tds:s=>(s.rtd||0)+(s.rectd||0),fgm:s=>s.fgm||0};
+function catPlayers(cat,school){
+  const out=[];
+  for(const [pid,p] of Object.entries(PLAYERS)){
+    if(p.c[0]!==school)continue;
+    if(STATV[cat]){
+      const v=STATV[cat](STATS[pid]?.s||{});
+      if(v>0)out.push({p,v});
+      continue;
+    }
+    if(cat==='total'){out.push({p});continue}
+    if(p.s!=='ACT')continue;
+    if(cat==='active'){out.push({p});continue}
+    if(cat==='starters'){if(p.st)out.push({p});continue}
+    const m=cat.match(/^(pos|start)_(.+)$/);
+    if(m&&GRP(p.p)===m[2]&&(m[1]==='pos'||p.st))out.push({p});
+  }
+  out.sort((a,b)=>(b.v||0)-(a.v||0)||a.p.n.localeCompare(b.p.n));
+  return out;
+}
+function expandHtml(cat,school){
+  const list=catPlayers(cat,school);
+  if(!list.length)return '<div class="row">Nobody qualifies.</div>';
+  return list.map(({p,v})=>{
+    const bits=[p.d||p.p,p.t];
+    if(p.st&&!cat.startsWith('start')&&cat!=='starters')bits.push('starter');
+    if(p.s!=='ACT')bits.push({RES:'IR',DEV:'practice squad',INA:'inactive',TRT:'returning'}[p.s]||'');
+    return `<div class="row"><b>${esc(p.n)}</b> (${esc(bits.filter(Boolean).join(', '))})${v!==undefined?` · ${v.toLocaleString()}`:''}</div>`;
+  }).join('');
+}
 function rankView(){
   let h='';
   for(const sc of sel){
     const rows=Object.keys(CATS).map(cat=>{
       const r=rankOf(cat,sc);
-      if(!r)return `<tr><td>${CATS[cat]}</td><td class="num">–</td><td class="num">0</td><td class="hint">${leaderCtx(RANKS[cat]||[])}</td></tr>`;
+      const open=expanded===sc+'|'+cat;
+      const exp=open?`<tr><td colspan="4" class="expand">${expandHtml(cat,sc)}</td></tr>`:'';
+      const click=`class="rk${open?' open':''}" data-cat="${cat}" data-sc="${esc(sc)}"`;
+      const chev='<span class="chev">▸</span>';
+      if(!r)return `<tr ${click}><td>${chev}${CATS[cat]}</td><td class="num">–</td><td class="num">0</td><td class="hint">${leaderCtx(RANKS[cat]||[])}</td></tr>`+exp;
       const tops=tiedAt(r.rows,r.rows[0][1]);
       let ctx;
       if(r.rank===1){
@@ -247,7 +295,7 @@ function rankView(){
         ctx=co.length?`tied with ${co.slice(0,3).map(x=>esc(x[0])).join(', ')}${co.length>3?` +${co.length-3} more`:''}`
           :(r.rows[tops.length]?`then ${esc(r.rows[tops.length][0])} · ${r.rows[tops.length][1].toLocaleString()}`:'');
       }else ctx=leaderCtx(r.rows);
-      return `<tr><td>${CATS[cat]}</td><td class="num"><b>${r.label}</b></td><td class="num">${r.val.toLocaleString()}</td><td class="hint">${ctx}</td></tr>`;
+      return `<tr ${click}><td>${chev}${CATS[cat]}</td><td class="num"><b>${r.label}</b></td><td class="num">${r.val.toLocaleString()}</td><td class="hint">${ctx}</td></tr>`+exp;
     }).join('');
     h+=`<div class="card"><h2 style="margin:0 0 8px">${esc(sc)}</h2>
       <div class="tablewrap"><table>
@@ -265,7 +313,7 @@ function rankView(){
       ${Object.entries(CATS).map(([k,lbl])=>`<option value="${k}" ${k===rankCat?'selected':''}>${lbl}</option>`).join('')}</select></h2>
       <div class="tablewrap"><table>${topList(rankCat,10)}</table></div></div>`;
   }
-  h+=`<p class="hint">Ties share a rank (T-1 means tied for first). Rankings credit the school a player finished at. A starter is anyone taking 50%+ of his team's offensive or defensive snaps on average, minimum two games.</p>`;
+  h+=`<p class="hint">Tap a category to see which of your players are behind the number. Ties share a rank (T-1 means tied for first). Rankings credit the school a player finished at. A starter is anyone taking 50%+ of his team's offensive or defensive snaps on average, minimum two games.</p>`;
   return h;
 }
 
