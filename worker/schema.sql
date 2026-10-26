@@ -1,4 +1,4 @@
--- CFB Sundays Tuesday email subscribers. Safe to run on every deploy.
+-- CFB Sundays Tuesday email subscribers. Safe to run on every deploy (CREATE IF NOT EXISTS).
 CREATE TABLE IF NOT EXISTS subscribers (
   norm            TEXT PRIMARY KEY,   -- normalized address: one subscription per person
   email           TEXT NOT NULL,      -- address mail goes to (as typed, lowercased)
