@@ -285,7 +285,7 @@ body.egg-on{overflow:hidden}
 <header class="band" id="band">
 <div class="wrap bandin">
 <h1 class="wordmark">CFB Sundays</h1>
-<p class="bandmeta" id="bandMeta" aria-live="polite"></p>
+<p class="bandmeta" id="bandMeta"></p>
 <p class="tag">Pick your schools. See where your guys are playing on Sundays. <a href="#signup" id="emailLink">Get it by email</a></p>
 </div>
 </header>
@@ -599,7 +599,7 @@ function render(){
   if(!sel.length)openGames.clear();
   document.querySelectorAll('#tabs button').forEach(x=>{x.classList.toggle('on',x.dataset.v===tab);x.setAttribute('aria-current',x.dataset.v===tab?'page':'false')});
   {const on=document.querySelector('#tabs button.on'),rail=document.getElementById('tabs');if(on&&rail.scrollWidth>rail.clientWidth)rail.scrollTo({left:Math.max(0,on.offsetLeft-24),behavior:'smooth'})}
-  const bm=document.getElementById('bandMeta');if(bm&&GAMES.length)bm.textContent=`${/^\d+$/.test(String(weekLabel(curWeek)))?'Week '+weekLabel(curWeek):weekLabel(curWeek)} \u00b7 ${SEASON_YR}`;
+  const bm=document.getElementById('bandMeta');if(bm&&GAMES.length)bm.textContent=`${SEASON_YR} season`;
   const addBtn=sel.length?'':'<button class="addbtn" type="button">+ Add a school</button>';
   if(tab==='games')v.innerHTML=addBtn+weekView();
   else if(tab==='rank')v.innerHTML=addBtn+rankView();
