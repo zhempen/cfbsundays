@@ -47,8 +47,8 @@ nav button.on{color:var(--ink);border-bottom-color:var(--accent)}
 .chip .x{margin-left:6px;opacity:.7}
 input[type=search]{width:100%;padding:12px 14px;font:inherit;font-size:16px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
 .hint{color:var(--muted);font-size:13px;margin:4px 0 0}
-.weekbar{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0 8px}
-.weekbar button{min-width:40px;padding:5px 0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;font-family:"Barlow Condensed";font-size:15px;cursor:pointer}
+.weekbar{display:grid;grid-template-columns:repeat(var(--cols,9),minmax(0,1fr));gap:4px;padding:2px 0 8px}
+.weekbar button{min-width:0;padding:5px 0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;font-family:"Barlow Condensed";font-size:15px;cursor:pointer}
 .weekbar button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .game{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 8px;cursor:pointer}
 .game:hover{border-color:var(--accent)}
@@ -78,9 +78,9 @@ tr.rk{cursor:pointer}
 tr.rk:hover td{background:var(--chip)}
 tr.rk .chev{display:inline-block;width:14px;color:var(--muted);transition:transform .12s}
 tr.rk.open .chev{transform:rotate(90deg)}
-td.expand{padding:4px 0 10px 14px;color:var(--muted);font-size:13.5px}
-td.expand b{color:var(--ink);font-weight:600}
-td.expand .row{padding:2px 0}
+.expand{padding:4px 0 10px 14px;color:var(--muted);font-size:13.5px}
+.expand b{color:var(--ink);font-weight:600}
+.expand .row{padding:2px 0}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:0 0 12px}
 .empty{color:var(--muted);padding:24px 0;text-align:center}
 .foot{color:var(--muted);font-size:12px;margin-top:28px}
@@ -97,7 +97,7 @@ td.expand .row{padding:2px 0}
   h1{font-size:40px}
   nav button{font-size:19px;padding:12px 12px}
   .chip{padding:9px 16px;font-size:15px}
-  .weekbar button{min-width:48px;padding:11px 0;font-size:17px}
+  .weekbar button{padding:11px 0;font-size:16px}
   .game{padding:14px 16px}
   .game .teams{font-size:22px}
   .game .meta{font-size:14px}
@@ -150,7 +150,7 @@ td.expand .row{padding:2px 0}
 </div>
 
 <script>
-let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},POST={},sel=[],curWeek=1,tab='games',openGame=null,rankCat='starters',expanded=null;
+let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},POST={},sel=[],curWeek=1,tab='games',openGame=null,rankCat='starters',expanded=null,boardOpen=null;
 let mode='fin';try{mode=localStorage.getItem('mode')||'fin'}catch(e){}
 const ROUND={WC:'Wild Card',DIV:'Division',CON:'Conference',SB:'Super Bowl'};
 const ROUND_SHORT={WC:'WC',DIV:'DIV',CON:'CONF',SB:'SB'};
@@ -255,6 +255,9 @@ function wire(v){
   v.querySelectorAll('[data-w]').forEach(el=>el.onclick=()=>{curWeek=+el.dataset.w;render()});
   const bk=v.querySelector('.back');if(bk)bk.onclick=()=>{openGame=null;render()};
   const cs=v.querySelector('#catSel');if(cs)cs.onchange=()=>{rankCat=cs.value;render()};
+  v.querySelectorAll('[data-bo]').forEach(el=>el.onclick=()=>{
+    boardOpen=boardOpen===el.dataset.bo?null:el.dataset.bo;render();
+  });
   v.querySelectorAll('tr.rk').forEach(el=>el.onclick=()=>{
     const k=el.dataset.sc+'|'+el.dataset.cat;
     expanded=expanded===k?null:k;render();
@@ -269,6 +272,31 @@ function tiedAt(rows,val){return rows.filter(x=>x[1]===val)}
 function rankLabel(rows,i){
   const rk=compRank(rows,i);
   return (tiedAt(rows,rows[i][1]).length>1?'T-':'#')+rk;
+}
+let RANK_MODE=null;
+function creditSchools(p){return mode==='fin'?[p.c[0]]:[...new Set(p.c)]}
+function buildRanks(){
+  if(RANK_MODE===mode)return;
+  const acc={};
+  const add=(cat,sc,v)=>{if(!v)return;(acc[cat]=acc[cat]||{})[sc]=(acc[cat][sc]||0)+v};
+  for(const [pid,p] of Object.entries(PLAYERS)){
+    const s=STATS[pid]?.s||{};
+    const g=GRP(p.p);
+    for(const sc of creditSchools(p)){
+      add('total',sc,1);
+      if(p.s==='ACT'){
+        add('active',sc,1);add('pos_'+g,sc,1);
+        if(p.st){add('starters',sc,1);add('start_'+g,sc,1)}
+      }
+      for(const k in STATV)add(k,sc,STATV[k](s));
+    }
+  }
+  RANKS={};
+  for(const cat in acc){
+    RANKS[cat]=Object.entries(acc[cat]).map(([sc,v])=>[sc,Math.round(v*10)/10])
+      .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+  }
+  RANK_MODE=mode;
 }
 function rankOf(cat,school){
   const r=RANKS[cat]||[];const i=r.findIndex(x=>x[0]===school);
@@ -298,7 +326,7 @@ const STATV={py:s=>s.py||0,ry:s=>s.ry||0,recy:s=>s.recy||0,sk:s=>s.sk||0,
 function catPlayers(cat,school){
   const out=[];
   for(const [pid,p] of Object.entries(PLAYERS)){
-    if(p.c[0]!==school)continue;
+    if(!creditSchools(p).includes(school))continue;
     if(STATV[cat]){
       const v=STATV[cat](STATS[pid]?.s||{});
       if(v>0)out.push({p,v});
@@ -325,6 +353,7 @@ function expandHtml(cat,school){
   }).join('');
 }
 function rankView(){
+  buildRanks();
   let h='';
   for(const sc of sel){
     const rows=Object.keys(CATS).map(cat=>{
@@ -359,7 +388,7 @@ function rankView(){
       ${Object.entries(CATS).map(([k,lbl])=>`<option value="${k}" ${k===rankCat?'selected':''}>${lbl}</option>`).join('')}</select></h2>
       <div class="tablewrap"><table>${topList(rankCat,10)}</table></div></div>`;
   }
-  h+=`<p class="hint">Tap a category to see which of your players are behind the number. Ties share a rank (T-1 means tied for first). Rankings credit the school a player finished at. A starter is anyone taking 50%+ of his team's offensive or defensive snaps on average, minimum two games.</p>`;
+  h+=`<p class="hint">Tap a category to see which of your players are behind the number. Ties share a rank (T-1 means tied for first). ${mode==='fin'?'Rankings credit the school a player finished at.':'Rankings credit every school a player played for, so transfers count for each stop.'} A starter is anyone taking 50%+ of his team's offensive or defensive snaps on average, minimum two games.</p>`;
   return h;
 }
 
@@ -375,7 +404,8 @@ function weekView(){
   let wks=[...new Set(GAMES.map(g=>g.wk))].sort((a,b)=>a-b);
   if(inPlayoffs)wks=wks.filter(w=>{const g=GAMES.find(x=>x.wk===w);return g&&g.type!=='REG'});
   const lbl=guysLabel();
-  let h=`<div class="weekbar">`+wks.map(w=>`<button data-w="${w}" class="${w===curWeek?'on':''}">${weekLabel(w)}</button>`).join('')+`</div>`;
+  const cols=wks.length<=6?wks.length:Math.ceil(wks.length/2);
+  let h=`<div class="weekbar" style="--cols:${cols}">`+wks.map(w=>`<button data-w="${w}" class="${w===curWeek?'on':''}">${weekLabel(w)}</button>`).join('')+`</div>`;
   const gs=GAMES.filter(g=>g.wk===curWeek);
   h+=gs.map(g=>{
     const n=(idx[g.away]||[]).length+(idx[g.home]||[]).length;
@@ -452,11 +482,24 @@ function boardsView(){
     const topTeams=Object.entries(byTeam).sort((a,b)=>b[1]-a[1]).slice(0,6);
     const top=cat=>ps.map(e=>({e,v:(STATS[e.pid]?.s||{})[cat]||0})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,5);
     const row=(x,unit)=>`<tr><td>${esc(x.e.p.n)}${!x.e.primary?' <span class="badge">finished at '+esc(x.e.p.c[0])+'</span>':''}</td><td>${x.e.p.t}</td><td class="num">${x.v.toLocaleString()} ${unit}</td></tr>`;
+    const chip=(kind,key,n)=>{const id=sc+'|'+kind+'|'+key;
+      return `<button class="chip${boardOpen===id?' sel':''}" data-bo="${esc(id)}">${key} · ${n}</button>`};
+    const openList=kind=>{
+      if(!boardOpen)return '';
+      const [bs,bk,bv]=boardOpen.split('|');
+      if(bs!==sc||bk!==kind)return '';
+      const list=act.filter(e=>kind==='pos'?e.p.p===bv:e.p.t===bv)
+        .sort((a,b)=>(b.p.st?1:0)-(a.p.st?1:0)||a.p.n.localeCompare(b.p.n));
+      return `<div class="expand" style="padding:6px 0 4px 4px">`+list.map(e=>
+        `<div class="row"><b>${esc(e.p.n)}</b> (${esc([e.p.d||e.p.p,kind==='pos'?e.p.t:'',e.p.st?'starter':'',!e.primary?'finished at '+e.p.c[0]:''].filter(Boolean).join(', '))})</div>`).join('')+`</div>`;
+    };
     h+=`<div class="card"><h2 style="margin:0 0 4px">${esc(sc)}</h2>
       <p class="sub" style="margin:0 0 10px">${act.length} on active rosters · ${ps.length} in the league overall (IR &amp; practice squads included)</p>
-      <div class="chips">${Object.entries(byPos).sort((a,b)=>b[1]-a[1]).map(([p,n])=>`<span class="chip">${p} · ${n}</span>`).join('')}</div>
+      <div class="chips">${Object.entries(byPos).sort((a,b)=>b[1]-a[1]).map(([p,n])=>chip('pos',p,n)).join('')}</div>
+      ${openList('pos')}
       <p class="hint" style="margin:8px 0 4px">Most on one NFL team</p>
-      <div class="chips">${topTeams.map(([t,n])=>`<span class="chip">${t} · ${n}</span>`).join('')}</div>
+      <div class="chips">${topTeams.map(([t,n])=>chip('team',t,n)).join('')}</div>
+      ${openList('team')}
       <div class="tablewrap"><table>
       <tr><th colspan="3">Season leaders</th></tr>
       ${top('py').slice(0,2).map(x=>row(x,'pass yds')).join('')}
