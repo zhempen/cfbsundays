@@ -68,6 +68,12 @@ input[type=search]{width:100%;padding:12px 14px;font:inherit;font-size:16px;bord
 .count.zero{color:var(--muted);opacity:.45}
 .addbtn{display:block;width:100%;margin:0 0 14px;padding:12px 16px;font-family:"Barlow Condensed";font-size:18px;letter-spacing:.6px;text-transform:uppercase;background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;cursor:pointer}
 .addbtn:hover{filter:brightness(1.08)}
+#egg{margin:0 0 14px}
+#eggAns{border-color:var(--accent);text-align:center;padding:18px 16px}
+#eggAns .big{font-family:"Barlow Condensed";font-size:56px;line-height:1;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin:4px 0 10px}
+#eggAns p{margin:0 auto;max-width:560px}
+@media (prefers-reduced-motion:no-preference){#eggAns:not([hidden]){animation:eggIn .45s ease-out}}
+@keyframes eggIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
 .addcol{font-family:"Barlow Condensed";font-size:15px;letter-spacing:.4px;text-transform:uppercase;color:var(--accent);white-space:nowrap}
 .countlbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .score{font-variant-numeric:tabular-nums}
@@ -153,6 +159,10 @@ tr.rk.open .chev{transform:rotate(90deg)}
   <button data-v="fan">Fantasy</button>
   <button data-v="post" id="postTab" hidden>Playoffs</button>
 </nav>
+<div id="egg" hidden>
+  <button id="eggBtn" class="addbtn" type="button">So who’s the best team, based on all this?</button>
+  <div id="eggAns" class="card" hidden></div>
+</div>
 
 <div id="view"></div>
 <details class="contact" id="contact">
@@ -994,6 +1004,59 @@ function h2hHtml(){
       <div class="expand" style="padding:0 0 0 4px">${faceoffs.map(f=>`<div class="row"><b>${f.g.away}</b> (${fmtSide(f.a)}) @ <b>${f.g.home}</b> (${fmtSide(f.b)})</div>`).join('')}</div>`:''}
     ${sel.length>4?'<p class="hint" style="margin:8px 0 0">Showing your first four schools.</p>':''}</div>`;
 }
+
+
+// ===================== easter egg (Konami code) =====================
+// keyboard: up up down down left right left right b a
+// phones: swipe up up down down left right left right, then tap twice
+function eggReason(){
+  if(!latestStatWeek())return 'The season hasn’t started yet, but the answer doesn’t change. Check back after week 1 for the receipts.';
+  const keep=mode;mode='fin';RANK_MODE=null;buildRanks();
+  const cands=Object.keys(CATS).filter(c=>c!=='total').map(c=>({c,r:rankOf(c,'Georgia')})).filter(x=>x.r)
+    .sort((a,b)=>a.r.rank-b.r.rank||b.r.val-a.r.val);
+  const starters=rankOf('starters','Georgia');
+  mode=keep;RANK_MODE=null;
+  // one entry per position group (active OL and starting OL say the same thing),
+  // and make room for a production stat if one ranks top 10
+  const grp=c=>{const m=c.match(/^(pos|start)_(.+)$/);return m?m[2]:(['active','starters'].includes(c)?'roster':c)};
+  const used=new Set(),top=[];
+  for(const x of cands){if(top.length===3)break;if(used.has(grp(x.c)))continue;used.add(grp(x.c));top.push(x)}
+  if(!top.some(x=>STATV[x.c])){const st=cands.find(x=>STATV[x.c]&&x.r.rank<=10&&!used.has(grp(x.c)));if(st)top.splice(top.length-1,1,st)}
+  if(!top.length)return 'Former Dawgs are all over NFL rosters. The numbers are still catching up.';
+  const lc=t=>/^[A-Z][a-z]/.test(t)?t[0].toLowerCase()+t.slice(1):t;
+  const bits=top.map(x=>`${x.r.label} in ${lc(CATS[x.c])}`);
+  const list=bits.length>1?bits.slice(0,-1).join(', ')+' and '+bits[bits.length-1]:bits[0];
+  return `Former Dawgs rank ${list} among every school’s NFL alumni`+
+    (starters?`, with ${starters.val} of them starting on Sundays`:'')+`. Through week ${weekLabel(latestStatWeek())}.`;
+}
+function unlockEgg(){
+  const egg=document.getElementById('egg');
+  if(!egg.hidden)return;
+  egg.hidden=false;egg.scrollIntoView({behavior:'smooth',block:'center'});
+}
+document.getElementById('eggBtn').onclick=()=>{
+  const a=document.getElementById('eggAns');
+  a.innerHTML=`<div class="hint">The best team, based on all this</div><div class="big">Georgia</div><p>${esc(eggReason())}</p>`;
+  a.hidden=false;
+};
+(()=>{
+  const K=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+  let i=0;
+  document.addEventListener('keydown',e=>{
+    if(e.target.matches&&e.target.matches('input,textarea,select'))return;
+    const k=e.key.length===1?e.key.toLowerCase():e.key;
+    i=k===K[i]?i+1:(k===K[0]?1:0);
+    if(i===K.length){i=0;unlockEgg()}
+  });
+  let seq=[],st=null;
+  document.addEventListener('touchstart',e=>{const t=e.changedTouches[0];st={x:t.clientX,y:t.clientY}},{passive:true});
+  document.addEventListener('touchend',e=>{
+    if(!st)return;const t=e.changedTouches[0],dx=t.clientX-st.x,dy=t.clientY-st.y;st=null;
+    const m=Math.max(Math.abs(dx),Math.abs(dy))<12?'T':(Math.abs(dx)>Math.abs(dy)?(dx>0?'R':'L'):(dy>0?'D':'U'));
+    seq.push(m);seq=seq.slice(-10);
+    if(seq.join('')==='UUDDLRLRTT'){seq=[];unlockEgg()}
+  },{passive:true});
+})();
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 boot();
