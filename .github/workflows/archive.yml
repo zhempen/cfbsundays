@@ -1,25 +1,29 @@
 name: Rebuild past seasons
 
 # Push any commit to the "archive-build" branch to rebuild site/archive
-# (2013 through last season) with ESPN starting lineups. The result is
-# uploaded as an artifact to review and commit to main; nothing deploys.
+# (2013 through last season) with ESPN starting lineups. The job commits the
+# result back to archive-build (that push does not retrigger it) so it can be
+# reviewed and copied to main; nothing deploys from here.
 on:
   push:
     branches: [archive-build]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   archive:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build archived seasons
-        run: python3 scripts/build.py --archive 2013-2025
-      - uses: actions/upload-artifact@v4
-        with:
-          name: archive
-          path: site/archive
-          retention-days: 7
+      - name: Build log
+        run: python3 scripts/build.py --archive 2013-2025 2> build-log.txt || (cat build-log.txt; exit 1)
+      - name: Commit result to archive-build
+        run: |
+          grep -v '^fetching' build-log.txt > site/archive/build-log.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/archive
+          git commit -m "Rebuilt archive with ESPN starters" || echo "no changes"
+          git push origin HEAD:archive-build
