@@ -178,6 +178,7 @@ async function boot(){
   const h=location.hash.replace('#','');
   if(h==='boards')tab='boards';
   renderPicker();render();
+  if(!sel.length&&matchMedia('(pointer:fine)').matches)document.getElementById('schoolSearch').focus();
 }
 
 function playersOf(school){
@@ -218,7 +219,10 @@ function renderPicker(){
   const selDiv=document.getElementById('selChips');
   selDiv.innerHTML=sel.map(s=>`<button class="chip sel" data-s="${esc(s)}">${esc(s)}<span class="x">×</span></button>`).join('');
   selDiv.querySelectorAll('button').forEach(b=>b.onclick=()=>{sel=sel.filter(x=>x!==b.dataset.s);saveSel();renderPicker();render()});
-  document.getElementById('pickHint').textContent=sel.length?'':'Nothing picked yet. Search above — add more than one for watch parties.';
+  const ph=document.getElementById('pickHint');
+  ph.textContent=sel.length?'':'Nothing picked yet. Tap here or search above \u2014 add more than one for watch parties.';
+  ph.style.cursor=sel.length?'':'pointer';
+  ph.onclick=sel.length?null:()=>document.getElementById('schoolSearch').focus();
 }
 document.addEventListener('input',e=>{
   if(e.target.id!=='schoolSearch')return;
