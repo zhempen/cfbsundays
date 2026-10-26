@@ -23,7 +23,7 @@
   --accent:#1546b8; --accent-ink:#ffffff; --chip:#dde3eb;
   --gold:#ffc629; --gold-ink:#1b1400; --rail:#0e1830; --rail-ink:#c7d2e8;
   --badge:#5c4300; --badge-bg:#ffe9a8;
-  --team1:#1546b8; --team2:#ffc629; --team-ink:#ffffff;
+  --team1:#1546b8; --team2:#ffc629; --team-ink:#ffffff; --team2-ink:#0c1526;
   --lift:inset 0 1px 0 rgba(255,255,255,.75),0 1px 2px rgba(12,21,38,.08),0 8px 18px -10px rgba(12,21,38,.35);
   --disp:"Saira",system-ui,sans-serif;
   color-scheme:light;
@@ -245,8 +245,8 @@ details.recap[open]>summary::before{transform:rotate(90deg)}
 #eggAns p{margin:0 auto;max-width:620px;font-size:18px;line-height:1.5}
 #eggBack{font:inherit;font-size:16px;font-weight:700;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:3px;padding:10px 20px;cursor:pointer;margin-top:26px}
 body.egg-on{overflow:hidden}
-@media (prefers-reduced-motion:no-preference){#egg:not([hidden]){animation:eggIn .35s cubic-bezier(.16,1,.3,1)}#eggAns:not([hidden]) .big{animation:eggIn .5s cubic-bezier(.16,1,.3,1)}
-  .game{transition:border-color .15s}}
+@media (prefers-reduced-motion:no-preference){#egg:not([hidden]){animation:eggIn .35s cubic-bezier(.16,1,.3,1)}#eggAns:not([hidden]) .big{animation:eggIn .5s cubic-bezier(.16,1,.3,1)}}
+@media (prefers-reduced-motion:reduce){.game{transition:none}.game:hover,.game:focus-visible{transform:none}}
 @keyframes eggIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
 
 @media (max-width:640px){
@@ -313,7 +313,7 @@ body.egg-on{overflow:hidden}
 </div></nav>
 <div class="wrap">
 <div id="egg" role="dialog" aria-modal="true" aria-label="Who's the best team" hidden>
-  <button id="eggClose" type="button" aria-label="Back to the site">✕ Close</button>
+  <button id="eggClose" type="button" aria-label="Back to the site"><svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;margin-right:6px"><path d="M2 2l6 6M8 2l-6 6"/></svg>Close</button>
   <button id="eggBtn" type="button">So who’s the best team, based on all this?</button>
   <div id="eggAns" hidden></div>
 </div>

@@ -1,0 +1,1111 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-26T18:25:22+00:00",
+  "title": "Design System: CFB Sundays",
+  "extensions": {
+    "colorMeta": {
+      "steel-ground": {
+        "role": "neutral",
+        "displayName": "Steel Ground",
+        "source": "--bg (light)",
+        "canonical": "#cdd5df",
+        "oklch": "oklch(87.0% 0.016 253.9)",
+        "tonalRamp": [
+          "#090b0e",
+          "#21252a",
+          "#3d434a",
+          "#5b626b",
+          "#7c838c",
+          "#9fa6ae",
+          "#c4cad0",
+          "#ebeff3"
+        ]
+      },
+      "steel-panel": {
+        "role": "neutral",
+        "displayName": "Steel Panel",
+        "source": "--surface (light)",
+        "canonical": "#edf1f6",
+        "oklch": "oklch(95.7% 0.008 253.9)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#3f4246",
+          "#5e6266",
+          "#7f8387",
+          "#a2a5aa",
+          "#c7c9cd",
+          "#edeff1"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "source": "--ink (light)",
+        "canonical": "#0c1526",
+        "oklch": "oklch(19.7% 0.037 262.3)",
+        "tonalRamp": [
+          "#080b12",
+          "#1e2531",
+          "#384254",
+          "#566277",
+          "#768399",
+          "#9aa6bb",
+          "#c0cada",
+          "#e8effa"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Slate",
+        "source": "--muted (light)",
+        "canonical": "#3d4a5f",
+        "oklch": "oklch(40.7% 0.039 259.9)",
+        "tonalRamp": [
+          "#070b13",
+          "#1d2532",
+          "#374255",
+          "#546278",
+          "#75839a",
+          "#98a6bc",
+          "#bfcadb",
+          "#e8effb"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "source": "--line (light)",
+        "canonical": "#aeb9c8",
+        "oklch": "oklch(78.2% 0.025 256.1)",
+        "tonalRamp": [
+          "#080b10",
+          "#20252d",
+          "#3a434e",
+          "#58626f",
+          "#798391",
+          "#9ca6b3",
+          "#c2cad4",
+          "#eaeff6"
+        ]
+      },
+      "accent": {
+        "role": "tertiary",
+        "displayName": "Varsity Blue",
+        "source": "--accent (light)",
+        "canonical": "#1546b8",
+        "oklch": "oklch(44.2% 0.187 263.2)",
+        "tonalRamp": [
+          "#00052e",
+          "#021b61",
+          "#0b359a",
+          "#2356c9",
+          "#447af1",
+          "#77a3fb",
+          "#b0cafb",
+          "#e6efff"
+        ]
+      },
+      "accent-ink": {
+        "role": "neutral",
+        "displayName": "Accent Ink",
+        "source": "--accent-ink (light)",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "chip": {
+        "role": "neutral",
+        "displayName": "Chip Steel",
+        "source": "--chip (light)",
+        "canonical": "#dde3eb",
+        "oklch": "oklch(91.4% 0.013 255.5)",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#222529",
+          "#3e4248",
+          "#5d6269",
+          "#7d838a",
+          "#a0a5ac",
+          "#c5c9cf",
+          "#eceff2"
+        ]
+      },
+      "gold": {
+        "role": "secondary",
+        "displayName": "Selection Gold",
+        "source": "--gold (both themes)",
+        "canonical": "#ffc629",
+        "oklch": "oklch(85.5% 0.166 86.2)",
+        "tonalRamp": [
+          "#130900",
+          "#312300",
+          "#533f09",
+          "#7a5c08",
+          "#a27c0d",
+          "#ca9e29",
+          "#eac46f",
+          "#ffedc6"
+        ]
+      },
+      "gold-ink": {
+        "role": "neutral",
+        "displayName": "Gold Ink",
+        "source": "--gold-ink (both themes)",
+        "canonical": "#1b1400",
+        "oklch": "oklch(19.4% 0.040 92.7)",
+        "tonalRamp": [
+          "#0e0b04",
+          "#2a2516",
+          "#49422c",
+          "#696147",
+          "#8a8267",
+          "#ada58c",
+          "#cfc9b6",
+          "#f2eee1"
+        ]
+      },
+      "rail": {
+        "role": "neutral",
+        "displayName": "Menu Rail",
+        "source": "--rail (light)",
+        "canonical": "#0e1830",
+        "oklch": "oklch(21.4% 0.050 265.4)",
+        "tonalRamp": [
+          "#070b15",
+          "#1d2536",
+          "#36425a",
+          "#54617e",
+          "#7482a1",
+          "#97a5c2",
+          "#bfc9e0",
+          "#e7effe"
+        ]
+      },
+      "rail-ink": {
+        "role": "neutral",
+        "displayName": "Rail Ink",
+        "source": "--rail-ink (light)",
+        "canonical": "#c7d2e8",
+        "oklch": "oklch(86.2% 0.033 264.4)",
+        "tonalRamp": [
+          "#080b11",
+          "#202530",
+          "#3a4252",
+          "#586174",
+          "#798397",
+          "#9ca5b8",
+          "#c2c9d8",
+          "#e9eff9"
+        ]
+      },
+      "badge": {
+        "role": "neutral",
+        "displayName": "Pennant Badge Ink",
+        "source": "--badge (light)",
+        "canonical": "#5c4300",
+        "oklch": "oklch(39.9% 0.082 84.4)",
+        "tonalRamp": [
+          "#120900",
+          "#322200",
+          "#543e05",
+          "#775d23",
+          "#997e46",
+          "#bba26f",
+          "#dac7a0",
+          "#faedd3"
+        ]
+      },
+      "badge-bg": {
+        "role": "neutral",
+        "displayName": "Pennant Badge",
+        "source": "--badge-bg (light)",
+        "canonical": "#ffe9a8",
+        "oklch": "oklch(93.7% 0.086 91.6)",
+        "tonalRamp": [
+          "#110a00",
+          "#2f2300",
+          "#514000",
+          "#735f1f",
+          "#958142",
+          "#b7a46c",
+          "#d7c99e",
+          "#f8eed2"
+        ]
+      },
+      "stadium-ground": {
+        "role": "neutral",
+        "displayName": "Stadium Ground",
+        "source": "--bg (dark)",
+        "canonical": "#090f1d",
+        "oklch": "oklch(17.0% 0.031 265.6)",
+        "tonalRamp": [
+          "#080b11",
+          "#202530",
+          "#3b4251",
+          "#596173",
+          "#798296",
+          "#9da5b7",
+          "#c3c9d7",
+          "#eaeff8"
+        ]
+      },
+      "stadium-panel": {
+        "role": "neutral",
+        "displayName": "Stadium Panel",
+        "source": "--surface (dark)",
+        "canonical": "#111a2e",
+        "oklch": "oklch(22.0% 0.042 264.8)",
+        "tonalRamp": [
+          "#070b13",
+          "#1e2533",
+          "#384256",
+          "#566179",
+          "#76829c",
+          "#99a5bd",
+          "#c0c9dc",
+          "#e8effc"
+        ]
+      },
+      "stadium-ink": {
+        "role": "neutral",
+        "displayName": "Stadium Ink",
+        "source": "--ink (dark); also score bug text",
+        "canonical": "#e7edf8",
+        "oklch": "oklch(94.5% 0.016 262.8)",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#22252b",
+          "#3e424a",
+          "#5c616b",
+          "#7d838c",
+          "#a0a5af",
+          "#c5c9d0",
+          "#eceff3"
+        ]
+      },
+      "stadium-muted": {
+        "role": "neutral",
+        "displayName": "Stadium Muted",
+        "source": "--muted (dark)",
+        "canonical": "#97a6c0",
+        "oklch": "oklch(72.2% 0.042 261.5)",
+        "tonalRamp": [
+          "#070b13",
+          "#1d2533",
+          "#374256",
+          "#546279",
+          "#75839c",
+          "#98a6bd",
+          "#bfcadc",
+          "#e8effb"
+        ]
+      },
+      "stadium-line": {
+        "role": "neutral",
+        "displayName": "Stadium Hairline",
+        "source": "--line (dark)",
+        "canonical": "#24314b",
+        "oklch": "oklch(31.4% 0.050 263.5)",
+        "tonalRamp": [
+          "#070b15",
+          "#1c2536",
+          "#35425b",
+          "#52617e",
+          "#7383a1",
+          "#96a5c2",
+          "#becae0",
+          "#e7effe"
+        ]
+      },
+      "stadium-accent": {
+        "role": "tertiary",
+        "displayName": "Night Varsity Blue",
+        "source": "--accent (dark)",
+        "canonical": "#6f9bff",
+        "oklch": "oklch(70.3% 0.155 264.8)",
+        "tonalRamp": [
+          "#010728",
+          "#0a1f57",
+          "#1b3a8b",
+          "#345ab8",
+          "#537dde",
+          "#79a2fd",
+          "#b1c9fc",
+          "#e7effe"
+        ]
+      },
+      "stadium-accent-ink": {
+        "role": "neutral",
+        "displayName": "Night Accent Ink",
+        "source": "--accent-ink (dark)",
+        "canonical": "#06102a",
+        "oklch": "oklch(18.2% 0.055 264.8)",
+        "tonalRamp": [
+          "#060b16",
+          "#1c2537",
+          "#35425d",
+          "#526181",
+          "#7282a4",
+          "#96a5c5",
+          "#bdc9e2",
+          "#e7effe"
+        ]
+      },
+      "stadium-chip": {
+        "role": "neutral",
+        "displayName": "Stadium Chip",
+        "source": "--chip (dark)",
+        "canonical": "#1a2540",
+        "oklch": "oklch(26.9% 0.053 266.2)",
+        "tonalRamp": [
+          "#070b15",
+          "#1d2537",
+          "#36415c",
+          "#536180",
+          "#7482a3",
+          "#97a5c4",
+          "#bec9e1",
+          "#e8effd"
+        ]
+      },
+      "stadium-rail": {
+        "role": "neutral",
+        "displayName": "Stadium Rail",
+        "source": "--rail (dark)",
+        "canonical": "#050a16",
+        "oklch": "oklch(14.6% 0.028 263.1)",
+        "tonalRamp": [
+          "#080b11",
+          "#20252f",
+          "#3b4250",
+          "#596172",
+          "#7a8394",
+          "#9da5b5",
+          "#c3c9d6",
+          "#eaeff7"
+        ]
+      },
+      "stadium-rail-ink": {
+        "role": "neutral",
+        "displayName": "Stadium Rail Ink",
+        "source": "--rail-ink (dark)",
+        "canonical": "#b9c6df",
+        "oklch": "oklch(82.5% 0.038 263.6)",
+        "tonalRamp": [
+          "#080b12",
+          "#1f2532",
+          "#394255",
+          "#566177",
+          "#77839a",
+          "#9aa5bb",
+          "#c1c9db",
+          "#e9effa"
+        ]
+      },
+      "stadium-badge": {
+        "role": "neutral",
+        "displayName": "Night Pennant Ink",
+        "source": "--badge (dark)",
+        "canonical": "#ffd65c",
+        "oklch": "oklch(88.9% 0.145 90.5)",
+        "tonalRamp": [
+          "#120a00",
+          "#302300",
+          "#524000",
+          "#765e0f",
+          "#9d7e17",
+          "#c4a130",
+          "#e2c77c",
+          "#fdeec2"
+        ]
+      },
+      "stadium-badge-bg": {
+        "role": "neutral",
+        "displayName": "Night Pennant",
+        "source": "--badge-bg (dark)",
+        "canonical": "#3a2e08",
+        "oklch": "oklch(30.6% 0.055 90.7)",
+        "tonalRamp": [
+          "#0f0b02",
+          "#2c240e",
+          "#4c4121",
+          "#6d603c",
+          "#8f815c",
+          "#b1a481",
+          "#d2c9ae",
+          "#f5eedc"
+        ]
+      },
+      "team1-default": {
+        "role": "primary",
+        "displayName": "Team One (default)",
+        "source": "--team1; replaced at runtime by the lead school's first color from site/colors.json",
+        "canonical": "#1546b8",
+        "oklch": "oklch(44.2% 0.187 263.2)",
+        "tonalRamp": [
+          "#00052e",
+          "#021b61",
+          "#0b359a",
+          "#2356c9",
+          "#447af1",
+          "#77a3fb",
+          "#b0cafb",
+          "#e6efff"
+        ]
+      },
+      "team2-default": {
+        "role": "primary",
+        "displayName": "Team Two (default)",
+        "source": "--team2; replaced at runtime by the lead school's second color",
+        "canonical": "#ffc629",
+        "oklch": "oklch(85.5% 0.166 86.2)",
+        "tonalRamp": [
+          "#130900",
+          "#312300",
+          "#533f09",
+          "#7a5c08",
+          "#a27c0d",
+          "#ca9e29",
+          "#eac46f",
+          "#ffedc6"
+        ]
+      },
+      "team-fallback-1": {
+        "role": "neutral",
+        "displayName": "Unknown Team Body",
+        "source": "team tag --c1 fallback when an NFL team has no colors",
+        "canonical": "#33405a",
+        "oklch": "oklch(37.2% 0.048 263.7)",
+        "tonalRamp": [
+          "#070b14",
+          "#1d2535",
+          "#36425a",
+          "#53617d",
+          "#7483a0",
+          "#97a5c1",
+          "#becadf",
+          "#e7effe"
+        ]
+      },
+      "team-fallback-2": {
+        "role": "neutral",
+        "displayName": "Unknown Team Stripe",
+        "source": "team tag --c2 fallback",
+        "canonical": "#8a96ad",
+        "oklch": "oklch(67.1% 0.037 263.5)",
+        "tonalRamp": [
+          "#080b12",
+          "#1f2531",
+          "#394254",
+          "#566177",
+          "#778399",
+          "#9aa5bb",
+          "#c1c9da",
+          "#e9effa"
+        ]
+      },
+      "bug-top": {
+        "role": "neutral",
+        "displayName": "Score Bug Gloss Top",
+        "source": "score bug gradient stop 0",
+        "canonical": "#22325a",
+        "oklch": "oklch(32.5% 0.074 266.0)",
+        "tonalRamp": [
+          "#050a19",
+          "#19243e",
+          "#314166",
+          "#4d608c",
+          "#6d82b0",
+          "#91a5d0",
+          "#bac9eb",
+          "#e8effe"
+        ]
+      },
+      "bug-upper": {
+        "role": "neutral",
+        "displayName": "Score Bug Upper",
+        "source": "score bug gradient stop 48%",
+        "canonical": "#18264a",
+        "oklch": "oklch(27.7% 0.069 266.0)",
+        "tonalRamp": [
+          "#060a18",
+          "#1a243c",
+          "#324164",
+          "#4f6089",
+          "#6f82ad",
+          "#93a5cd",
+          "#bbc9e9",
+          "#e7effe"
+        ]
+      },
+      "bug-lower": {
+        "role": "neutral",
+        "displayName": "Score Bug Lower",
+        "source": "score bug gradient stop 52%",
+        "canonical": "#121d3a",
+        "oklch": "oklch(23.8% 0.058 266.4)",
+        "tonalRamp": [
+          "#060b16",
+          "#1c2438",
+          "#35415e",
+          "#526183",
+          "#7282a6",
+          "#96a5c7",
+          "#bdc9e4",
+          "#e7efff"
+        ]
+      },
+      "bug-bottom": {
+        "role": "neutral",
+        "displayName": "Score Bug Bottom",
+        "source": "score bug gradient stop 100%",
+        "canonical": "#0f1832",
+        "oklch": "oklch(21.6% 0.053 267.5)",
+        "tonalRamp": [
+          "#070b15",
+          "#1d2437",
+          "#37415c",
+          "#546180",
+          "#7482a3",
+          "#98a5c4",
+          "#bfc9e1",
+          "#e8eefd"
+        ]
+      },
+      "bug-edge": {
+        "role": "neutral",
+        "displayName": "Score Bug Edge",
+        "source": "score bug 1px border",
+        "canonical": "#0a1226",
+        "oklch": "oklch(18.7% 0.043 266.0)",
+        "tonalRamp": [
+          "#080b13",
+          "#1e2533",
+          "#384257",
+          "#56617a",
+          "#76829d",
+          "#9aa5be",
+          "#c0c9dd",
+          "#e8effc"
+        ]
+      },
+      "bug-count-cell": {
+        "role": "neutral",
+        "displayName": "Count Cell",
+        "source": "right-hand player count column",
+        "canonical": "#070d1c",
+        "oklch": "oklch(16.2% 0.033 265.6)",
+        "tonalRamp": [
+          "#080b12",
+          "#202530",
+          "#3a4253",
+          "#586175",
+          "#798297",
+          "#9ca5b9",
+          "#c2c9d8",
+          "#eaeff9"
+        ]
+      },
+      "bug-meta": {
+        "role": "neutral",
+        "displayName": "Bug Meta Grey",
+        "source": "kickoff time and meta on score bugs",
+        "canonical": "#a9b6d0",
+        "oklch": "oklch(77.5% 0.040 264.3)",
+        "tonalRamp": [
+          "#080b13",
+          "#1e2532",
+          "#384256",
+          "#566178",
+          "#76839b",
+          "#9aa5bc",
+          "#c0c9db",
+          "#e8effb"
+        ]
+      },
+      "bug-final": {
+        "role": "neutral",
+        "displayName": "Bug Final Grey",
+        "source": "FINAL label on score bugs",
+        "canonical": "#c9d4ea",
+        "oklch": "oklch(86.8% 0.033 264.4)",
+        "tonalRamp": [
+          "#080b11",
+          "#202530",
+          "#3a4252",
+          "#586174",
+          "#798397",
+          "#9ca5b8",
+          "#c2c9d8",
+          "#e9eff9"
+        ]
+      },
+      "bug-score-loser": {
+        "role": "neutral",
+        "displayName": "Losing Score Grey",
+        "source": "non-winning score on score bugs",
+        "canonical": "#9fb0cf",
+        "oklch": "oklch(75.5% 0.049 262.5)",
+        "tonalRamp": [
+          "#070b14",
+          "#1c2535",
+          "#35425a",
+          "#52627d",
+          "#7383a0",
+          "#96a6c1",
+          "#becadf",
+          "#e7effe"
+        ]
+      },
+      "bug-count-zero": {
+        "role": "neutral",
+        "displayName": "Zero Count Grey",
+        "source": "player count when none of your players are in the game",
+        "canonical": "#7d8bab",
+        "oklch": "oklch(63.7% 0.051 266.4)",
+        "tonalRamp": [
+          "#070b15",
+          "#1d2536",
+          "#37415b",
+          "#54617f",
+          "#7482a2",
+          "#98a5c3",
+          "#bfc9e0",
+          "#e7efff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display / Wordmark",
+        "fontStyle": "italic",
+        "textTransform": "uppercase",
+        "purpose": "The CFB SUNDAYS wordmark in the band only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "fontStyle": "italic",
+        "textTransform": "uppercase",
+        "purpose": "Card titles (h2), balanced wrap."
+      },
+      "headline-panel": {
+        "displayName": "Panel Headline",
+        "fontStyle": "italic",
+        "textTransform": "uppercase",
+        "purpose": "The signup panel header."
+      },
+      "title": {
+        "displayName": "Title",
+        "fontStyle": "italic",
+        "textTransform": "uppercase",
+        "purpose": "Team-side headings in an open game (h3)."
+      },
+      "menu": {
+        "displayName": "Menu Label",
+        "fontStyle": "italic",
+        "textTransform": "uppercase",
+        "purpose": "Rail tabs (18px on phones); band meta at 15px/800/0.05em; selected chips at 15px/800/width 74."
+      },
+      "action": {
+        "displayName": "Action",
+        "fontStyle": "italic",
+        "textTransform": "uppercase",
+        "purpose": "Gold buttons; 20px for the full-width add button."
+      },
+      "score": {
+        "displayName": "Score",
+        "purpose": "Score bug points; 24px on phones."
+      },
+      "count": {
+        "displayName": "Player Count",
+        "purpose": "Gold per-game count of your players; 28px on phones."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "All reading text; 16px on phones; tabular numerals on body."
+      },
+      "body-strong": {
+        "displayName": "Body Strong",
+        "purpose": "Player names, bold stat values."
+      },
+      "label": {
+        "displayName": "Label",
+        "textTransform": "uppercase",
+        "purpose": "Table headers, FINAL (12px, 0.06em), count labels (10.5px)."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Hints, nicknames, stat lines, muted meta."
+      }
+    },
+    "themes": {
+      "mechanism": "Tokens on :root; dark set under @media (prefers-color-scheme: dark) :root:not([data-theme=light]) and again under :root[data-theme=dark]; color-scheme set to match.",
+      "light": {
+        "--bg": "steel-ground",
+        "--surface": "steel-panel",
+        "--ink": "ink",
+        "--muted": "muted",
+        "--line": "line",
+        "--accent": "accent",
+        "--accent-ink": "accent-ink",
+        "--chip": "chip",
+        "--gold": "gold",
+        "--gold-ink": "gold-ink",
+        "--rail": "rail",
+        "--rail-ink": "rail-ink",
+        "--badge": "badge",
+        "--badge-bg": "badge-bg"
+      },
+      "dark": {
+        "--bg": "stadium-ground",
+        "--surface": "stadium-panel",
+        "--ink": "stadium-ink",
+        "--muted": "stadium-muted",
+        "--line": "stadium-line",
+        "--accent": "stadium-accent",
+        "--accent-ink": "stadium-accent-ink",
+        "--chip": "stadium-chip",
+        "--gold": "gold",
+        "--gold-ink": "gold-ink",
+        "--rail": "stadium-rail",
+        "--rail-ink": "stadium-rail-ink",
+        "--badge": "stadium-badge",
+        "--badge-bg": "stadium-badge-bg"
+      },
+      "fixed": "Score bug palette (bug-*) and gold are identical in both themes."
+    },
+    "teamColors": {
+      "source": "site/colors.json: {nfl: {ABBR: [c1, c2]}, school: {Name: [c1, c2]}}",
+      "bandVariables": {
+        "--team1": "lead school's first color (default #1546b8)",
+        "--team2": "lead school's second color (default #ffc629)",
+        "--team-ink": "inkFor(--team1)",
+        "--team2-ink": "inkFor(--team2); not declared on :root, consumed with fallback #1b1400"
+      },
+      "localVariables": {
+        "--c1": "first color",
+        "--c2": "second color (falls back to first)",
+        "--ci": "inkFor(--c1)"
+      },
+      "consumers": [
+        "band",
+        "band stripe",
+        "signup header",
+        "easter egg screen",
+        "team tags (.tm)",
+        "selected chips",
+        "swatch dots"
+      ],
+      "inkFor": "WCAG relative luminance > 0.36 returns #0c1526, else #ffffff",
+      "applied": "applyTeam() sets the four band variables on document.documentElement inside document.startViewTransition (skipped on first paint and under reduced motion)",
+      "prohibition": "Colors only. No school, NFL or video game logos or wordmarks."
+    },
+    "fonts": [
+      {
+        "family": "Saira",
+        "file": "/fonts/saira-latin-var.woff2",
+        "style": "normal",
+        "weight": "100 900",
+        "stretch": "50% 125%",
+        "display": "swap",
+        "preloaded": true,
+        "license": "site/fonts/OFL-Saira.txt"
+      },
+      {
+        "family": "Saira",
+        "file": "/fonts/saira-latin-var-italic.woff2",
+        "style": "italic",
+        "weight": "100 900",
+        "stretch": "50% 125%",
+        "display": "swap",
+        "preloaded": true,
+        "license": "site/fonts/OFL-Saira.txt"
+      }
+    ],
+    "globalStates": {
+      "focus": "outline: 2px solid var(--gold); outline-offset: 2px (:focus-visible)",
+      "selection": "::selection background var(--gold), color var(--gold-ink)",
+      "scrollbar": "html { scrollbar-color: var(--accent) var(--chip) }",
+      "caret": "caret-color: var(--accent)",
+      "checkbox": "accent-color: var(--accent)"
+    },
+    "shadows": [
+      {
+        "name": "lift-light",
+        "value": "inset 0 1px 0 rgba(255,255,255,.75),0 1px 2px rgba(12,21,38,.08),0 8px 18px -10px rgba(12,21,38,.35)",
+        "purpose": "--lift in light: every card."
+      },
+      {
+        "name": "lift-dark",
+        "value": "inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.4),0 10px 22px -12px rgba(0,0,0,.8)",
+        "purpose": "--lift in dark: every card."
+      },
+      {
+        "name": "band-bevel",
+        "value": "inset 0 1px 0 rgba(255,255,255,.7),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.4)",
+        "purpose": "Chrome hairlines on the band's top and bottom edges."
+      },
+      {
+        "name": "band-gloss",
+        "value": "linear-gradient(180deg,rgba(255,255,255,.26) 0,rgba(255,255,255,.08) 46%,rgba(0,0,0,.06) 54%,rgba(0,0,0,.26) 100%)",
+        "purpose": "Split gloss overlay on the band (background, not shadow)."
+      },
+      {
+        "name": "gold-bevel",
+        "value": "inset 0 1px 0 rgba(255,255,255,.6),inset 0 -3px 0 rgba(0,0,0,.18),0 3px 8px -4px rgba(0,0,0,.45)",
+        "purpose": "Gold buttons."
+      },
+      {
+        "name": "selection-bar-bevel",
+        "value": "inset 0 1px 0 rgba(255,255,255,.6),inset 0 -2px 0 rgba(0,0,0,.18)",
+        "purpose": "The gold tab selection bar."
+      },
+      {
+        "name": "gold-rule",
+        "value": "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 var(--gold)",
+        "purpose": "Menu rail top hairline and 3px gold line beneath it."
+      },
+      {
+        "name": "score-bug",
+        "value": "inset 0 1px 0 rgba(255,255,255,.22),0 2px 4px rgba(0,0,0,.25)",
+        "purpose": "Score bug at rest."
+      },
+      {
+        "name": "score-bug-hover",
+        "value": "inset 0 1px 0 rgba(255,255,255,.22),0 0 0 2px var(--gold),0 6px 14px -6px rgba(0,0,0,.5)",
+        "purpose": "Score bug hover and focus: gold ring plus deeper drop."
+      },
+      {
+        "name": "chip-selected",
+        "value": "inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px -2px rgba(0,0,0,.4)",
+        "purpose": "Selected chips and the active week button (with a .6 top highlight)."
+      },
+      {
+        "name": "dropdown",
+        "value": "0 14px 30px -8px rgba(0,0,0,.45)",
+        "purpose": "School search results panel."
+      },
+      {
+        "name": "inset-well",
+        "value": "inset 0 2px 3px rgba(12,21,38,.08)",
+        "purpose": "Search input."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-menu",
+        "value": "cubic-bezier(.16,1,.3,1)",
+        "purpose": "The one easing curve: tab bar, band wipe, score bug nudge, easter egg."
+      },
+      {
+        "name": "selection-bar-slide",
+        "value": "::view-transition-group(tabhl) 0.28s ease-menu",
+        "purpose": "Gold bar morphs from the old tab to the new one (document.startViewTransition on tab click)."
+      },
+      {
+        "name": "team-select-wipe",
+        "value": "::view-transition-new(band) wipe 0.5s ease-menu; clip-path polygon(0 0,0 0,-12% 100%,-12% 100%) to polygon(0 0,112% 0,100% 100%,-12% 100%)",
+        "purpose": "Band takes on the lead school's colors with a slanted left-to-right wipe; root cross-fade disabled."
+      },
+      {
+        "name": "score-bug-hover",
+        "value": "box-shadow .15s, transform .15s ease-menu; translateX(3px)",
+        "purpose": "Score bug nudges right with a gold ring."
+      },
+      {
+        "name": "disclosure",
+        "value": "transform .15s (triangles), .12s (ranking chevrons); rotate(90deg)",
+        "purpose": "Recap, contact and ranking-row disclosure markers."
+      },
+      {
+        "name": "egg-in",
+        "value": "scale(.92) to none with opacity, .35s (screen) / .5s (answer) ease-menu",
+        "purpose": "Easter egg championship screen, only under prefers-reduced-motion: no-preference."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "JS skips startViewTransition when (prefers-reduced-motion: reduce) matches; CSS sets animation:none on all view-transition pseudo-elements",
+        "purpose": "Motion is opt-out by the OS setting."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "max-width: 640px",
+        "purpose": "Scrolling snap rail with right fade; larger touch targets and type."
+      },
+      {
+        "name": "desktop",
+        "value": "min-width: 641px",
+        "purpose": "Score bug becomes a 200px + auto grid with meta beside teams."
+      },
+      {
+        "name": "recap-stack",
+        "value": "max-width: 600px",
+        "purpose": "Recap stat grid collapses to one column."
+      },
+      {
+        "name": "container",
+        "value": "760px",
+        "purpose": "Max content width; 16px gutter with safe-area insets."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Team Band",
+      "kind": "custom",
+      "refersTo": "band",
+      "description": "Header band in the lead school's colors: split gloss, chrome bevel, slanted second-color stripe, italic wordmark.",
+      "html": "<header class=\"ds-band\"><div class=\"ds-band-in\"><h1 class=\"ds-wordmark\">CFB Sundays</h1><p class=\"ds-band-tag\">Pick your schools. See where your guys are playing on Sundays.</p></div><p class=\"ds-band-meta\">Week 7 · 2026</p></header>",
+      "css": ".ds-band{position:relative;overflow:hidden;color:var(--team-ink,#fff);background:var(--team1,#1546b8);font-family:Saira,system-ui,sans-serif;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.4)} .ds-band::before{content:\"\";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.26) 0,rgba(255,255,255,.08) 46%,rgba(0,0,0,.06) 54%,rgba(0,0,0,.26) 100%)} .ds-band::after{content:\"\";position:absolute;top:0;bottom:0;right:0;width:34%;background:var(--team2,#ffc629);clip-path:polygon(84px 0,100% 0,100% 100%,0 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)} .ds-band-in{position:relative;z-index:1;padding:18px 16px 14px} .ds-wordmark{margin:0;font-size:48px;line-height:.92;font-weight:800;font-style:italic;font-stretch:70%;text-transform:uppercase;letter-spacing:.01em} .ds-band-tag{margin:6px 0 0;font-size:15px;max-width:62%} .ds-band-meta{position:absolute;z-index:2;top:14px;right:16px;margin:0;font-weight:800;font-style:italic;font-stretch:72%;text-transform:uppercase;letter-spacing:.05em;font-size:15px;color:var(--team2-ink,#1b1400)}"
+    },
+    {
+      "name": "Menu Rail with Selection Bar",
+      "kind": "nav",
+      "refersTo": "nav-rail",
+      "description": "Near-black rail, slanted italic tabs, one gold selection bar behind the active tab, 3px gold rule beneath.",
+      "html": "<nav class=\"ds-rail\"><button class=\"ds-tab ds-on\"><span class=\"ds-hl\"></span>NFL Week</button><button class=\"ds-tab\"><span class=\"ds-hl\"></span>Leaderboards</button><button class=\"ds-tab\"><span class=\"ds-hl\"></span>School rankings</button></nav>",
+      "css": ".ds-rail{display:flex;gap:4px;padding:6px 16px;background:var(--rail,#0e1830);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 var(--gold,#ffc629)} .ds-tab{position:relative;isolation:isolate;font-family:Saira,system-ui,sans-serif;font-stretch:72%;font-weight:700;font-style:italic;font-size:17px;text-transform:uppercase;letter-spacing:.03em;background:none;border:none;color:var(--rail-ink,#c7d2e8);padding:7px 14px;cursor:pointer} .ds-hl{position:absolute;inset:2px 0;z-index:-1;background:var(--gold,#ffc629);transform:skewX(-14deg);border-radius:2px;opacity:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -2px 0 rgba(0,0,0,.18)} .ds-tab.ds-on{color:var(--gold-ink,#1b1400)} .ds-tab.ds-on .ds-hl{opacity:1} .ds-tab:not(.ds-on):hover{color:#fff} .ds-tab:focus-visible{outline:2px solid var(--gold,#ffc629);outline-offset:2px}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Gold confirm button: heavy italic uppercase label, gold bevel.",
+      "html": "<button class=\"ds-btn\">Sign up</button>",
+      "css": ".ds-btn{font-family:Saira,system-ui,sans-serif;font-stretch:72%;font-weight:800;font-style:italic;font-size:19px;text-transform:uppercase;letter-spacing:.03em;background:var(--gold,#ffc629);color:var(--gold-ink,#1b1400);border:none;border-radius:3px;padding:9px 26px;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -3px 0 rgba(0,0,0,.18),0 3px 8px -4px rgba(0,0,0,.45)} .ds-btn:hover{filter:brightness(1.05)} .ds-btn:focus-visible{outline:2px solid var(--gold,#ffc629);outline-offset:2px} .ds-btn:disabled{opacity:.6}"
+    },
+    {
+      "name": "School Chips",
+      "kind": "chip",
+      "refersTo": "chip-selected",
+      "description": "Slanted tags. Selected chips carry the school's two colors with computed ink; unselected chips are steel filters.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip ds-sel\" style=\"--c1:#ba0c2f;--c2:#2c2a29;--ci:#ffffff\"><span>Georgia<svg class=\"ds-x\" viewBox=\"0 0 10 10\" aria-hidden=\"true\"><path d=\"M2 2l6 6M8 2l-6 6\"/></svg></span></button><button class=\"ds-chip\"><span>QB · 4</span></button><button class=\"ds-chip\"><span>WR · 7</span></button></div>",
+      "css": ".ds-chips{display:flex;flex-wrap:wrap;gap:8px} .ds-chip{font-family:Saira,system-ui,sans-serif;font-size:13px;font-weight:600;background:var(--chip,#dde3eb);color:var(--ink,#0c1526);border:1px solid var(--line,#aeb9c8);padding:4px 12px;cursor:pointer;transform:skewX(-12deg);border-radius:2px} .ds-chip>span{display:inline-block;transform:skewX(12deg)} .ds-chip:hover{border-color:var(--accent,#1546b8)} .ds-chip:focus-visible{outline:2px solid var(--gold,#ffc629);outline-offset:2px} .ds-chip.ds-sel{--c1:var(--accent,#1546b8);--c2:var(--gold,#ffc629);--ci:#fff;background:linear-gradient(90deg,var(--c2) 0 7px,var(--c1) 7px);color:var(--ci);border-color:transparent;font-stretch:74%;font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:15px;padding:5px 14px 5px 18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px -2px rgba(0,0,0,.4)} .ds-x{width:.7em;height:.7em;margin-left:8px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;opacity:.8}"
+    },
+    {
+      "name": "Week Bar",
+      "kind": "custom",
+      "refersTo": "week-button-active",
+      "description": "Grid of slanted week buttons; the current week is solid gold.",
+      "html": "<div class=\"ds-weeks\"><button><span>5</span></button><button><span>6</span></button><button class=\"ds-on\"><span>7</span></button><button><span>8</span></button><button><span>9</span></button></div>",
+      "css": ".ds-weeks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding:2px} .ds-weeks button{padding:5px 0;border:1px solid var(--line,#aeb9c8);background:var(--surface,#edf1f6);color:var(--ink,#0c1526);border-radius:2px;font-family:Saira,system-ui,sans-serif;font-stretch:72%;font-weight:700;font-size:15px;cursor:pointer;transform:skewX(-12deg)} .ds-weeks button>span{display:inline-block;transform:skewX(12deg)} .ds-weeks button:hover{border-color:var(--accent,#1546b8)} .ds-weeks button:focus-visible{outline:2px solid var(--gold,#ffc629);outline-offset:2px} .ds-weeks button.ds-on{background:var(--gold,#ffc629);color:var(--gold-ink,#1b1400);border-color:var(--gold,#ffc629);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 6px -2px rgba(0,0,0,.4)}"
+    },
+    {
+      "name": "Score Bug",
+      "kind": "card",
+      "refersTo": "score-bug",
+      "description": "A game row as a dark broadcast score bug: two-tone slanted team tags, tabular scores, FINAL meta, gold player count cell. Dark in both themes.",
+      "html": "<div class=\"ds-game\" tabindex=\"0\"><div class=\"ds-bug\"><div class=\"ds-line\"><span class=\"ds-tm\" style=\"--c1:#203731;--c2:#ffb612;--ci:#fff\"><span>GB</span></span><span class=\"ds-pts\">17</span></div><div class=\"ds-line\"><span class=\"ds-tm\" style=\"--c1:#0076b6;--c2:#b0b7bc;--ci:#fff\"><span>DET</span></span><span class=\"ds-pts ds-win\">20</span></div><div class=\"ds-meta\"><span class=\"ds-final\">Final</span> · Sun, Oct 25 · 4:25 PM ET</div></div><div class=\"ds-mine\"><div class=\"ds-count\">11</div><div class=\"ds-countlbl\">UGA 5 · BAMA 6</div></div></div>",
+      "css": ".ds-game{display:flex;align-items:stretch;color:#e7edf8;border:1px solid #0a1226;border-radius:3px;overflow:hidden;cursor:pointer;font-family:Saira,system-ui,sans-serif;font-variant-numeric:tabular-nums;background:linear-gradient(180deg,#22325a 0,#18264a 48%,#121d3a 52%,#0f1832 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 2px 4px rgba(0,0,0,.25);transition:box-shadow .15s,transform .15s cubic-bezier(.16,1,.3,1)} .ds-game:hover,.ds-game:focus-visible{outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 2px var(--gold,#ffc629),0 6px 14px -6px rgba(0,0,0,.5);transform:translateX(3px)} .ds-bug{flex:1;min-width:0;padding:9px 12px} .ds-line{display:flex;align-items:center;gap:12px;max-width:190px;padding:2px 0} .ds-tm{display:inline-flex;align-items:center;justify-content:center;min-width:52px;padding:2px 8px 2px 10px;font-stretch:70%;font-weight:800;font-style:italic;font-size:18px;letter-spacing:.03em;color:var(--ci);background:linear-gradient(90deg,var(--c2) 0 5px,var(--c1) 5px);transform:skewX(-12deg);border-radius:2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)} .ds-tm>span{display:inline-block;transform:skewX(12deg)} .ds-pts{margin-left:auto;font-stretch:70%;font-weight:800;font-size:22px;line-height:1;min-width:1.6em;text-align:center;color:#9fb0cf} .ds-pts.ds-win{color:#fff} .ds-meta{font-size:12.5px;margin-top:4px;color:#a9b6d0} .ds-final{font-stretch:72%;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:12px;color:#c9d4ea} .ds-mine{margin-left:auto;min-width:86px;padding:8px 10px;display:flex;flex-direction:column;justify-content:center;text-align:center;background:#070d1c;box-shadow:inset 1px 0 0 rgba(255,255,255,.08)} .ds-count{font-stretch:70%;font-weight:800;font-size:26px;line-height:1;color:var(--gold,#ffc629)} .ds-countlbl{font-size:10.5px;color:var(--rail-ink,#c7d2e8);text-transform:uppercase;letter-spacing:.05em;line-height:1.25;margin-top:3px}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Steel panel with hairline border and the lift shadow; italic uppercase headline, swatch dot before school names, pennant badge.",
+      "html": "<div class=\"ds-card\"><h2><i class=\"ds-sw\" style=\"--c1:#ba0c2f;--c2:#2c2a29\"></i>Georgia</h2><p class=\"ds-sub\">58 players on NFL rosters this week.</p><div class=\"ds-player\"><span class=\"ds-pos\">LB1</span><span class=\"ds-nm\">Nakobe Dean</span><span class=\"ds-badge\">finished at Georgia</span><span class=\"ds-badge ds-started\">started</span></div></div>",
+      "css": ".ds-card{background:var(--surface,#edf1f6);color:var(--ink,#0c1526);border:1px solid var(--line,#aeb9c8);border-radius:4px;padding:14px 16px;font:15px/1.5 Saira,system-ui,sans-serif;font-stretch:96%;font-variant-numeric:tabular-nums;box-shadow:var(--lift,inset 0 1px 0 rgba(255,255,255,.75),0 1px 2px rgba(12,21,38,.08),0 8px 18px -10px rgba(12,21,38,.35))} .ds-card h2{margin:0 0 4px;font-size:24px;line-height:1.05;font-weight:800;font-style:italic;font-stretch:70%;text-transform:uppercase;letter-spacing:.01em} .ds-sub{color:var(--muted,#3d4a5f);margin:0 0 8px;font-size:14px} .ds-sw{display:inline-block;width:.62em;height:.62em;border-radius:50%;margin:0 .4em .05em 0;vertical-align:middle;background:linear-gradient(90deg,var(--c1) 50%,var(--c2) 50%);box-shadow:0 0 0 1px var(--line,#aeb9c8)} .ds-player{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line,#aeb9c8)} .ds-pos{color:var(--muted,#3d4a5f);font-size:12.5px;min-width:42px;font-stretch:74%;font-weight:700} .ds-nm{font-weight:650} .ds-badge{font-size:11px;padding:1px 7px;border-radius:2px;background:var(--badge-bg,#ffe9a8);color:var(--badge,#5c4300);font-weight:600;white-space:nowrap} .ds-badge.ds-started{background:var(--accent,#1546b8);color:var(--accent-ink,#fff)}"
+    },
+    {
+      "name": "School Search",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Steel search field with an inset well; results float below and the active option fills gold.",
+      "html": "<div class=\"ds-search\"><input type=\"search\" placeholder=\"Search a school (Miami, OSU, UGA…)\"><div class=\"ds-dd\"><button class=\"ds-opt ds-act\">Georgia <span class=\"ds-cnt\">58 in NFL</span></button><button class=\"ds-opt\">Georgia Tech <span class=\"ds-cnt\">14 in NFL</span></button></div></div>",
+      "css": ".ds-search{position:relative;font-family:Saira,system-ui,sans-serif} .ds-search input{width:100%;padding:12px 14px;font:inherit;font-size:16px;border:1px solid var(--line,#aeb9c8);border-radius:3px;background:var(--surface,#edf1f6);color:var(--ink,#0c1526);box-shadow:inset 0 2px 3px rgba(12,21,38,.08);caret-color:var(--accent,#1546b8)} .ds-search input::placeholder{color:var(--muted,#3d4a5f);opacity:1} .ds-search input:focus-visible{outline:2px solid var(--gold,#ffc629);outline-offset:2px} .ds-dd{margin-top:4px;background:var(--surface,#edf1f6);border:1px solid var(--line,#aeb9c8);border-radius:3px;box-shadow:0 14px 30px -8px rgba(0,0,0,.45)} .ds-opt{display:flex;justify-content:space-between;align-items:baseline;gap:12px;width:100%;padding:12px 14px;border:none;border-bottom:1px solid var(--line,#aeb9c8);background:none;color:var(--ink,#0c1526);font:inherit;font-size:15px;text-align:left;cursor:pointer} .ds-opt:last-child{border-bottom:none} .ds-opt .ds-cnt{color:var(--muted,#3d4a5f);font-size:13px} .ds-opt.ds-act,.ds-opt:hover{background:var(--gold,#ffc629);color:var(--gold-ink,#1b1400)} .ds-opt.ds-act .ds-cnt,.ds-opt:hover .ds-cnt{color:var(--gold-ink,#1b1400)}"
+    },
+    {
+      "name": "Mini Select",
+      "kind": "input",
+      "refersTo": "select-mini",
+      "description": "Custom select with a dark rail cap holding a gold caret drawn in CSS.",
+      "html": "<select class=\"ds-sel\"><option>Finished at the school (drafted from there)</option><option>Everyone who played there (transfers out too)</option></select>",
+      "css": ".ds-sel{font-family:Saira,system-ui,sans-serif;font-size:13px;font-weight:600;background-color:var(--surface,#edf1f6);color:var(--ink,#0c1526);border:1px solid var(--line,#aeb9c8);border-radius:3px;padding:4px 28px 4px 9px;appearance:none;-webkit-appearance:none;cursor:pointer;max-width:100%;background-image:linear-gradient(45deg,transparent 50%,var(--gold,#ffc629) 50%),linear-gradient(-45deg,transparent 50%,var(--gold,#ffc629) 50%),linear-gradient(var(--rail,#0e1830),var(--rail,#0e1830));background-size:5px 5px,5px 5px,22px 100%;background-position:calc(100% - 11px) 52%,calc(100% - 6px) 52%,100% 0;background-repeat:no-repeat} .ds-sel:focus-visible{outline:2px solid var(--gold,#ffc629);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Team-Select Screen",
+    "overview": "CFB Sundays is dressed as an early-2000s console college football menu. Picking a school is picking your team on the select screen: the header band, its slanted second-color stripe and the email panel header take on the lead school's colors with a slanted wipe, and a single gold selection bar marks where you are. The ground under it is cool steel in light mode and deep stadium navy in dark mode; the menu rail is always near-black navy. Game rows are broadcast score bugs that stay dark in both themes.\n\nThe world is glossy and beveled, never glowing. Depth comes from chrome hairline highlights along top edges, darker bevels along bottom edges, and a split gloss gradient on the band. Everything that is a choice (tabs, chips, week buttons, team tags) is a slanted parallelogram. Type is one variable family, Saira, pushed narrow, heavy and italic for anything that is a label on the menu, and set at near-normal width for reading. Numbers are tabular everywhere.\n\nTeam identity is carried by color alone: two-tone swatches, two-tone team tags and the reskinned band. There are no school, NFL or video game logos or wordmarks anywhere in the system. Density is a working tool's density: compact rows, 14px rhythm, one 760px column, built for a phone during a Sunday game.",
+    "keyCharacteristics": [
+      "Team-color band with a glossy split gradient and a slanted second-color stripe at right, recolored at runtime from the lead school.",
+      "Near-black menu rail with slanted italic tab labels and one gold selection bar that slides between tabs.",
+      "Steel (light) or stadium-navy (dark) ground; the menu rail and score bugs stay dark in both.",
+      "Slanted parallelogram shapes for every selectable control, counter-skewed so the text stays upright.",
+      "Saira variable at narrow width (70 to 74) for display and menu labels, near-normal width (96) for body; tabular numerals throughout.",
+      "Colors only, never logos."
+    ],
+    "rules": [
+      {
+        "name": "The One Gold Rule",
+        "body": "Gold means \"selected, focused, press this, or this is your number.\" Only one gold selection bar exists in the rail, one gold week button in the week bar, one gold option in the dropdown. Gold is never a decorative fill or a section color.",
+        "section": "colors"
+      },
+      {
+        "name": "The Colors-Only Rule",
+        "body": "Team identity is expressed only through color: `--team1`/`--team2`/`--team-ink` on the band, `--c1`/`--c2`/`--ci` on team tags, selected chips and swatch dots. No school, NFL or video game logos or wordmarks, ever.",
+        "section": "colors"
+      },
+      {
+        "name": "The Computed Ink Rule",
+        "body": "Text on any team color takes its ink from the luminance function, never a hand-picked value, so every school in `colors.json` stays legible.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Widths Rule",
+        "body": "Narrow (width 70 to 74) is for things the menu says: display, headings, tabs, chips, buttons, scores. Reading text stays at width 96. Never set a paragraph narrow.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "`font-variant-numeric: tabular-nums` is set on the body, so every score, count and stat column lines up. Don't turn it off.",
+        "section": "typography"
+      },
+      {
+        "name": "The Italic Is Motion Rule",
+        "body": "Italic belongs to display and control labels, where it matches the slanted shapes. Body text is upright.",
+        "section": "typography"
+      },
+      {
+        "name": "The Chrome Edge Rule",
+        "body": "Raised menu surfaces carry a 1px white inner highlight on top and a darker inner line at the bottom. That pair, not a large blurred shadow, is what makes something look like a menu button.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No Glow Rule",
+        "body": "No colored outer glows, no neon, no blur halos. Gold appears as a solid ring or bar.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** take team colors only from `site/colors.json` at runtime and route them through `--team1`/`--team2`/`--team-ink` (band) or `--c1`/`--c2`/`--ci` (tags, chips, dots).",
+      "**Do** compute text ink on any team color with the luminance function (dark `#0c1526` above 0.36 luminance, otherwise white).",
+      "**Do** skew selectable controls (-12deg, or -14deg for the tab bar) and counter-skew their text so it stays upright.",
+      "**Do** keep one gold selection per group: one tab, one week, one dropdown option.",
+      "**Do** give raised menu surfaces the chrome edge pair: a 1px white inner highlight on top, a darker inner line at the bottom.",
+      "**Do** keep score bugs dark navy in both themes.",
+      "**Do** use Saira at width 70 to 74 for labels and headings and width 96 for reading text, with tabular numerals.",
+      "**Do** gate every animation and view transition behind a reduced-motion check."
+    ],
+    "donts": [
+      "**Don't** use school, NFL or video game logos, wordmarks or helmet art. Colors only.",
+      "**Don't** add colored outer glows or neon effects. Gold is a solid bar, fill or ring.",
+      "**Don't** use gold for decoration, section headers or large fills that are not a selection, focus, primary action or your player count.",
+      "**Don't** round slanted controls beyond 2px or cards beyond 4px.",
+      "**Don't** set paragraphs in the narrow italic display voice.",
+      "**Don't** introduce a second display family or system display faces; everything is Saira.",
+      "**Don't** hand-pick a text color for a team color."
+    ]
+  }
+}
