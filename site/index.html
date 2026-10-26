@@ -164,7 +164,7 @@ const CATS={active:'Active players',total:'In the league (incl. IR/PS)',starters
   start_QB:'Starting QBs',start_RB:'Starting RBs',start_WR:'Starting WRs',start_TE:'Starting TEs',
   start_OL:'Starting OL',start_DL:'Starting DL',start_LB:'Starting LBs',start_DB:'Starting DBs',
   start_K:'Starting kickers',start_P:'Starting punters',
-  py:'Pass yds',ry:'Rush yds',recy:'Rec yds',tds:'Rush+rec TDs',sk:'Sacks',tkl:'Tackles',dint:'INTs',fgm:'FG made'};
+  py:'Pass yds',ry:'Rush yds',recy:'Rec yds',ptd:'Pass TDs',rtd:'Rush TDs',rectd:'Rec TDs',tds:'Rush + rec TDs',sk:'Sacks',tkl:'Tackles',dint:'INTs',fgm:'FG made'};
 
 function loadSel(){try{const s=JSON.parse(localStorage.getItem('schools')||'[]');if(Array.isArray(s))sel=s}catch(e){}}
 function saveSel(){try{localStorage.setItem('schools',JSON.stringify(sel))}catch(e){}}
@@ -333,7 +333,7 @@ function topList(cat,n){
 }
 const GRP=p=>({T:'OL',G:'OL',C:'OL',OT:'OL',OG:'OL',DE:'DL',DT:'DL',NT:'DL',EDGE:'DL',
   ILB:'LB',OLB:'LB',MLB:'LB',CB:'DB',S:'DB',FS:'DB',SS:'DB',FB:'RB',LS:'ST'}[p]||p);
-const STATV={py:s=>s.py||0,ry:s=>s.ry||0,recy:s=>s.recy||0,sk:s=>s.sk||0,
+const STATV={py:s=>s.py||0,ptd:s=>s.ptd||0,ry:s=>s.ry||0,rtd:s=>s.rtd||0,recy:s=>s.recy||0,rectd:s=>s.rectd||0,sk:s=>s.sk||0,
   tkl:s=>(s.tk||0)+(s.ast||0),dint:s=>s.dint||0,tds:s=>(s.rtd||0)+(s.rectd||0),fgm:s=>s.fgm||0};
 function catPlayers(cat,school){
   const out=[];
@@ -514,12 +514,15 @@ function boardsView(){
       ${top('ry').slice(0,3).map(x=>row(x,'rush yds')).join('')}
       ${top('recy').slice(0,3).map(x=>row(x,'rec yds')).join('')}
       ${top('sk').slice(0,2).map(x=>row(x,'sacks')).join('')}
+      ${top('ptd').slice(0,1).map(x=>row(x,'pass TD')).join('')}
+      ${top('rtd').slice(0,1).map(x=>row(x,'rush TD')).join('')}
+      ${top('rectd').slice(0,1).map(x=>row(x,'rec TD')).join('')}
       ${top('fgm').slice(0,1).map(x=>row(x,'FG')).join('')}
       </table></div></div>`;
   }
   if(!sel.length){
     buildRanks();
-    const LEAD=[['py','Pass yds'],['ry','Rush yds'],['recy','Rec yds'],['tds','Rush + rec TDs'],
+    const LEAD=[['py','Pass yds'],['ptd','Pass TDs'],['ry','Rush yds'],['rtd','Rush TDs'],['recy','Rec yds'],['rectd','Rec TDs'],['tds','Rush + rec TDs'],
                 ['sk','Sacks'],['tkl','Tackles'],['dint','INTs'],['fgm','FG made']];
     h+=`<p class="hint" style="margin:0 0 12px">Season stat totals by school, with each school\u2019s top contributor. Add schools above for their player leaderboards.</p>`;
     for(const [cat,lbl] of LEAD){
