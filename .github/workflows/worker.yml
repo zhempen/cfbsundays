@@ -1,0 +1,56 @@
+name: Deploy signup handler
+
+# Deploys worker/ (the Tuesday email signup handler) to Cloudflare whenever it
+# changes. Creates the D1 database the first time, applies the schema (safe to
+# re-run), and sets the Worker's secrets from this repo's GitHub secrets.
+on:
+  push:
+    branches: [main]
+    paths: ["worker/**", ".github/workflows/worker.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worker
+  cancel-in-progress: false
+
+env:
+  WRANGLER: npx -y wrangler@4.150.0
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Database (create once) and config
+        run: |
+          if grep -q __ACCOUNT_ID__ wrangler.toml; then echo "account_id not set yet; skipping"; echo SKIP=1 >> $GITHUB_ENV; exit 0; fi
+          ACCOUNT=$(python3 -c "import re;print(re.search(r'account_id = \"(\w+)\"', open('wrangler.toml').read()).group(1))")
+          export CLOUDFLARE_ACCOUNT_ID=$ACCOUNT
+          find_id() { $WRANGLER d1 list --json | python3 -c "import json,sys; print(next((d.get('uuid') or d.get('id') for d in json.load(sys.stdin) if d['name']=='cfbsundays'), ''))"; }
+          ID=$(find_id)
+          if [ -z "$ID" ]; then $WRANGLER d1 create cfbsundays; ID=$(find_id); fi
+          test -n "$ID"
+          sed -i "s/__D1_ID__/$ID/" wrangler.toml
+          $WRANGLER d1 execute cfbsundays --remote --file schema.sql -y
+      - name: Deploy
+        if: env.SKIP != '1'
+        run: $WRANGLER deploy
+      - name: Secrets
+        if: env.SKIP != '1'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
+        run: |
+          python3 -c "import json,os; print(json.dumps({k: os.environ[k] for k in ('RESEND_API_KEY','TURNSTILE_SECRET')}))" > secrets.json
+          $WRANGLER secret bulk secrets.json
+          rm secrets.json

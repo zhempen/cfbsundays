@@ -1,0 +1,19 @@
+# Signup handler for the Tuesday email. Deployed by .github/workflows/worker.yml,
+# which fills in the D1 database id and sets the secrets (RESEND_API_KEY,
+# TURNSTILE_SECRET) from the repo's GitHub secrets.
+name = "cfbsundays-signup"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+account_id = "__ACCOUNT_ID__"
+
+[vars]
+SITE = "https://cfbsundays.com"
+ORIGINS = "https://cfbsundays.com,https://www.cfbsundays.com"
+FROM = "CFB Sundays <tuesday@mail.cfbsundays.com>"
+REPLY_TO = "hello@cfbsundays.com"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cfbsundays"
+database_id = "__D1_ID__"

@@ -119,7 +119,9 @@ tr.rk.open .chev{transform:rotate(90deg)}
 .contact form{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-width:440px}
 .contact textarea,.contact input[type=email]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%}
 .formrow{display:flex;align-items:center;gap:10px}
-.contact button{font-family:"Barlow Condensed";font-size:17px;text-transform:uppercase;letter-spacing:.6px;background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:9px 22px;cursor:pointer}
+#suSchools label{display:inline-flex;align-items:center;gap:5px;margin:0 12px 4px 0;color:var(--ink);font-size:14px;cursor:pointer}
+#suSchools input{width:16px;height:16px;accent-color:var(--accent)}
+.contact button{white-space:nowrap;font-family:"Barlow Condensed";font-size:17px;text-transform:uppercase;letter-spacing:.6px;background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:9px 22px;cursor:pointer}
 .contact button:disabled{opacity:.6}
 @media (prefers-reduced-motion:no-preference){.game{transition:border-color .15s}}
 @media (max-width:640px){
@@ -145,7 +147,7 @@ tr.rk.open .chev{transform:rotate(90deg)}
 <body>
 <div class="wrap">
 <h1>CFB Sundays</h1>
-<p class="sub">Pick your schools. See where your guys are playing on Sundays.</p>
+<p class="sub">Pick your schools. See where your guys are playing on Sundays. <a href="#signup" id="emailLink" style="color:var(--accent);white-space:nowrap">Get it by email</a></p>
 
 <div id="archiveBar" class="card" hidden></div>
 
@@ -180,6 +182,16 @@ tr.rk.open .chev{transform:rotate(90deg)}
 </div>
 
 <div id="view"></div>
+<details class="contact" id="signup">
+<summary>This website could have been an email. Get it Tuesday mornings</summary>
+<form id="signupForm" novalidate>
+  <div id="suSchools" class="hint"></div>
+  <input type="email" name="email" required placeholder="Your email" autocomplete="email" aria-label="Your email">
+  <div id="suCaptcha"></div>
+  <div class="formrow"><button type="submit" id="suSend">Sign up</button><span class="hint" id="suStatus" role="status"></span></div>
+  <p class="hint" style="margin:0">One email a week during the season, covering up to 4 schools. You'll get a confirmation link first. Unsubscribe any time; your address is used for nothing else.</p>
+</form>
+</details>
 <details class="contact" id="contact">
 <summary>Questions, bugs, or a school nickname I missed? Send me a note</summary>
 <form id="noteForm">
@@ -232,6 +244,10 @@ async function boot(){
   SCHOOLS=s;PLAYERS=p;GAMES=g;STATS=st;RANKS=rk;POST=po;
   for(const [id,pl] of Object.entries(PLAYERS))_pidOf.set(pl,id);
   loadSel();
+  // ?s=Georgia,Alabama (links in the Tuesday email) picks those schools
+  const qs=new URLSearchParams(location.search);
+  if(qs.get('s')){const want=qs.get('s').split(',').map(x=>x.trim()).filter(n=>SCHOOLS.some(x=>x.name===n)).slice(0,10);
+    if(want.length){sel=want;saveSel()}qs.delete('s');history.replaceState(null,'',location.pathname+(qs.toString()?'?'+qs:'')+location.hash)}
   const today=new Date().toISOString().slice(0,10);
   const wks=[...new Set(GAMES.map(g=>g.wk))].sort((a,b)=>a-b);
   curWeek=isArch?wks[0]:(wks.find(w=>GAMES.filter(x=>x.wk===w).some(x=>x.date>=today))||wks[wks.length-1]);
@@ -296,6 +312,48 @@ function teamIndex(wk){
   }
   return byTeam;
 }
+
+// ===================== Tuesday email signup =====================
+const SIGNUP_URL='https://cfbsundays-signup.__SUBDOMAIN__.workers.dev';
+const TURNSTILE_SITEKEY='0x4AAAAAAFm3fLDzKxvcGskm';
+let suToken='',suWidget=null,suPicked=null;
+function renderSignupSchools(){
+  const box=document.getElementById('suSchools');if(!box)return;
+  if(!sel.length){box.innerHTML='Pick your schools at the top of the page first. The email covers the schools you pick, up to 4.';return}
+  if(!suPicked)suPicked=new Set(sel.slice(0,4));
+  for(const s of [...suPicked])if(!sel.includes(s))suPicked.delete(s);
+  for(const s of sel)if(suPicked.size<4&&!suPicked.has(s)&&sel.length<=4)suPicked.add(s);
+  box.innerHTML='Schools in your email:<br>'+sel.map(s=>`<label><input type="checkbox" value="${esc(s)}" ${suPicked.has(s)?'checked':''}>${sw('school',s)}${esc(s)}</label>`).join('')+
+    (sel.length>4?'<br>Up to 4. Uncheck one to swap in another.':'');
+  box.querySelectorAll('input').forEach(cb=>cb.onchange=()=>{
+    if(cb.checked&&suPicked.size>=4){cb.checked=false;document.getElementById('suStatus').textContent='Up to 4 schools.';return}
+    cb.checked?suPicked.add(cb.value):suPicked.delete(cb.value);document.getElementById('suStatus').textContent=''});
+}
+function loadTurnstile(){
+  if(suWidget!==null||!document.getElementById('suCaptcha'))return;suWidget='loading';
+  window.onTurnstileReady=()=>{suWidget=turnstile.render('#suCaptcha',{sitekey:TURNSTILE_SITEKEY,theme:'auto',
+    callback:t=>{suToken=t},'expired-callback':()=>{suToken=''},'error-callback':()=>{suToken=''}})};
+  const sc=document.createElement('script');sc.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileReady';sc.async=true;document.head.appendChild(sc);
+}
+// hidden until the signup handler is deployed (its address is filled in then)
+if(SIGNUP_URL.includes('__')){document.getElementById('signup').hidden=true;document.getElementById('emailLink').hidden=true}
+document.getElementById('signup').addEventListener('toggle',e=>{if(e.target.open){renderSignupSchools();loadTurnstile()}});
+document.getElementById('emailLink').onclick=e=>{e.preventDefault();const d=document.getElementById('signup');d.open=true;d.scrollIntoView({behavior:'smooth',block:'center'})};
+document.getElementById('signupForm').onsubmit=async e=>{
+  e.preventDefault();
+  const st=document.getElementById('suStatus'),btn=document.getElementById('suSend');
+  const email=e.target.email.value.trim(),schools=[...(suPicked||[])].filter(s=>sel.includes(s));
+  if(!schools.length){st.textContent='Pick at least one school.';return}
+  if(!/^\S+@\S+\.\S+$/.test(email)){st.textContent='That email address doesn\u2019t look right.';return}
+  if(!suToken){st.textContent='Finish the robot check first.';return}
+  btn.disabled=true;st.textContent='Sending\u2026';
+  try{
+    const r=await fetch(SIGNUP_URL+'/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,schools,token:suToken})});
+    const j=await r.json().catch(()=>({msg:'Something went wrong. Try again in a minute.'}));
+    st.textContent=j.msg||'';if(j.ok)e.target.email.value='';
+  }catch(err){st.textContent='Couldn\u2019t reach the signup service. Try again in a minute.'}
+  btn.disabled=false;suToken='';try{turnstile.reset(suWidget)}catch(err){}
+};
 
 function renderPicker(){
   const selDiv=document.getElementById('selChips');

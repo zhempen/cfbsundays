@@ -34,3 +34,18 @@ Each summer before week 1:
 
 Rebuild every archived season (after a conference or nickname fix, say) with
 `python3 scripts/build.py --archive all` (2013 through last season).
+
+## Tuesday email
+
+- **Signup:** the form at the bottom of the page posts to a Cloudflare Worker (`worker/`) with a D1
+  database. It checks a Turnstile captcha, rate-limits by IP, normalizes addresses (case, `+tags`,
+  Gmail dots) so each person gets one subscription, caps schools at 4, and sends a confirmation link
+  through Resend. Signing up again with the same address changes the schools after a new confirmation.
+- **Deploy:** `.github/workflows/worker.yml` on any change under `worker/`. Needs repo secrets
+  `CLOUDFLARE_API_TOKEN`, `RESEND_API_KEY`, `TURNSTILE_SECRET`, plus `account_id` in
+  `worker/wrangler.toml` and the Worker's address in `worker/URL` and `SIGNUP_URL` in `site/index.html`.
+- **Send:** `.github/workflows/tuesday.yml`, 7 AM New York time on Tuesdays, runs
+  `scripts/send_tuesday.py`. It sends the latest week whose games are all final with stats in, once per
+  week. Push to the `email-sample` branch to send the latest week to 3 or fewer test subscribers.
+- **Limits:** Resend's free plan sends 100 emails a day; the job warns past 95 subscribers.
+- **Preview:** `MODE=preview DATA=site PREVIEW_SCHOOLS="Georgia,Alabama" python3 scripts/send_tuesday.py`
