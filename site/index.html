@@ -134,7 +134,7 @@ tr.rk.open .chev{transform:rotate(90deg)}
 </div>
 
 <nav id="tabs">
-  <button data-v="games" class="on">This week</button>
+  <button data-v="games" class="on">NFL Week</button>
   <button data-v="boards">Leaderboards</button>
   <button data-v="rank">School rankings</button>
   <button data-v="post" id="postTab" hidden>Playoffs</button>
@@ -239,11 +239,14 @@ document.addEventListener('input',e=>{
   const raw=e.target.value.trim(),box=document.getElementById('schoolResults');
   if(raw.length<2){box.innerHTML='';return}
   const q=normSchool(raw)||raw.toLowerCase();
-  const hit=t=>(' '+normSchool(t)).includes(' '+q);
-  const exact=s=>[s.name,...(s.alias||[])].some(t=>normSchool(t)===q);
-  const match=s=>hit(s.name)||(s.alias||[]).some(hit);
-  const hits=SCHOOLS.filter(s=>match(s)&&!sel.includes(s.name))
-    .sort((a,b)=>exact(b)-exact(a)||(normSchool(b.name).startsWith(q))-(normSchool(a.name).startsWith(q))||b.count-a.count)
+  // partial matches anywhere count (fast typers miss letters); ranking puts
+  // exact names/nicknames first, then word-start matches, then the rest
+  const hit=t=>normSchool(t).includes(q);
+  const wordHit=t=>(' '+normSchool(t)).includes(' '+q);
+  const terms=s=>[s.name,...(s.alias||[])];
+  const score=s=>terms(s).some(t=>normSchool(t)===q)?3:terms(s).some(wordHit)?2:1;
+  const hits=SCHOOLS.filter(s=>terms(s).some(hit)&&!sel.includes(s.name))
+    .sort((a,b)=>score(b)-score(a)||b.count-a.count)
     .slice(0,12);
   box.innerHTML=hits.map(s=>{
     const via=!hit(s.name)?(s.alias||[]).find(hit):null;
