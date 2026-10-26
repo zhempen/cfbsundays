@@ -1,0 +1,42 @@
+ESPN starters: fetched 534 lineups, 0 short
+starts mapped for 1250 players, 25 unmapped
+archive 2013: players=2007 starters=960 with stats=1791 games=267
+ESPN starters: fetched 534 lineups, 0 short
+starts mapped for 1282 players, 31 unmapped
+archive 2014: players=2030 starters=1010 with stats=1849 games=267
+ESPN starters: fetched 534 lineups, 0 short
+starts mapped for 1321 players, 61 unmapped
+archive 2015: players=2041 starters=1031 with stats=1845 games=267
+ESPN starters: fetched 534 lineups, 0 short
+starts mapped for 1339 players, 56 unmapped
+archive 2016: players=2757 starters=1045 with stats=1855 games=267
+ESPN starters: fetched 534 lineups, 0 short
+starts mapped for 1326 players, 56 unmapped
+archive 2017: players=2473 starters=1058 with stats=1868 games=267
+ESPN starters: fetched 534 lineups, 0 short
+starts mapped for 1380 players, 27 unmapped
+archive 2018: players=2458 starters=1058 with stats=1883 games=267
+ESPN starters: fetched 534 lineups, 0 short
+starts mapped for 1400 players, 22 unmapped
+archive 2019: players=2470 starters=1046 with stats=1888 games=267
+ESPN starters: fetched 538 lineups, 0 short
+starts mapped for 1400 players, 35 unmapped
+archive 2020: players=2704 starters=1073 with stats=1983 games=269
+ESPN starters: fetched 570 lineups, 0 short
+starts mapped for 1473 players, 15 unmapped
+archive 2021: players=2732 starters=981 with stats=2081 games=285
+ESPN starters: fetched 568 lineups, 0 short
+starts mapped for 1396 players, 34 unmapped
+archive 2022: players=2686 starters=958 with stats=2006 games=284
+ESPN starters: fetched 570 lineups, 0 short
+starts mapped for 1363 players, 18 unmapped
+archive 2023: players=2652 starters=966 with stats=1942 games=285
+ESPN starters: fetched 570 lineups, 0 short
+starts mapped for 1402 players, 17 unmapped
+archive 2024: players=2696 starters=984 with stats=1996 games=285
+ESPN starters: fetched 570 lineups, 0 short
+starts mapped for 1392 players, 0 unmapped
+archive 2025: players=2693 starters=987 with stats=2019 games=285
+archived seasons: [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013]
+colors: 36 NFL teams, 274 schools matched, 309 without colors
+no colors for: ASA College (NY), Adams State College, Albany, Albany State (GA), Alberta (Canada), Albion College, Alderson Broaddus, Alfred University, Allan Hancock College, American River, Antelope Valley Junior College, Arizona Western, Ashland, Assumption, Augustana (SD), Azusa Pacific, Baker University, Bakersfield College, Baldwin Wallace College, Barton College, Beloit College, Bemidji State University, Benedict College, Bentley College, Bethany West, Blinn College, Bloomsburg, Booneville JC (MS), Boston University, Bowie State, Butler County CC, Butler County JC, Butte College, C.W. Post Center, CCSU, Cabrillo College, Calgary, Canada, California Lutheran, Campbell University, Canisius College, Carroll College, Center at Buffalo/Amherst, Central Florida CC, Central Missouri, Central Oklahoma, Central Washington University, Centre College, Cerritos College, Chabot College, Chadron State, Chaffey College, Charleston, Chattanooga State Technical CC, Cisco Junior College, Citrus College, City College (SF), Coahoma JC, Coffeyville CC, College of DuPage, College of the Canyons, College of the Sequoias, Compton Community College, Concordia College, Concordia College St. Paul, Contra Costa, Copiah-Lincoln Junior College, Cortland State Of New York, Culver-Stockton College, Cumberland College, Cypress College, De Anza College, Dean JC, Diablo Valley College, Dodge City CC, Dubuque, Duluth/University of Minnesota, East Central, East Central JC, East Los Angeles College, East Mississippi JC, East Texas A&M, Eastern Arizona, Eastern Oregon State Univ., El Camino, Ellsworth CC, Emporia State University, Erie CC, Fairmont State, Faulkner, Fayetteville State University, Ferris State, Findlay, Florida Tech, Fort Hays, Fort Scott CC, Framingham State College, Franklin College of Indiana, Fresno City College, Friends U., Front Range CC CO, Frostburg State, Fullerton, Garden City CC, Georgia Military, Globe Institute, Golden West, Gonzaga University, Grand Rapids CC, Grand Valley, Grossmont, Gulf Coast CC, Harding University, Hartnell College, Heidelberg College, Henderson State University, Highland CC, Hillsdale, Hinds CC, Hobart, Hofstra, Holmes County JC, Humboldt State, Hutchinson CC, Independence Comm. College, Indiana PA,  University of, Indianapolis, Iowa Central CC-Eagle Grove, Iowa Western CC, Itawamba JC, Jacksonville, John Carroll University, Johns Hopkins University, Joliet Junior College, Jones County JC, Kearney State, Kentucky Wesleyan, Kilgore, Kirkwood Community College, Kutztown, LAHC, Lackawanna JC, Lake Erie, Lane College, Laney College, Laval, Limestone, Lindenwood, Long Beach City College, Louisburg, Loyola University, Madison Area Technical College, Malone, Manhattan Christian Coll. KS (J.C.), Manitoba (Canada), Marian, McGill, McKendree, McLennan CC, McPherson College, Merced College, Mercyhurst College, Mesa CC, Michigan Tech University, Mid-State Technical College (J.C.), Midland College, Midwestern State, Miles College, Millsaps College, Mineral Area CC, Minn. State-Mankato, Minnesota State, Minot State University, Mississippi Delta CC, Mississippi Gulf Coast CC, Missouri Southern, Missouri Western, Missouri-Rolla, Monroe County CC, Monterey Peninsula, Montreal, Morningside College, Mount Union, Mt. San Antonio, NW Missouri State University, Nassau CC, Navarro, Nebraska-Omaha, New Mexico Highlands Univ., New Mexico Military Institute, North Alabama, North Iowa Area Community College, Northeast Oklahoma, Northeastern State (Ok), Northeastern University, Mass, Northern Michigan University, Northern Montana State University, Northern Oklahoma College, Northwest Mississippi CC, Northwestern Oklahoma State University, Northwood, Norwich University, Ohio Northern University, Orange Coast College, Ouachita Baptist University, Palomar College, Pasadena College, Pearl River, Peru State College (Ne), Pierce College, Pittsburg State (KS), Pittsburgh-Johnstown, Reedley, Regina, Rensselear Polytechnic Institute, Ricks College, Riverside Community College, Rochester Community College, Sacramento City, Saddleback Community College, Saginaw Valley State, Saint Xavier, San Bernardino Valley, San Joaquin Delta College, San Mateo, Santa Barbara, Santa Monica, Santa Rosa, Scottsdale CC, Seton Hall University, Shasta College, Shenandoah University, Shepherd, Shorter College, Sierra JC, Simon Fraser, Sioux Falls, Slippery Rock, Snow, Solano Community College, South Florida Community College, Southeastern Illinois, Southeastern Oklahoma State, Southern Arkansas, Southern Connecticut State, Southern Nazarene University, Southern Oregon, Southwest Minnesota State University, Southwest Mississippi JC, Southwestern Oklahoma State University, St. Francis PA, St. Francis Xavier University, St. John's (MN), St. Paul's College, Stillman College, Tallahassee CC, Tarleton State, Tarrant County JC, Texas A&M University-Kingsville, Texas A&M-Commerce, Tiffin, Trinity College, Deerfield, Trinity University Texas, Trinity Valley CC, Truman State University, Tuskegee University, Tyler JC, UC Irvine, UNC Pembroke, Univ of Arkansas at Monticello, Univ of California-San Diego, University of Arkansas at Pine Bluff, University of British Columbia, University of Clarion, University of Edinboro, University of Lock Haven, University of Ottawa (Kans.), University of Portland, University of Rochester, University of Shippensburg, University of St. Thomas, University of West Florida, University of Windsor, Utah Valley, Ventura, Virginia Commonwealth Univ., Virginia State, Wallace State CC AL (J.C.), Walsh, Washburn, Wayne State, Wayne State, Mich., Wesley, West Chester State University, West Hills Community College, West Texas State, West Virginia State, Western Ontario, Western Oregon, Western State, Western Washington University, Wheaton College Illinois, William Penn, Wisconsin Eau Claire, Wisconsin Oshkosh, Wisconsin-Milwaukee, Wisconsin-Platteville, Wisconsin-Stevens Point, Wisconsin-Whitewater, York (Canada)
