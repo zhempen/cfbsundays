@@ -164,7 +164,7 @@ const CATS={active:'Active players',total:'In the league (incl. IR/PS)',starters
   start_QB:'Starting QBs',start_RB:'Starting RBs',start_WR:'Starting WRs',start_TE:'Starting TEs',
   start_OL:'Starting OL',start_DL:'Starting DL',start_LB:'Starting LBs',start_DB:'Starting DBs',
   start_K:'Starting kickers',start_P:'Starting punters',
-  py:'Pass yds',ry:'Rush yds',recy:'Rec yds',ptd:'Pass TDs',rtd:'Rush TDs',rectd:'Rec TDs',tds:'Rush + rec TDs',sk:'Sacks',tkl:'Tackles',dint:'INTs',fgm:'FG made'};
+  py:'Pass yds',ry:'Rush yds',recy:'Rec yds',ptd:'Pass TDs',rtd:'Rush TDs',rectd:'Rec TDs',tds:'Rush + Rec TDs',sk:'Sacks',tkl:'Tackles',dint:'INTs',fgm:'FG made'};
 
 function loadSel(){try{const s=JSON.parse(localStorage.getItem('schools')||'[]');if(Array.isArray(s))sel=s}catch(e){}}
 function saveSel(){try{localStorage.setItem('schools',JSON.stringify(sel))}catch(e){}}
@@ -522,7 +522,7 @@ function boardsView(){
   }
   if(!sel.length){
     buildRanks();
-    const LEAD=[['py','Pass yds'],['ptd','Pass TDs'],['ry','Rush yds'],['rtd','Rush TDs'],['recy','Rec yds'],['rectd','Rec TDs'],['tds','Rush + rec TDs'],
+    const LEAD=[['py','Pass yds'],['ptd','Pass TDs'],['ry','Rush yds'],['rtd','Rush TDs'],['recy','Rec yds'],['rectd','Rec TDs'],['tds','Rush + Rec TDs'],
                 ['sk','Sacks'],['tkl','Tackles'],['dint','INTs'],['fgm','FG made']];
     h+=`<p class="hint" style="margin:0 0 12px">Season stat totals by school, with each school\u2019s top contributor. Tap a school to see every player behind its total.</p>`;
     for(const [cat,lbl] of LEAD){
