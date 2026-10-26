@@ -1,4 +1,4 @@
-"""FBS conference membership by season, 2004 onward.
+"""FBS conference membership by season, 2004 onward (2004 values stand in for earlier seasons).
 
 Each school maps to a list of (first_season, conference); a conference
 applies from that season until the next entry. Schools not listed are
@@ -52,8 +52,8 @@ HISTORY = {
     "Utah": [(2004, MWC), (2011, P12), (2024, B12)],
     # ---- ACC ----
     "Clemson": [(2004, ACC)], "Duke": [(2004, ACC)], "Florida State": [(2004, ACC)],
-    "Georgia Tech": [(2004, ACC)], "Miami": [(2004, ACC)], "North Carolina": [(2004, ACC)],
-    "NC State": [(2004, ACC)], "Virginia": [(2004, ACC)], "Virginia Tech": [(2004, ACC)],
+    "Georgia Tech": [(2004, ACC)], "Miami": [(1991, BE), (2004, ACC)], "North Carolina": [(2004, ACC)],
+    "NC State": [(2004, ACC)], "Virginia": [(2004, ACC)], "Virginia Tech": [(1991, BE), (2004, ACC)],
     "Wake Forest": [(2004, ACC)],
     "Boston College": [(2004, BE), (2005, ACC)],
     "Pitt": [(2004, BE), (2013, ACC)], "Syracuse": [(2004, BE), (2013, ACC)],
@@ -132,7 +132,9 @@ def conference(school, season):
     hist = HISTORY.get(school)
     if not hist:
         return FCS
-    conf = FCS  # seasons before a school's first FBS entry
+    # the table starts in 2004; earlier seasons use a school's 2004 conference
+    # (older veterans in archived seasons), apart from the moves listed above
+    conf = hist[0][1] if hist[0][0] <= 2004 else FCS
     for start, name in hist:
         if season >= start:
             conf = name

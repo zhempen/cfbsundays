@@ -10,19 +10,32 @@ sys.path.insert(0, os.path.dirname(__file__))
 from conferences import conference
 from collections import defaultdict
 
+# Current season. Change this each summer before week 1, then archive the
+# season that just ended:  python3 scripts/build.py --archive 2026
 SEASON = int(os.environ.get("SEASON", "2026"))
-OUT = os.path.join(os.path.dirname(__file__), "..", "site", "data")
-os.makedirs(OUT, exist_ok=True)
+ROOT = os.path.join(os.path.dirname(__file__), "..", "site")
+OUT = os.path.join(ROOT, "data")
+ARCHIVE = os.path.join(ROOT, "archive")   # past seasons, committed (they don't change)
+FIRST_ARCHIVE = 2013                      # snap counts (our starter test) begin in 2013
 
 NFLVERSE = "https://github.com/nflverse/nflverse-data/releases/download"
-SOURCES = {
-    "roster": f"{NFLVERSE}/rosters/roster_{SEASON}.csv",
-    "stats": f"{NFLVERSE}/stats_player/stats_player_week_{SEASON}.csv",
-    "snaps": f"{NFLVERSE}/snap_counts/snap_counts_{SEASON}.csv",
-    "depth": f"{NFLVERSE}/depth_charts/depth_charts_{SEASON}.csv",
-    "games": "https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv",
-    "draft": f"{NFLVERSE}/draft_picks/draft_picks.csv",
-}
+GAMES_URL = "https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv"
+DRAFT_URL = f"{NFLVERSE}/draft_picks/draft_picks.csv"
+PLAYERS_URL = f"{NFLVERSE}/players/players.csv"
+
+def sources(season):
+    return {
+        "roster": f"{NFLVERSE}/rosters/roster_{season}.csv",
+        "stats": f"{NFLVERSE}/stats_player/stats_player_week_{season}.csv",
+        "snaps": f"{NFLVERSE}/snap_counts/snap_counts_{season}.csv",
+        "depth": f"{NFLVERSE}/depth_charts/depth_charts_{season}.csv",
+    }
+
+_CACHE = {}
+def fetch_cached(url):
+    if url not in _CACHE:
+        _CACHE[url] = fetch_csv(url)
+    return _CACHE[url]
 
 ESPN_RANKINGS = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/rankings"
 
@@ -235,17 +248,27 @@ def norm_name(n):
     n = re.sub(r"\b(jr|sr|ii|iii|iv|v)\.?$", "", n.strip().lower())
     return re.sub(r"[^a-z]", "", n)
 
-def main():
-    roster_rows = fetch_csv(SOURCES["roster"])
-    stats_rows = fetch_csv(SOURCES["stats"])
-    snaps_rows = fetch_csv(SOURCES["snaps"])
-    depth_rows = fetch_csv(SOURCES["depth"])
-    games_rows = fetch_csv(SOURCES["games"])
-    draft_rows = fetch_csv(SOURCES["draft"])
+def main(yr=SEASON, archive=False):
+    src = sources(yr)
+    out = os.path.join(ARCHIVE, str(yr)) if archive else OUT
+    os.makedirs(out, exist_ok=True)
+    roster_rows = fetch_csv(src["roster"])
+    stats_rows = fetch_csv(src["stats"])
+    snaps_rows = fetch_csv(src["snaps"])
+    depth_rows = [] if archive else fetch_csv(src["depth"])
+    games_rows = fetch_cached(GAMES_URL)
+    draft_rows = fetch_cached(DRAFT_URL)
     draft = {r["gsis_id"]: r for r in draft_rows if r.get("gsis_id")}
+    # master player file: fills college, entry year and PFR id gaps in older rosters
+    master = {r["gsis_id"]: r for r in fetch_cached(PLAYERS_URL) if r.get("gsis_id")} if archive else {}
+    had_stats = {r["player_id"] for r in stats_rows if r["season_type"] in ("REG", "POST")}
 
     # ---- rosters: dedupe by player, keep latest roster week ----
     players, pfr_to_pid, name_team_to_pid = {}, {}, {}
+    ever_act = set()
+    for m in master.values():
+        if m.get("pfr_id"):
+            pfr_to_pid[m["pfr_id"]] = m["gsis_id"]
     for r in roster_rows:
         pid = r["gsis_id"] or r["smart_id"]
         if not pid:
@@ -255,15 +278,32 @@ def main():
         if r["gsis_id"]:
             name_team_to_pid[(norm_name(r["full_name"]), r["team"])] = r["gsis_id"]
         wk = int(r["week"] or 0)
-        if pid in players and players[pid]["_wk"] >= wk:
+        if archive:
+            if r["status"] == "ACT":
+                ever_act.add(pid)
+            # past seasons: keep the latest roster spot he held, not a later cut
+            keep = r["status"] in KEEP_STATUS
+            cur = players.get(pid)
+            if cur and (cur["_keep"], cur["_wk"]) >= (keep, wk):
+                continue
+        elif pid in players and players[pid]["_wk"] >= wk:
             continue
-        colleges = [RENAME.get(c.strip(), c.strip())
-                    for c in (r["college"] or "").split(";") if c.strip()]
+        m = master.get(r["gsis_id"], {})
+        college = m.get("college_name") or r["college"] or ""
+        colleges = [RENAME.get(c.strip(), c.strip()) for c in college.split(";") if c.strip()]
+        entry = r["entry_year"] or m.get("rookie_season") or ""
         players[pid] = {"_wk": wk, "name": r["full_name"], "team": r["team"],
                         "pos": r["position"], "status": r["status"],
                         "jersey": r["jersey_number"], "colleges": colleges,
-                        "entry": int(r["entry_year"]) if r["entry_year"] else None}
+                        "entry": int(entry) if entry else None}
+        if archive:
+            players[pid]["_keep"] = r["status"] in KEEP_STATUS
 
+    if archive:
+        # a season in review: anyone active at any point (or with a stat line) counts as active
+        for pid, p in players.items():
+            if pid in ever_act or pid in had_stats:
+                p["status"] = "ACT"
     active = {pid: p for pid, p in players.items()
               if p["status"] in KEEP_STATUS and p["colleges"]}
 
@@ -396,7 +436,7 @@ def main():
               "date": r["gameday"], "time": r["gametime"],
               "away": r["away_team"], "home": r["home_team"],
               "as": r["away_score"], "hs": r["home_score"]}
-             for r in games_rows if r["season"] == str(SEASON)]
+             for r in games_rows if r["season"] == str(yr)]
     games.sort(key=lambda g: (g["wk"], g["date"], g["time"]))
 
     # ---- rankings.json (credit = school player finished at) ----
@@ -432,14 +472,26 @@ def main():
                       key=lambda x: (-x[1], x[0]))
         rk_out[cat] = [[s, int(v) if v == int(v) else round(v, 1)] for s, v in rows]
 
+    if archive:
+        for name, obj in [("schools", schools), ("players", pout), ("games", games),
+                          ("stats", stats_out), ("playoffs", post_out)]:
+            json.dump(obj, open(os.path.join(out, f"{name}.json"), "w"), separators=(",", ":"))
+        print(f"archive {yr}: players={len(active)} starters={len(starters)} "
+              f"with stats={len(stats_out)} games={len(games)}", file=sys.stderr)
+        return
+
     # current AP top 3 for the search box examples; keep last good copy on failure
     meta_path = os.path.join(OUT, "meta.json")
-    meta = ap_top(schools)
-    if meta:
-        json.dump(meta, open(meta_path, "w"), separators=(",", ":"))
-        print("AP top 3:", meta["ap"], file=sys.stderr)
-    elif not os.path.exists(meta_path):
-        json.dump({"ap": ["Miami", "Ohio State", "Georgia"], "apWeek": "fallback"}, open(meta_path, "w"))
+    try:
+        meta = json.load(open(meta_path))
+    except Exception:
+        meta = {"ap": ["Miami", "Ohio State", "Georgia"], "apWeek": "fallback"}
+    fresh = ap_top(schools)
+    if fresh:
+        meta.update(fresh)
+        print("AP top 3:", fresh["ap"], file=sys.stderr)
+    meta["season"] = yr
+    json.dump(meta, open(meta_path, "w"), separators=(",", ":"))
 
     for name, obj in [("schools", schools), ("players", pout), ("games", games),
                       ("stats", stats_out), ("rankings", rk_out), ("playoffs", post_out)]:
@@ -529,5 +581,18 @@ see who is in each NFL game this week with per-game and season stats.</p>
     open(os.path.join(OUT, "..", "robots.txt"), "w").write(
         f"User-agent: *\nAllow: /\nSitemap: {DOMAIN}/sitemap.xml\n")
     print(f"prerendered {len(urls)-1} school pages + sitemap", file=sys.stderr)
+def write_season_list():
+    yrs = sorted((int(d) for d in os.listdir(ARCHIVE) if d.isdigit()), reverse=True) \
+        if os.path.isdir(ARCHIVE) else []
+    json.dump(yrs, open(os.path.join(ARCHIVE, "seasons.json"), "w"))
+    print("archived seasons:", yrs, file=sys.stderr)
+
+
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 2 and sys.argv[1] == "--archive":
+        a, _, b = sys.argv[2].partition("-")
+        for yr in range(int(a), int(b or a) + 1):
+            main(yr, archive=True)
+        write_season_list()
+    else:
+        main()

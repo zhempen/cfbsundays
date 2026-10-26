@@ -68,11 +68,18 @@ input[type=search]{width:100%;padding:12px 14px;font:inherit;font-size:16px;bord
 .count.zero{color:var(--muted);opacity:.45}
 .addbtn{display:block;width:100%;margin:0 0 14px;padding:12px 16px;font-family:"Barlow Condensed";font-size:18px;letter-spacing:.6px;text-transform:uppercase;background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;cursor:pointer}
 .addbtn:hover{filter:brightness(1.08)}
-#egg{margin:0 0 14px}
-#eggAns{border-color:var(--accent);text-align:center;padding:18px 16px}
-#eggAns .big{font-family:"Barlow Condensed";font-size:56px;line-height:1;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin:4px 0 10px}
-#eggAns p{margin:0 auto;max-width:560px}
-@media (prefers-reduced-motion:no-preference){#eggAns:not([hidden]){animation:eggIn .45s ease-out}}
+#egg{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px 16px;text-align:center;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--accent) 22%,var(--bg)) 0%,var(--bg) 70%);overflow-y:auto}
+#egg[hidden]{display:none}
+#eggClose{position:absolute;top:14px;right:16px;font:inherit;font-size:15px;background:none;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 12px;cursor:pointer}
+#eggBtn{font-family:"Barlow Condensed";font-weight:600;font-size:clamp(28px,5vw,44px);line-height:1.1;text-transform:uppercase;letter-spacing:.5px;max-width:760px;padding:22px 30px;border-radius:14px;border:2px solid var(--accent);background:var(--surface);color:var(--ink);cursor:pointer}
+#eggBtn:hover,#eggBtn:focus-visible{background:var(--accent);color:var(--bg)}
+#eggAns .lbl{font-size:15px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+#eggAns .big{font-family:"Barlow Condensed";font-weight:600;font-size:clamp(84px,20vw,200px);line-height:.9;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin:8px 0 18px}
+#eggAns p{margin:0 auto;max-width:620px;font-size:18px;line-height:1.5}
+#eggBack{font:inherit;font-size:16px;font-weight:600;background:none;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px 20px;cursor:pointer;margin-top:26px}
+body.egg-on{overflow:hidden}
+.recapgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:2px 28px;padding:0 0 0 4px}
+@media (prefers-reduced-motion:no-preference){#egg:not([hidden]){animation:eggIn .35s ease-out}#eggAns:not([hidden]) .big{animation:eggIn .5s ease-out}}
 @keyframes eggIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
 .addcol{font-family:"Barlow Condensed";font-size:15px;letter-spacing:.4px;text-transform:uppercase;color:var(--accent);white-space:nowrap}
 .countlbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
@@ -135,6 +142,8 @@ tr.rk.open .chev{transform:rotate(90deg)}
 <h1>CFB Sundays</h1>
 <p class="sub">Pick your schools. See where your guys are playing on Sundays.</p>
 
+<div id="archiveBar" class="card" hidden></div>
+
 <div id="pickerArea">
   <div class="chips" id="selChips"></div>
   <div class="searchwrap">
@@ -159,9 +168,10 @@ tr.rk.open .chev{transform:rotate(90deg)}
   <button data-v="fan">Fantasy</button>
   <button data-v="post" id="postTab" hidden>Playoffs</button>
 </nav>
-<div id="egg" hidden>
-  <button id="eggBtn" class="addbtn" type="button">So who’s the best team, based on all this?</button>
-  <div id="eggAns" class="card" hidden></div>
+<div id="egg" role="dialog" aria-modal="true" aria-label="Who's the best team" hidden>
+  <button id="eggClose" type="button" aria-label="Back to the site">✕ Close</button>
+  <button id="eggBtn" type="button">So who’s the best team, based on all this?</button>
+  <div id="eggAns" hidden></div>
 </div>
 
 <div id="view"></div>
@@ -174,6 +184,7 @@ tr.rk.open .chev{transform:rotate(90deg)}
   <div class="formrow"><button type="submit" id="noteSend">Send</button><span class="hint" id="noteStatus"></span></div>
 </form>
 </details>
+<p class="hint" style="margin:18px 0 0">Season: <select id="seasonSel" aria-label="Season" style="font:inherit;font-size:13px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 7px"></select> Past seasons go back to 2013, the first year of snap counts.</p>
 <p class="foot">Data: nflverse rosters, weekly stats, team depth charts &amp; schedule (free, open NFL data). Position labels like QB1 or LCB2 are the team's own depth chart slot. College history from NFL roster records; the school listed first is where the player finished. Data refreshes automatically every day and after game days.</p>
 </div>
 
@@ -194,19 +205,30 @@ const CATS={active:'Active players',total:'In the league (incl. IR/PS)',starters
 function loadSel(){try{const s=JSON.parse(localStorage.getItem('schools')||'[]');if(Array.isArray(s))sel=s}catch(e){}}
 function saveSel(){try{localStorage.setItem('schools',JSON.stringify(sel))}catch(e){}}
 
+// past seasons live in archive/YYYY/ and load only when picked (?season=YYYY)
+const ARCH_YR=+(new URLSearchParams(location.search).get('season')||0);
 async function boot(){
-  const [s,p,g,st,rk,po]=await Promise.all(['schools','players','games','stats','rankings','playoffs'].map(n=>fetch('data/'+n+'.json').then(r=>r.json()).catch(()=>({}))));
+  const meta=await fetch('data/meta.json').then(r=>r.json()).catch(()=>({}));
+  const curYr=meta.season||SEASON_YR;
+  const archived=await fetch('archive/seasons.json').then(r=>r.json()).catch(()=>[]);
+  const isArch=ARCH_YR&&ARCH_YR!==curYr&&archived.includes(ARCH_YR);
+  SEASON_YR=isArch?ARCH_YR:curYr;
+  const base=isArch?'archive/'+ARCH_YR+'/':'data/';
+  const [s,p,g,st,rk,po]=await Promise.all(['schools','players','games','stats','rankings','playoffs'].map(n=>fetch(base+n+'.json').then(r=>r.json()).catch(()=>({}))));
+  const ss=document.getElementById('seasonSel');
+  ss.innerHTML=[curYr,...archived.filter(y=>y!==curYr)].map(y=>`<option value="${y}" ${y===SEASON_YR?'selected':''}>${y}${y===curYr?' (current)':''}</option>`).join('');
+  ss.onchange=()=>{const y=+ss.value;location.href=location.pathname+(y===curYr?'':'?season='+y)+location.hash};
+  if(isArch){const ab=document.getElementById('archiveBar');ab.hidden=false;
+    ab.innerHTML=`<b>Viewing the ${ARCH_YR} season.</b> <a href="${location.pathname}" style="color:var(--accent);font-weight:600">Back to ${curYr}</a><br><span class="hint">Teams are where each player finished that season. Active means on an active roster at any point that year. No depth chart slots for past seasons.</span>`}
   SCHOOLS=s;PLAYERS=p;GAMES=g;STATS=st;RANKS=rk;POST=po;
   loadSel();
   const today=new Date().toISOString().slice(0,10);
   const wks=[...new Set(GAMES.map(g=>g.wk))].sort((a,b)=>a-b);
-  curWeek=wks.find(w=>GAMES.filter(x=>x.wk===w).some(x=>x.date>=today))||wks[wks.length-1];
+  curWeek=isArch?wks[0]:(wks.find(w=>GAMES.filter(x=>x.wk===w).some(x=>x.date>=today))||wks[wks.length-1]);
   if(GAMES.some(g=>g.type!=='REG'))document.getElementById('postTab').hidden=false;
   // search examples follow the current AP top 3 (refreshed each build)
-  fetch('data/meta.json').then(r=>r.json()).then(m=>{
-    if(Array.isArray(m.ap)&&m.ap.length)document.getElementById('schoolSearch').placeholder=
-      'Search a school ('+m.ap.slice(0,3).map(shortName).join(', ')+'\u2026)';
-  }).catch(()=>{});
+  if(Array.isArray(meta.ap)&&meta.ap.length)document.getElementById('schoolSearch').placeholder=
+    'Search a school ('+meta.ap.slice(0,3).map(shortName).join(', ')+'\u2026)';
   const h=location.hash.replace('#','');
   if(h==='boards')tab='boards';
   renderPicker();render();
@@ -720,7 +742,7 @@ function postView(){
   return h;
 }
 // ===================== shared helpers for the newer views =====================
-const SEASON_YR=2026;
+let SEASON_YR=2026;
 const ST_LBL={RES:'IR',DEV:'practice squad',INA:'inactive',TRT:'returning'};
 function plBits(p,extra){
   const b=[p.d||p.p,p.t];
@@ -935,15 +957,24 @@ function fanView(){
 }
 
 // ===================== Weekly recap (top of NFL Week) =====================
+// recap leaders by stat category; fantasy points play no part here
+const RECAP_CATS=[
+  {lbl:'Passing',v:w=>w.py||0,tb:w=>w.ptd||0,line:w=>`${w.cmp||0}/${w.att||0}, ${w.py} yds, ${w.ptd||0} TD${w.int?`, ${w.int} INT`:''}`},
+  {lbl:'Rushing',v:w=>w.ry||0,tb:w=>w.rtd||0,line:w=>`${w.car||0} car, ${w.ry} yds${w.rtd?`, ${w.rtd} TD`:''}`},
+  {lbl:'Receiving',v:w=>w.recy||0,tb:w=>w.rectd||0,line:w=>`${w.rec||0} rec, ${w.recy} yds${w.rectd?`, ${w.rectd} TD`:''}`},
+  {lbl:'Sacks',v:w=>w.sk||0,tb:w=>(w.tk||0)+(w.ast||0),line:w=>`${w.sk} sack${w.sk===1?'':'s'}, ${(w.tk||0)+(w.ast||0)} tackles`},
+  {lbl:'Tackles',v:w=>(w.tk||0)+(w.ast||0),tb:w=>w.sk||0,line:w=>`${(w.tk||0)+(w.ast||0)} tackles${w.sk?`, ${w.sk} sack${w.sk===1?'':'s'}`:''}`},
+  {lbl:'Interceptions',v:w=>w.dint||0,tb:w=>w.pd||0,line:w=>`${w.dint} INT${w.pd?`, ${w.pd} PD`:''}`},
+];
+function recapLeaders(lines,c,n){
+  return lines.filter(l=>c.v(l.w)>0).sort((a,b)=>c.v(b.w)-c.v(a.w)||c.tb(b.w)-c.tb(a.w)||a.p.n.localeCompare(b.p.n)).slice(0,n);
+}
 function recapHtml(wk){
   const lines=[];
   for(const [pid,p] of Object.entries(PLAYERS)){const w=STATS[pid]?.w?.[wk];if(w)lines.push({pid,p,w})}
   if(!lines.length)return '';
   const r1=v=>Math.round(v*10)/10;
-  const offense=l=>(l.w.fp||0)>0;
-  const defScore=w=>(w.sk||0)*3+(w.dint||0)*4+((w.tk||0)+(w.ast||0))*0.5;
-  const isDef=l=>(l.w.sk||l.w.dint||((l.w.tk||0)+(l.w.ast||0))>=6)&&!(l.w.fp>0);
-  const lineRow=(l,school)=>`<div class="row"><b>${esc(l.p.n)}</b> <span class="hint">${l.p.t}${school?` · <span style="color:var(--accent)">${esc(school)}</span>`:''}</span><br>${esc(fmtLine(l.w))}${l.w.fp?` <span class="nflrk">${r1(l.w.fp)} PPR</span>`:''}</div>`;
+  const row=(l,c,school)=>`<div class="row"><b>${esc(l.p.n)}</b> <span class="hint">${l.p.t}${school?` · <span style="color:var(--accent)">${esc(school)}</span>`:''}</span><br>${esc(c.line(l.w))}</div>`;
   let body='';
   if(sel.length){
     for(const sc of sel){
@@ -951,19 +982,17 @@ function recapHtml(wk){
       if(!mine.length){body+=`<p class="hint" style="margin:8px 0">${esc(sc)}: no stat lines this week.</p>`;continue}
       const sum=k=>mine.reduce((a,l)=>a+(l.w[k]||0),0);
       const tds=sum('ptd')+sum('rtd')+sum('rectd');
-      const top=mine.filter(offense).sort((a,b)=>(b.w.fp||0)-(a.w.fp||0)).slice(0,3);
-      const def=mine.filter(isDef).sort((a,b)=>defScore(b.w)-defScore(a.w)).slice(0,2);
+      const leads=RECAP_CATS.map(c=>{const l=recapLeaders(mine,c,1)[0];
+        return l?`<div class="row"><span class="hint">${c.lbl}</span><br><b>${esc(l.p.n)}</b> <span class="hint">${l.p.t}</span> ${esc(c.line(l.w))}</div>`:''}).join('');
       body+=`<div style="margin:6px 0 12px"><div class="disp" style="font-size:18px;text-transform:uppercase;letter-spacing:.4px">${esc(sc)}</div>
         <p class="sub" style="margin:2px 0 6px">${sum('py').toLocaleString()} pass yds · ${sum('ry').toLocaleString()} rush yds · ${sum('recy').toLocaleString()} rec yds · ${tds} TD${tds===1?'':'s'} · ${r1(sum('sk'))} sack${r1(sum('sk'))===1?'':'s'} · ${sum('dint')} INT${sum('dint')===1?'':'s'}</p>
-        <div class="expand" style="padding:0 0 0 4px">${top.map(l=>lineRow(l)).join('')}${def.map(l=>lineRow(l)).join('')}</div></div>`;
+        <div class="recapgrid">${leads}</div></div>`;
     }
   }else{
-    const top=lines.filter(offense).sort((a,b)=>(b.w.fp||0)-(a.w.fp||0)).slice(0,8);
-    const def=lines.filter(isDef).sort((a,b)=>defScore(b.w)-defScore(a.w)).slice(0,4);
-    body=`<div class="expand" style="padding:0 0 0 4px">${top.map(l=>lineRow(l,l.p.c[0])).join('')}
-      <p class="hint" style="margin:8px 0 2px">On defense</p>${def.map(l=>lineRow(l,l.p.c[0])).join('')}</div>`;
+    body=`<div class="recapgrid">${RECAP_CATS.map(c=>{const top=recapLeaders(lines,c,3);
+      return top.length?`<div><p class="hint" style="margin:8px 0 2px;text-transform:uppercase;letter-spacing:.5px">${c.lbl}</p>${top.map(l=>row(l,c,l.p.c[0])).join('')}</div>`:''}).join('')}</div>`;
   }
-  return `<details class="card recap" ${recapOpen?'open':''}><summary class="disp" style="font-size:20px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">Week ${weekLabel(wk)} recap${sel.length?'':': best by former college players'}</summary>${body}</details>`;
+  return `<details class="card recap" ${recapOpen?'open':''}><summary class="disp" style="font-size:20px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">Week ${weekLabel(wk)} recap${sel.length?'':': stat leaders'}</summary>${body}</details>`;
 }
 let recapOpen=true;
 
@@ -1027,25 +1056,30 @@ function eggReason(){
   const bits=top.map(x=>`${x.r.label} in ${lc(CATS[x.c])}`);
   const list=bits.length>1?bits.slice(0,-1).join(', ')+' and '+bits[bits.length-1]:bits[0];
   return `Former Dawgs rank ${list} among every school’s NFL alumni`+
-    (starters?`, with ${starters.val} of them starting on Sundays`:'')+`. Through week ${weekLabel(latestStatWeek())}.`;
+    (starters?`, with ${starters.val} of them starting on Sundays`:'')+(ARCH_YR&&SEASON_YR===ARCH_YR?`. In the ${ARCH_YR} season.`:`. Through week ${weekLabel(latestStatWeek())}.`);
 }
 function unlockEgg(){
   const egg=document.getElementById('egg');
   if(!egg.hidden)return;
-  egg.hidden=false;egg.scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('eggBtn').hidden=false;document.getElementById('eggAns').hidden=true;
+  egg.hidden=false;document.body.classList.add('egg-on');document.getElementById('eggBtn').focus();
 }
+function closeEgg(){document.getElementById('egg').hidden=true;document.body.classList.remove('egg-on')}
 document.getElementById('eggBtn').onclick=()=>{
   const a=document.getElementById('eggAns');
-  a.innerHTML=`<div class="hint">The best team, based on all this</div><div class="big">Georgia</div><p>${esc(eggReason())}</p>`;
-  a.hidden=false;
+  a.innerHTML=`<div class="lbl">The best team, based on all this</div><div class="big">Georgia</div><p>${esc(eggReason())}</p><button id="eggBack" type="button">Back to the site</button>`;
+  document.getElementById('eggBtn').hidden=true;a.hidden=false;
+  document.getElementById('eggBack').onclick=closeEgg;document.getElementById('eggBack').focus();
 };
+document.getElementById('eggClose').onclick=closeEgg;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('egg').hidden)closeEgg()});
 (()=>{
   const K=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
   let i=0;
   document.addEventListener('keydown',e=>{
     if(e.target.matches&&e.target.matches('input,textarea,select'))return;
     const k=e.key.length===1?e.key.toLowerCase():e.key;
-    i=k===K[i]?i+1:(k===K[0]?1:0);
+    i=k===K[i]?i+1:(k===K[0]?(i===2?2:1):0);
     if(i===K.length){i=0;unlockEgg()}
   });
   let seq=[],st=null;
