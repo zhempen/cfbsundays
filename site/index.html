@@ -132,7 +132,7 @@ tr.rk.open .chev{transform:rotate(90deg)}
 <div id="pickerArea">
   <div class="chips" id="selChips"></div>
   <div class="searchwrap">
-    <input type="search" id="schoolSearch" placeholder="Search a school (UGA, Ole Miss, Bama…)" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="schoolResults">
+    <input type="search" id="schoolSearch" placeholder="Search a school (Miami, OSU, UGA…)" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="schoolResults">
     <div id="schoolResults" class="dropdown" role="listbox" hidden></div>
   </div>
   <p class="hint" id="pickHint"></p>
@@ -192,6 +192,11 @@ async function boot(){
   const wks=[...new Set(GAMES.map(g=>g.wk))].sort((a,b)=>a-b);
   curWeek=wks.find(w=>GAMES.filter(x=>x.wk===w).some(x=>x.date>=today))||wks[wks.length-1];
   if(GAMES.some(g=>g.type!=='REG'))document.getElementById('postTab').hidden=false;
+  // search examples follow the current AP top 3 (refreshed each build)
+  fetch('data/meta.json').then(r=>r.json()).then(m=>{
+    if(Array.isArray(m.ap)&&m.ap.length)document.getElementById('schoolSearch').placeholder=
+      'Search a school ('+m.ap.slice(0,3).map(shortName).join(', ')+'\u2026)';
+  }).catch(()=>{});
   const h=location.hash.replace('#','');
   if(h==='boards')tab='boards';
   renderPicker();render();

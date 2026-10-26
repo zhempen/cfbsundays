@@ -24,6 +24,45 @@ SOURCES = {
     "draft": f"{NFLVERSE}/draft_picks/draft_picks.csv",
 }
 
+ESPN_RANKINGS = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/rankings"
+
+def fetch_json(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "cfbsundays-build"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+def ap_top(schools, n=3):
+    """Top n of the current AP poll, mapped to our school names. Returns
+    None on any failure so the caller keeps the previous value."""
+    import unicodedata
+    def key(t):
+        t = unicodedata.normalize("NFKD", str(t)).encode("ascii", "ignore").decode()
+        return re.sub(r"[^a-z0-9]", "", t.lower())
+    lookup = {}
+    for s in schools:
+        for t in [s["name"], *s.get("alias", [])]:
+            lookup.setdefault(key(t), s["name"])
+    try:
+        data = fetch_json(ESPN_RANKINGS)
+        polls = data.get("rankings", [])
+        ap = next((p for p in polls if "AP" in (p.get("name", "") + p.get("shortName", ""))), None)
+        if not ap:
+            return None
+        out = []
+        for r in sorted(ap.get("ranks", []), key=lambda r: r.get("current", 99)):
+            t = r.get("team", {})
+            for cand in (t.get("location"), t.get("nickname"), t.get("shortDisplayName"), t.get("displayName")):
+                if cand and key(cand) in lookup:
+                    out.append(lookup[key(cand)]); break
+            if len(out) == n:
+                break
+        if len(out) < n:
+            return None
+        return {"ap": out, "apWeek": ap.get("headline") or ap.get("occurrence", {}).get("displayValue", "")}
+    except Exception as e:
+        print("AP poll fetch failed:", e, file=sys.stderr)
+        return None
+
 def fetch_csv(url):
     print("fetching", url, file=sys.stderr)
     req = urllib.request.Request(url, headers={"User-Agent": "cfbsundays-build"})
@@ -392,6 +431,15 @@ def main():
         rows = sorted(((s, v) for s, v in vals.items() if v > 0),
                       key=lambda x: (-x[1], x[0]))
         rk_out[cat] = [[s, int(v) if v == int(v) else round(v, 1)] for s, v in rows]
+
+    # current AP top 3 for the search box examples; keep last good copy on failure
+    meta_path = os.path.join(OUT, "meta.json")
+    meta = ap_top(schools)
+    if meta:
+        json.dump(meta, open(meta_path, "w"), separators=(",", ":"))
+        print("AP top 3:", meta["ap"], file=sys.stderr)
+    elif not os.path.exists(meta_path):
+        json.dump({"ap": ["Miami", "Ohio State", "Georgia"], "apWeek": "fallback"}, open(meta_path, "w"))
 
     for name, obj in [("schools", schools), ("players", pout), ("games", games),
                       ("stats", stats_out), ("rankings", rk_out), ("playoffs", post_out)]:
