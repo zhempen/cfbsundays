@@ -433,6 +433,7 @@ function playersOf(school){
   return out;
 }
 function shortName(school){
+  if(school==='No college')return 'No-college';
   const s=SCHOOLS.find(x=>x.name===school);
   if(!s)return school;
   const a=(s.alias||[])[0];
