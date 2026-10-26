@@ -185,7 +185,7 @@ tr.rk.open .chev{transform:rotate(90deg)}
 </form>
 </details>
 <p class="hint" style="margin:18px 0 0">Season: <select id="seasonSel" aria-label="Season" style="font:inherit;font-size:13px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 7px"></select> Past seasons go back to 2013, the first year of snap counts.</p>
-<p class="foot">Data: nflverse rosters, weekly stats, team depth charts &amp; schedule (free, open NFL data). Position labels like QB1 or LCB2 are the team's own depth chart slot. College history from NFL roster records; the school listed first is where the player finished. Data refreshes automatically every day and after game days.</p>
+<p class="foot">Data: nflverse rosters, weekly stats, team depth charts &amp; schedule (free, open NFL data). Starting lineups from ESPN. Position labels like QB1 or LCB2 are the team's own depth chart slot. College history from NFL roster records; the school listed first is where the player finished. Data refreshes automatically every day and after game days.</p>
 </div>
 
 <script>
@@ -281,7 +281,7 @@ function renderPicker(){
   selDiv.innerHTML=sel.map(s=>`<button class="chip sel" data-s="${esc(s)}">${esc(s)}<span class="x">×</span></button>`).join('');
   selDiv.querySelectorAll('button').forEach(b=>b.onclick=()=>{sel=sel.filter(x=>x!==b.dataset.s);saveSel();renderPicker();render()});
   const ph=document.getElementById('pickHint');
-  ph.textContent=sel.length?'':'Nothing picked yet. Tap here or search above \u2014 add more than one for watch parties.';
+  ph.textContent=sel.length?(sel.includes('No college')?'No college means the NFL\u2019s records list no school. That\u2019s mostly International Pathway players, plus a few whose college is missing from the records.':''):'Nothing picked yet. Tap here or search above. Add more than one for watch parties.';
   ph.style.cursor=sel.length?'':'pointer';
   ph.onclick=sel.length?null:()=>document.getElementById('schoolSearch').focus();
 }
@@ -468,7 +468,7 @@ function catPlayers(cat,school){
     const m=cat.match(/^(pos|start)_(.+)$/);
     if(m&&GRP(p.p)===m[2]&&(m[1]==='pos'||p.st))out.push({p});
   }
-  out.sort((a,b)=>(b.v||0)-(a.v||0)||a.p.n.localeCompare(b.p.n));
+  out.sort((a,b)=>(b.v||0)-(a.v||0)||gsN(b.p)-gsN(a.p)||a.p.n.localeCompare(b.p.n));
   return out;
 }
 function expandHtml(cat,school){
@@ -476,7 +476,7 @@ function expandHtml(cat,school){
   if(!list.length)return '<div class="row">Nobody qualifies.</div>';
   return list.map(({p,v,pid})=>{
     const bits=[p.d||p.p,p.t];
-    if(p.st&&!cat.startsWith('start')&&cat!=='starters')bits.push('starter');
+    bits.push(cat.startsWith('start')||cat==='starters'?startsTxt(p):stLbl(p));
     if(p.s!=='ACT')bits.push({RES:'IR',DEV:'practice squad',INA:'inactive',TRT:'returning'}[p.s]||'');
     let split='';
     if(cat==='tds'){const st=STATS[pid]?.s||{};split=` (${st.rtd||0} Rush, ${st.rectd||0} Rec)`}
@@ -514,7 +514,7 @@ function rankView(){
     <select id="catSel" style="font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:4px 8px">
     ${Object.entries(CATS).map(([k,lbl])=>`<option value="${k}" ${k===rankCat?'selected':''}>${lbl}</option>`).join('')}</select></h2>
     <div class="tablewrap"><table>${topList(rankCat,topN)}</table></div></div>`;
-  h+=`<p class="hint">Tap a category to see which of your players are behind the number. Ties share a rank (T-1 means tied for first). ${mode==='fin'?'Rankings credit the school a player finished at.':'Rankings credit every school a player played for, so transfers count for each stop.'} ${ARCH_YR&&SEASON_YR===ARCH_YR?"A starter is anyone who took 50%+ of his team's offensive or defensive snaps on average that season, minimum two games.":"A starter is anyone taking 50%+ of his team's offensive or defensive snaps over his last three games (minimum two games), so benchings and promotions show up within a few weeks."}</p>`;
+  h+=`<p class="hint">Tap a category to see which of your players are behind the number. Ties share a rank (T-1 means tied for first). ${mode==='fin'?'Rankings credit the school a player finished at.':'Rankings credit every school a player played for, so transfers count for each stop.'} A start means he was in his team's lineup for the first snap. Starters are the players with the most starts at each position on each team, as many as that team usually starts there${ARCH_YR&&SEASON_YR===ARCH_YR?'':' so far this season'}. Kickers and punters count after two games.</p>`;
   return h;
 }
 
@@ -563,8 +563,8 @@ function statLine(pid,wk,played){
     if(o.py)parts.push(`<b>${o.py}</b> pass yds, ${o.ptd||0} TD${o.int?`, ${o.int} INT`:''}`);
     if(o.ry)parts.push(`<b>${o.ry}</b> rush yds${o.rtd?`, ${o.rtd} TD`:''}`);
     if(o.recy||o.rec)parts.push(`<b>${o.rec||0}</b> rec, <b>${o.recy||0}</b> yds${o.rectd?`, ${o.rectd} TD`:''}`);
-    if(o.sk)parts.push(`<b>${o.sk}</b> sacks`);
-    if((o.tk||o.ast)&&!o.py&&!o.ry&&!o.recy)parts.push(`<b>${(o.tk||0)+(o.ast||0)}</b> tackles`);
+    if(o.sk)parts.push(`<b>${o.sk}</b> sack${o.sk===1?'':'s'}`);
+    if((o.tk||o.ast)&&!o.py&&!o.ry&&!o.recy)parts.push(`<b>${(o.tk||0)+(o.ast||0)}</b> tackle${(o.tk||0)+(o.ast||0)===1?'':'s'}`);
     if(o.dint)parts.push(`<b>${o.dint}</b> INT`);
     if(o.fgm!==undefined)parts.push(`<b>${o.fgm}/${o.fga||0}</b> FG`);
     return parts.length?pre+parts.join(' · '):'';
@@ -580,7 +580,9 @@ function playerRow(e,wk,played){
   const xfer=!e.primary?`<span class="badge">finished at ${esc(p.c[0])}</span>`:'';
   const stops=e.primary&&p.c.length>1?`<span class="badge">also ${esc(p.c.slice(1).join(', '))}</span>`:'';
   const stat={RES:'IR',DEV:'practice squad',INA:'inactive',TRT:'returning'}[p.s];
-  const st=p.st?`<span class="badge" style="background:var(--chip);color:var(--ink)">starter</span>`:'';
+  const started=played&&p.gs&&p.gs.includes(wk);
+  const st=started?`<span class="badge" style="background:var(--accent);color:var(--accent-ink)" title="In the lineup for the first snap">started</span>`
+    :(!played&&p.st?`<span class="badge" style="background:var(--chip);color:var(--ink)">starter</span>`:'');
   return `<div class="player">
     <span class="pos" title="team depth chart">${p.d||p.p}</span><span class="nm">${esc(p.n)}</span>${st}
     ${sel.length>1?`<span class="schooltag">${esc(e.school)}</span>`:''}
@@ -594,7 +596,8 @@ function gameDetail(id){
   const idx=teamIndex(),played=g.as!=='';
   const side=t=>{
     const dr=e=>e.p.d?+(e.p.d.match(/\d+$/)||[9])[0]:9;
-    const list=(idx[t]||[]).sort((a,b)=>(a.p.s==='ACT'?0:1)-(b.p.s==='ACT'?0:1)||dr(a)-dr(b)||a.p.n.localeCompare(b.p.n));
+    const gs=e=>played&&e.p.gs&&e.p.gs.includes(g.wk)?0:1;
+    const list=(idx[t]||[]).sort((a,b)=>(a.p.s==='ACT'?0:1)-(b.p.s==='ACT'?0:1)||gs(a)-gs(b)||dr(a)-dr(b)||a.p.n.localeCompare(b.p.n));
     return `<div class="side"><h3>${t}${played?` · ${t===g.away?g.as:g.hs}`:''}</h3>`+
       (list.length?list.map(e=>playerRow(e,g.wk,played)).join(''):'<p class="hint">None of your guys here.</p>')+`</div>`;
   };
@@ -624,7 +627,7 @@ function boardsView(){
       const list=act.filter(e=>kind==='pos'?e.p.p===bv:e.p.t===bv)
         .sort((a,b)=>(b.p.st?1:0)-(a.p.st?1:0)||a.p.n.localeCompare(b.p.n));
       return `<div class="expand" style="padding:6px 0 4px 4px">`+list.map(e=>
-        `<div class="row"><b>${esc(e.p.n)}</b> (${esc([e.p.d||e.p.p,kind==='pos'?e.p.t:'',e.p.st?'starter':'',!e.primary?'finished at '+e.p.c[0]:''].filter(Boolean).join(', '))})</div>`).join('')+`</div>`;
+        `<div class="row"><b>${esc(e.p.n)}</b> (${esc([e.p.d||e.p.p,kind==='pos'?e.p.t:'',stLbl(e.p),!e.primary?'finished at '+e.p.c[0]:''].filter(Boolean).join(', '))})</div>`).join('')+`</div>`;
     };
     h+=`<div class="card"><h2 style="margin:0 0 4px">${esc(sc)}</h2>
       <p class="sub" style="margin:0 0 10px">${act.length} on active rosters · ${ps.length} in the league overall (IR &amp; practice squads included)</p>
@@ -706,8 +709,8 @@ function postView(){
     if(st.py)parts.push(`<b>${st.py}</b> pass yds, ${st.ptd||0} TD`);
     if(st.ry)parts.push(`<b>${st.ry}</b> rush yds${st.rtd?`, ${st.rtd} TD`:''}`);
     if(st.recy)parts.push(`<b>${st.rec||0}</b> rec, <b>${st.recy}</b> yds${st.rectd?`, ${st.rectd} TD`:''}`);
-    if(st.sk)parts.push(`<b>${st.sk}</b> sacks`);
-    if((st.tk||st.ast)&&!st.py&&!st.ry&&!st.recy)parts.push(`<b>${(st.tk||0)+(st.ast||0)}</b> tackles`);
+    if(st.sk)parts.push(`<b>${st.sk}</b> sack${st.sk===1?'':'s'}`);
+    if((st.tk||st.ast)&&!st.py&&!st.ry&&!st.recy)parts.push(`<b>${(st.tk||0)+(st.ast||0)}</b> tackle${(st.tk||0)+(st.ast||0)===1?'':'s'}`);
     if(st.fgm!==undefined)parts.push(`<b>${st.fgm}/${st.fga||0}</b> FG`);
     return parts.join(' \u00b7 ');};
   let h='';
@@ -744,9 +747,13 @@ function postView(){
 // ===================== shared helpers for the newer views =====================
 let SEASON_YR=2026;
 const ST_LBL={RES:'IR',DEV:'practice squad',INA:'inactive',TRT:'returning'};
+// regular-season starts (ESPN starting lineup = on the field for the first snap)
+function gsN(p){if(!p.gs)return 0;const reg=new Set(GAMES.filter(g=>g.type==='REG').map(g=>g.wk));return p.gs.filter(w=>reg.has(w)).length}
+function startsTxt(p){const n=gsN(p);return n?`${n} start${n===1?'':'s'}`:''}
+function stLbl(p){const t=startsTxt(p);return p.st?(t?`starter, ${t}`:'starter'):t}
 function plBits(p,extra){
   const b=[p.d||p.p,p.t];
-  if(p.st)b.push('starter');
+  b.push(stLbl(p));
   if(p.s!=='ACT')b.push(ST_LBL[p.s]||'');
   if(extra)b.push(extra);
   return b.filter(Boolean).join(', ');
@@ -777,7 +784,7 @@ function fmtLine(o){
   if(o.rec||o.recy)parts.push(`${o.rec||0} rec, ${o.recy||0} yds${o.rectd?`, ${o.rectd} TD`:''}`);
   if(o.sk)parts.push(`${o.sk} sack${o.sk===1?'':'s'}`);
   if(o.dint)parts.push(`${o.dint} INT`);
-  if((o.tk||o.ast)&&!o.py&&!o.ry&&!o.recy)parts.push(`${(o.tk||0)+(o.ast||0)} tackles`);
+  if((o.tk||o.ast)&&!o.py&&!o.ry&&!o.recy)parts.push(`${(o.tk||0)+(o.ast||0)} tackle${(o.tk||0)+(o.ast||0)===1?'':'s'}`);
   if(o.fgm!==undefined)parts.push(`${o.fgm}/${o.fga||0} FG`);
   return parts.join(' · ');
 }
@@ -825,7 +832,7 @@ function confView(){
   const cols=[['active','Active'],['starters','Starters'],['pct','Starter %'],['first','1st-rounders'],['fp','PPR pts']];
   const T=Object.fromEntries(cols.filter(([c])=>c!=='pct').map(([c])=>[c,confTallies(c).conf]));
   const groups=[['SEC',['SEC']],['Big Ten',['Big Ten']],['ACC',['ACC']],['Big 12',['Big 12']],['Pac-12',['Pac-12']],
-    ['Group of 5',[...G5]],['Independent',['Independent']],['FCS & lower',['FCS & lower']],['Big East / WAC (defunct)',['Big East','WAC']]];
+    ['Group of 5',[...G5]],['Independent',['Independent']],['FCS & lower',['FCS & lower']],['No college',['No college']],['Big East / WAC (defunct)',['Big East','WAC']]];
   const gv=(c,members)=>members.reduce((a,m)=>a+(T[c][m]||0),0);
   const sbRows=groups.map(([name,m])=>({name,vals:cols.map(([c])=>c==='pct'
     ?(gv('active',m)?Math.round(gv('starters',m)/gv('active',m)*100):0):round(gv(c,m)))})).sort((a,b)=>b.vals[0]-a.vals[0]);

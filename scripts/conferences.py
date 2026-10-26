@@ -129,6 +129,8 @@ POWER = {SEC, B1G, B12, ACC, P12}
 
 def conference(school, season):
     """Conference for a school in a given season; FCS & lower if unknown."""
+    if school == "No college":
+        return "No college"
     hist = HISTORY.get(school)
     if not hist:
         return FCS

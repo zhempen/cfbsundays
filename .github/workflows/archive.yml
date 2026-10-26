@@ -1,0 +1,25 @@
+name: Rebuild past seasons
+
+# Push any commit to the "archive-build" branch to rebuild site/archive
+# (2013 through last season) with ESPN starting lineups. The result is
+# uploaded as an artifact to review and commit to main; nothing deploys.
+on:
+  push:
+    branches: [archive-build]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build archived seasons
+        run: python3 scripts/build.py --archive 2013-2025
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archive
+          path: site/archive
+          retention-days: 7

@@ -31,6 +31,40 @@ def sources(season):
         "depth": f"{NFLVERSE}/depth_charts/depth_charts_{season}.csv",
     }
 
+# ---- game starters from ESPN (the official starting lineup for each game) ----
+ESPN_TEAM = {"ARI": 22, "ATL": 1, "BAL": 33, "BUF": 2, "CAR": 29, "CHI": 3, "CIN": 4,
+             "CLE": 5, "DAL": 6, "DEN": 7, "DET": 8, "GB": 9, "HOU": 34, "IND": 11,
+             "JAX": 30, "KC": 12, "LV": 13, "OAK": 13, "LAC": 24, "SD": 24, "LA": 14,
+             "STL": 14, "MIA": 15, "MIN": 16, "NE": 17, "NO": 18, "NYG": 19, "NYJ": 20,
+             "PHI": 21, "PIT": 23, "SF": 25, "SEA": 26, "TB": 27, "TEN": 10, "WAS": 28}
+ESPN_ROSTER = ("https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/{e}"
+               "/competitions/{e}/competitors/{t}/roster")
+
+def espn_starts(games_rows, cache):
+    """{game_id: {team: [espn player ids who started]}} for finished games.
+    Reuses cached games; a game is cached once both sides list 20+ starters."""
+    from concurrent.futures import ThreadPoolExecutor
+    todo = [(r["game_id"], r["espn"], t) for r in games_rows
+            if r["away_score"] and r.get("espn") for t in (r["away_team"], r["home_team"])
+            if len(cache.get(r["game_id"], {}).get(t, [])) < 20 and t in ESPN_TEAM]
+    def one(job):
+        gid, eid, team = job
+        for _ in range(3):
+            try:
+                d = fetch_json(ESPN_ROSTER.format(e=eid, t=ESPN_TEAM[team]))
+                return gid, team, [str(x["playerId"]) for x in d.get("entries", []) if x.get("starter")]
+            except Exception:
+                pass
+        return gid, team, None
+    out = {g: dict(v) for g, v in cache.items()}
+    with ThreadPoolExecutor(8) as ex:
+        for gid, team, ids in ex.map(one, todo):
+            if ids:
+                out.setdefault(gid, {})[team] = ids
+    failed = sum(1 for g, v in out.items() for t in v if len(v[t]) < 20)
+    print(f"ESPN starters: fetched {len(todo)} lineups, {failed} short", file=sys.stderr)
+    return out
+
 _CACHE = {}
 def fetch_cached(url):
     if url not in _CACHE:
@@ -83,6 +117,7 @@ def fetch_csv(url):
         return list(csv.DictReader(io.TextIOWrapper(r, encoding="utf-8")))
 
 KEEP_STATUS = {"ACT", "RES", "INA", "DEV", "TRT"}
+NO_COLLEGE = "No college"
 
 # Schools mostly known by a short form display that form everywhere;
 # the formal name stays searchable as an alias.
@@ -99,6 +134,8 @@ RENAME = {
 }
 
 ALIASES = {
+    NO_COLLEGE: ["None", "No school", "Didn't play college", "Never played college", "Did not attend",
+                 "International", "International Pathway", "Intl", "Overseas", "Rugby", "N/A"],
     "Georgia": ["UGA", "Dawgs", "Bulldogs", "Go Dawgs"],
     "Ole Miss": ["Rebels"],
     "Alabama": ["Bama", "Crimson Tide", "Tide", "Roll Tide"],
@@ -260,15 +297,18 @@ def main(yr=SEASON, archive=False):
     draft_rows = fetch_cached(DRAFT_URL)
     draft = {r["gsis_id"]: r for r in draft_rows if r.get("gsis_id")}
     # master player file: fills college, entry year and PFR id gaps in older rosters
-    master = {r["gsis_id"]: r for r in fetch_cached(PLAYERS_URL) if r.get("gsis_id")} if archive else {}
+    master = {r["gsis_id"]: r for r in fetch_cached(PLAYERS_URL) if r.get("gsis_id")}
     had_stats = {r["player_id"] for r in stats_rows if r["season_type"] in ("REG", "POST")}
 
     # ---- rosters: dedupe by player, keep latest roster week ----
     players, pfr_to_pid, name_team_to_pid = {}, {}, {}
     ever_act = set()
+    espn_to_pid = {}
     for m in master.values():
-        if m.get("pfr_id"):
+        if m.get("pfr_id") and archive:
             pfr_to_pid[m["pfr_id"]] = m["gsis_id"]
+        if m.get("espn_id"):
+            espn_to_pid[m["espn_id"]] = m["gsis_id"]
     for r in roster_rows:
         pid = r["gsis_id"] or r["smart_id"]
         if not pid:
@@ -277,6 +317,8 @@ def main(yr=SEASON, archive=False):
             pfr_to_pid[r["pfr_id"]] = r["gsis_id"]
         if r["gsis_id"]:
             name_team_to_pid[(norm_name(r["full_name"]), r["team"])] = r["gsis_id"]
+            if r.get("espn_id"):
+                espn_to_pid[r["espn_id"]] = r["gsis_id"]
         wk = int(r["week"] or 0)
         if archive:
             if r["status"] == "ACT":
@@ -289,8 +331,12 @@ def main(yr=SEASON, archive=False):
         elif pid in players and players[pid]["_wk"] >= wk:
             continue
         m = master.get(r["gsis_id"], {})
-        college = m.get("college_name") or r["college"] or ""
-        colleges = [RENAME.get(c.strip(), c.strip()) for c in college.split(";") if c.strip()]
+        # archived seasons prefer the master file (fuller transfer lists);
+        # the current season trusts the roster and fills gaps from the master
+        college = (m.get("college_name") or r["college"]) if archive else (r["college"] or m.get("college_name"))
+        colleges = [RENAME.get(c.strip(), c.strip()) for c in (college or "").split(";") if c.strip()]
+        if not colleges:
+            colleges = [NO_COLLEGE]   # mostly International Pathway players
         entry = r["entry_year"] or m.get("rookie_season") or ""
         players[pid] = {"_wk": wk, "name": r["full_name"], "team": r["team"],
                         "pos": r["position"], "status": r["status"],
@@ -367,22 +413,66 @@ def main(yr=SEASON, archive=False):
             continue
         snap_acc[pid]["off"].append((int(r["week"]), float(r["offense_pct"] or 0)))
         snap_acc[pid]["def"].append((int(r["week"]), float(r["defense_pct"] or 0)))
-    # Past seasons: 50%+ of snaps on average over the season.
-    # Current season: 50%+ over his last three games, so a benched starter
-    # drops off and a newly promoted one shows up within a few weeks.
+    # Starters. Each game: ESPN's starting lineup (on the field for the first
+    # snap). Season: the players with the most starts at each position group on
+    # each team, as many as that team usually starts there. Kickers and punters
+    # count after two games. If ESPN is unreachable, fall back to 50%+ of snaps.
+    POS_GROUP = {"T": "OL", "G": "OL", "C": "OL", "OT": "OL", "OG": "OL", "OL": "OL",
+                 "DE": "DL", "DT": "DL", "NT": "DL", "DL": "DL", "EDGE": "DL",
+                 "LB": "LB", "ILB": "LB", "OLB": "LB", "MLB": "LB",
+                 "CB": "DB", "S": "DB", "FS": "DB", "SS": "DB", "DB": "DB",
+                 "QB": "QB", "RB": "RB", "FB": "RB", "WR": "WR", "TE": "TE",
+                 "K": "K", "P": "P", "LS": "ST"}
+    season_games = [r for r in games_rows if r["season"] == str(yr)]
+    week_of = {r["game_id"]: int(r["week"]) for r in season_games}
+    regular = {r["game_id"] for r in season_games if r["game_type"] == "REG"}
+    cache = {}
+    if not archive:
+        try:
+            cache = fetch_json(f"{DOMAIN}/data/starts.json")
+        except Exception as e:
+            print("no starts cache:", e, file=sys.stderr)
+    starts_raw = espn_starts(season_games, cache) if not os.environ.get("NO_ESPN") else {}
+    game_starts = defaultdict(list)            # pid -> [week, ...]
+    team_starts = defaultdict(lambda: defaultdict(int))   # (team, grp) -> pid -> starts
+    team_slots = defaultdict(list)             # (team, grp) -> [starters per game]
+    unmapped = 0
+    for gid, sides in starts_raw.items():
+        if gid not in week_of:
+            continue
+        for team, ids in sides.items():
+            per = defaultdict(int)
+            for eid in ids:
+                pid = espn_to_pid.get(eid)
+                if not pid:
+                    unmapped += 1
+                    continue
+                game_starts[pid].append(week_of[gid])
+                if pid in active and gid in regular:   # season starters: regular season only
+                    grp = POS_GROUP.get(active[pid]["pos"], active[pid]["pos"])
+                    team_starts[(team, grp)][pid] += 1
+                    per[grp] += 1
+            if gid in regular:
+                for grp, n in per.items():
+                    team_slots[(team, grp)].append(n)
+    print(f"starts mapped for {len(game_starts)} players, {unmapped} unmapped", file=sys.stderr)
     starters = set()
+    for key, counts in team_starts.items():
+        slots = team_slots[key]
+        n = max(set(slots), key=lambda v: (slots.count(v), v))   # usual number started
+        ranked = sorted(counts.values(), reverse=True)
+        cut = ranked[min(n, len(ranked)) - 1]
+        starters |= {pid for pid, c in counts.items() if c >= cut}
     for pid, a in snap_acc.items():
         if len(a["off"]) < 2:
             continue
         if active[pid]["pos"] in ("K", "P"):
             starters.add(pid)
-            continue
-        off = [v for _, v in sorted(a["off"])]
-        dfn = [v for _, v in sorted(a["def"])]
-        if not archive:
-            off, dfn = off[-3:], dfn[-3:]
-        if max(statistics.mean(off), statistics.mean(dfn)) >= 0.5:
-            starters.add(pid)
+        elif not starts_raw:
+            off = [v for _, v in a["off"]]
+            dfn = [v for _, v in a["def"]]
+            if max(statistics.mean(off), statistics.mean(dfn)) >= 0.5:
+                starters.add(pid)
 
     # ---- depth charts: latest snapshot, best non-ST slot per player ----
     latest = max((r["dt"] for r in depth_rows), default=None)
@@ -406,6 +496,8 @@ def main(yr=SEASON, archive=False):
                "j": p["jersey"], "c": p["colleges"]}
         if pid in starters:
             row["st"] = 1
+        if game_starts.get(pid):
+            row["gs"] = sorted(set(game_starts[pid]))
         if pid in depth:
             _, rank, abb = depth[pid]
             row["d"] = f"{abb}{rank}"
@@ -445,12 +537,6 @@ def main(yr=SEASON, archive=False):
     games.sort(key=lambda g: (g["wk"], g["date"], g["time"]))
 
     # ---- rankings.json (credit = school player finished at) ----
-    POS_GROUP = {"T": "OL", "G": "OL", "C": "OL", "OT": "OL", "OG": "OL", "OL": "OL",
-                 "DE": "DL", "DT": "DL", "NT": "DL", "DL": "DL", "EDGE": "DL",
-                 "LB": "LB", "ILB": "LB", "OLB": "LB", "MLB": "LB",
-                 "CB": "DB", "S": "DB", "FS": "DB", "SS": "DB", "DB": "DB",
-                 "QB": "QB", "RB": "RB", "FB": "RB", "WR": "WR", "TE": "TE",
-                 "K": "K", "P": "P", "LS": "ST"}
     rank = defaultdict(lambda: defaultdict(float))
     for pid, p in active.items():
         sc = p["colleges"][0]
@@ -499,7 +585,8 @@ def main(yr=SEASON, archive=False):
     json.dump(meta, open(meta_path, "w"), separators=(",", ":"))
 
     for name, obj in [("schools", schools), ("players", pout), ("games", games),
-                      ("stats", stats_out), ("rankings", rk_out), ("playoffs", post_out)]:
+                      ("stats", stats_out), ("rankings", rk_out), ("playoffs", post_out),
+                      ("starts", starts_raw)]:
         path = os.path.join(OUT, f"{name}.json")
         json.dump(obj, open(path, "w"), separators=(",", ":"))
         print(f"{name}.json {os.path.getsize(path)//1024} KB", file=sys.stderr)
