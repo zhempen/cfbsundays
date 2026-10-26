@@ -709,7 +709,12 @@ players at his position on his team this season, or started at least a quarter o
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + sm + "\n</urlset>")
     open(os.path.join(OUT, "..", "robots.txt"), "w").write(
-        f"User-agent: *\nAllow: /\nSitemap: {DOMAIN}/sitemap.xml\n")
+        # Search engines may fetch everything (they render the page with its data).
+        # Every other crawler skips the raw data files, which have no search value
+        # and are the heaviest thing to fetch. Only polite bots obey this.
+        f"User-agent: Googlebot\nUser-agent: Bingbot\nAllow: /\n\n"
+        f"User-agent: *\nDisallow: /data/\nDisallow: /archive/\nAllow: /\n\n"
+        f"Sitemap: {DOMAIN}/sitemap.xml\n")
     print(f"prerendered {len(urls)-1} school pages + sitemap", file=sys.stderr)
 def write_season_list():
     yrs = sorted((int(d) for d in os.listdir(ARCHIVE) if d.isdigit()), reverse=True) \
