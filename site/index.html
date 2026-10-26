@@ -1259,7 +1259,7 @@ function recapHtml(wk){
   }
   return `<details class="card recap" ${recapOpen?'open':''}><summary class="disp" style="font-size:20px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">Week ${weekLabel(wk)} recap${sel.length?'':': stat leaders'}</summary>${body}</details>`;
 }
-let recapOpen=!matchMedia('(max-width:640px)').matches;
+let recapOpen=false;   // starts collapsed everywhere; one tap opens it and it stays open while browsing weeks
 
 // ===================== Head-to-head (Leaderboards, 2+ schools) =====================
 const sumv=o=>Object.values(o).reduce((a,b)=>a+b,0);
