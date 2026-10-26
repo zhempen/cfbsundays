@@ -47,7 +47,7 @@ nav button.on{color:var(--ink);border-bottom-color:var(--accent)}
 .chip .x{margin-left:6px;opacity:.7}
 input[type=search]{width:100%;padding:12px 14px;font:inherit;font-size:16px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
 .hint{color:var(--muted);font-size:13px;margin:4px 0 0}
-.weekbar{display:flex;gap:4px;overflow-x:auto;padding:2px 0 8px}
+.weekbar{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0 8px}
 .weekbar button{min-width:40px;padding:5px 0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;font-family:"Barlow Condensed";font-size:15px;cursor:pointer}
 .weekbar button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .game{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 8px;cursor:pointer}
@@ -121,12 +121,19 @@ td.expand .row{padding:2px 0}
   <input type="search" id="schoolSearch" placeholder="Search a school (UGA, Ole Miss, Bama…)" autocomplete="off">
   <div class="chips" id="schoolResults"></div>
   <p class="hint" id="pickHint"></p>
+  <p class="hint" style="margin-top:8px">Counting:
+    <select id="modeSel" style="font:inherit;font-size:13px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 7px">
+      <option value="fin">Finished at the school (drafted from there)</option>
+      <option value="all">Everyone who played there (transfers out too)</option>
+    </select>
+  </p>
 </div>
 
 <nav id="tabs">
   <button data-v="games" class="on">This week</button>
   <button data-v="boards">Leaderboards</button>
   <button data-v="rank">School rankings</button>
+  <button data-v="post" id="postTab" hidden>Playoffs</button>
 </nav>
 
 <div id="view"></div>
@@ -143,7 +150,10 @@ td.expand .row{padding:2px 0}
 </div>
 
 <script>
-let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},sel=[],curWeek=1,tab='games',openGame=null,rankCat='starters',expanded=null;
+let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},POST={},sel=[],curWeek=1,tab='games',openGame=null,rankCat='starters',expanded=null;
+let mode='fin';try{mode=localStorage.getItem('mode')||'fin'}catch(e){}
+const ROUND={WC:'Wild Card',DIV:'Division',CON:'Conference',SB:'Super Bowl'};
+const ROUND_SHORT={WC:'WC',DIV:'DIV',CON:'CONF',SB:'SB'};
 const CATS={active:'Active players',total:'In the league (incl. IR/PS)',starters:'Starters',
   pos_QB:'Active QBs',pos_RB:'Active RBs',pos_WR:'Active WRs',pos_TE:'Active TEs',
   pos_OL:'Active OL',pos_DL:'Active DL',pos_LB:'Active LBs',pos_DB:'Active DBs',
@@ -157,12 +167,13 @@ function loadSel(){try{const s=JSON.parse(localStorage.getItem('schools')||'[]')
 function saveSel(){try{localStorage.setItem('schools',JSON.stringify(sel))}catch(e){}}
 
 async function boot(){
-  const [s,p,g,st,rk]=await Promise.all(['schools','players','games','stats','rankings'].map(n=>fetch('data/'+n+'.json').then(r=>r.json())));
-  SCHOOLS=s;PLAYERS=p;GAMES=g;STATS=st;RANKS=rk;
+  const [s,p,g,st,rk,po]=await Promise.all(['schools','players','games','stats','rankings','playoffs'].map(n=>fetch('data/'+n+'.json').then(r=>r.json()).catch(()=>({}))));
+  SCHOOLS=s;PLAYERS=p;GAMES=g;STATS=st;RANKS=rk;POST=po;
   loadSel();
   const today=new Date().toISOString().slice(0,10);
   const wks=[...new Set(GAMES.map(g=>g.wk))].sort((a,b)=>a-b);
   curWeek=wks.find(w=>GAMES.filter(x=>x.wk===w).some(x=>x.date>=today))||wks[wks.length-1];
+  if(GAMES.some(g=>g.type!=='REG'))document.getElementById('postTab').hidden=false;
   const h=location.hash.replace('#','');
   if(h==='boards')tab='boards';
   renderPicker();render();
@@ -172,9 +183,25 @@ function playersOf(school){
   const out=[];
   for(const [pid,p] of Object.entries(PLAYERS)){
     const i=p.c.indexOf(school);
-    if(i>=0)out.push({pid,p,primary:i===0});
+    if(i<0)continue;
+    if(mode==='fin'&&i!==0)continue;
+    out.push({pid,p,primary:i===0});
   }
   return out;
+}
+function shortName(school){
+  const s=SCHOOLS.find(x=>x.name===school);
+  if(!s)return school;
+  const a=(s.alias||[])[0];
+  if(a&&a.length<=4&&a.length<s.name.length)return a;
+  return s.name;
+}
+function guysLabel(){
+  if(!sel.length)return 'your guys';
+  const sh=sel.map(shortName);
+  if(sh.length===1)return sh[0]+' players';
+  if(sh.length===2)return sh[0]+' + '+sh[1];
+  return 'your guys';
 }
 function teamIndex(){
   const byTeam={};
@@ -205,6 +232,8 @@ document.addEventListener('input',e=>{
   box.querySelectorAll('button').forEach(b=>b.onclick=()=>{sel.push(b.dataset.s);saveSel();
     document.getElementById('schoolSearch').value='';box.innerHTML='';renderPicker();render()});
 });
+document.getElementById('modeSel').value=mode;
+document.getElementById('modeSel').onchange=e=>{mode=e.target.value;try{localStorage.setItem('mode',mode)}catch(err){};render()};
 document.getElementById('tabs').onclick=e=>{
   const b=e.target.closest('button');if(!b)return;
   tab=b.dataset.v;openGame=null;
@@ -214,9 +243,10 @@ document.getElementById('tabs').onclick=e=>{
 
 function render(){
   const v=document.getElementById('view');
-  if(!sel.length&&tab!=='rank'){v.innerHTML='<div class="empty">Add a school to get started.</div>';return}
+  if(!sel.length&&tab!=='rank'&&tab!=='post'){v.innerHTML='<div class="empty">Add a school to get started.</div>';return}
   if(tab==='games')v.innerHTML=openGame?gameDetail(openGame):weekView();
   else if(tab==='rank')v.innerHTML=rankView();
+  else if(tab==='post')v.innerHTML=postView();
   else v.innerHTML=boardsView();
   wire(v);
 }
@@ -333,18 +363,28 @@ function rankView(){
   return h;
 }
 
+function weekLabel(w){
+  const g=GAMES.find(x=>x.wk===w);
+  return g&&g.type!=='REG'?(ROUND_SHORT[g.type]||g.type):w;
+}
 function weekView(){
   const idx=teamIndex();
-  const wks=[...new Set(GAMES.map(g=>g.wk))].sort((a,b)=>a-b);
-  let h=`<div class="weekbar">`+wks.map(w=>`<button data-w="${w}" class="${w===curWeek?'on':''}">${w}</button>`).join('')+`</div>`;
+  const today=new Date().toISOString().slice(0,10);
+  const lastReg=GAMES.filter(g=>g.type==='REG').map(g=>g.date).sort().pop();
+  const inPlayoffs=GAMES.some(g=>g.type!=='REG')&&today>lastReg;
+  let wks=[...new Set(GAMES.map(g=>g.wk))].sort((a,b)=>a-b);
+  if(inPlayoffs)wks=wks.filter(w=>{const g=GAMES.find(x=>x.wk===w);return g&&g.type!=='REG'});
+  const lbl=guysLabel();
+  let h=`<div class="weekbar">`+wks.map(w=>`<button data-w="${w}" class="${w===curWeek?'on':''}">${weekLabel(w)}</button>`).join('')+`</div>`;
   const gs=GAMES.filter(g=>g.wk===curWeek);
   h+=gs.map(g=>{
     const n=(idx[g.away]||[]).length+(idx[g.home]||[]).length;
     const played=g.as!=='';
+    const round=g.type!=='REG'?`<span class="badge" style="margin-left:6px">${ROUND[g.type]||g.type}</span>`:'';
     return `<div class="game" data-g="${g.id}">
-      <div><div class="teams">${g.away} @ ${g.home} ${played?`<span class="score">${g.as}–${g.hs}</span>`:''}</div>
+      <div><div class="teams">${g.away} @ ${g.home} ${played?`<span class="score">${g.as}–${g.hs}</span>`:''}${round}</div>
       <div class="meta">${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
-      <div class="mine"><div class="count ${n?'':'zero'}">${n}</div><div class="countlbl">your guys</div></div>
+      <div class="mine"><div class="count ${n?'':'zero'}">${n}</div><div class="countlbl">${esc(lbl)}</div></div>
     </div>`;
   }).join('');
   return h;
@@ -408,11 +448,15 @@ function boardsView(){
     const ps=playersOf(sc);
     const act=ps.filter(e=>e.p.s==='ACT');
     const byPos={};act.forEach(e=>{byPos[e.p.p]=(byPos[e.p.p]||0)+1});
+    const byTeam={};act.forEach(e=>{byTeam[e.p.t]=(byTeam[e.p.t]||0)+1});
+    const topTeams=Object.entries(byTeam).sort((a,b)=>b[1]-a[1]).slice(0,6);
     const top=cat=>ps.map(e=>({e,v:(STATS[e.pid]?.s||{})[cat]||0})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,5);
     const row=(x,unit)=>`<tr><td>${esc(x.e.p.n)}${!x.e.primary?' <span class="badge">finished at '+esc(x.e.p.c[0])+'</span>':''}</td><td>${x.e.p.t}</td><td class="num">${x.v.toLocaleString()} ${unit}</td></tr>`;
     h+=`<div class="card"><h2 style="margin:0 0 4px">${esc(sc)}</h2>
       <p class="sub" style="margin:0 0 10px">${act.length} on active rosters · ${ps.length} in the league overall (IR &amp; practice squads included)</p>
       <div class="chips">${Object.entries(byPos).sort((a,b)=>b[1]-a[1]).map(([p,n])=>`<span class="chip">${p} · ${n}</span>`).join('')}</div>
+      <p class="hint" style="margin:8px 0 4px">Most on one NFL team</p>
+      <div class="chips">${topTeams.map(([t,n])=>`<span class="chip">${t} · ${n}</span>`).join('')}</div>
       <div class="tablewrap"><table>
       <tr><th colspan="3">Season leaders</th></tr>
       ${top('py').slice(0,2).map(x=>row(x,'pass yds')).join('')}
@@ -430,6 +474,54 @@ function boardsView(){
   return h;
 }
 
+function postView(){
+  const pg=GAMES.filter(g=>g.type!=='REG');
+  if(!pg.length)return '<div class="empty">Playoffs haven\u2019t started yet.</div>';
+  const ORDER=['WC','DIV','CON','SB'];
+  const inRound={};
+  for(const g of pg){for(const t of [g.away,g.home]){
+    if(!inRound[t]||ORDER.indexOf(g.type)>ORDER.indexOf(inRound[t]))inRound[t]=g.type;}}
+  const sbTeams=new Set(pg.filter(g=>g.type==='SB').flatMap(g=>[g.away,g.home]));
+  const pSum=pid=>POST[pid]?.s||null;
+  const pStat=st=>{const parts=[];
+    if(st.py)parts.push(`<b>${st.py}</b> pass yds, ${st.ptd||0} TD`);
+    if(st.ry)parts.push(`<b>${st.ry}</b> rush yds${st.rtd?`, ${st.rtd} TD`:''}`);
+    if(st.recy)parts.push(`<b>${st.rec||0}</b> rec, <b>${st.recy}</b> yds${st.rectd?`, ${st.rectd} TD`:''}`);
+    if(st.sk)parts.push(`<b>${st.sk}</b> sacks`);
+    if((st.tk||st.ast)&&!st.py&&!st.ry&&!st.recy)parts.push(`<b>${(st.tk||0)+(st.ast||0)}</b> tackles`);
+    if(st.fgm!==undefined)parts.push(`<b>${st.fgm}/${st.fga||0}</b> FG`);
+    return parts.join(' \u00b7 ');};
+  let h='';
+  const scope=sel.length?sel:null;
+  if(scope){
+    for(const sc of scope){
+      const list=playersOf(sc).filter(e=>e.p.s==='ACT'&&inRound[e.p.t]);
+      list.sort((a,b)=>ORDER.indexOf(inRound[b.p.t])-ORDER.indexOf(inRound[a.p.t])||a.p.n.localeCompare(b.p.n));
+      const sb=list.filter(e=>sbTeams.has(e.p.t));
+      h+=`<div class="card"><h2 style="margin:0 0 4px">${esc(sc)}</h2>
+        <p class="sub" style="margin:0 0 10px">${list.length} players on playoff teams${sbTeams.size?` \u00b7 ${sb.length} in the Super Bowl`:''}</p>`;
+      h+=list.map(e=>{
+        const st=pSum(e.pid);
+        const line=st?pStat(st):'';
+        return `<div class="player"><span class="pos">${e.p.d||e.p.p}</span><span class="nm">${esc(e.p.n)}</span>
+          <span class="schooltag">${e.p.t} \u00b7 ${ROUND[inRound[e.p.t]]}</span>
+          ${sbTeams.has(e.p.t)?'<span class="badge">Super Bowl</span>':''}
+          ${line?`<div class="stat">Playoffs: ${line}</div>`:''}</div>`;
+      }).join('')||'<p class="hint">None of your guys made the playoffs.</p>';
+      h+='</div>';
+    }
+  }
+  // schools with most players in the playoffs (finished-at credit)
+  const tally={};
+  for(const p of Object.values(PLAYERS)){
+    if(p.s==='ACT'&&inRound[p.t])tally[p.c[0]]=(tally[p.c[0]]||0)+1;
+  }
+  const top=Object.entries(tally).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  h+=`<div class="card"><h2 style="margin:0 0 8px">Most players in the playoffs, by school</h2>
+    <div class="tablewrap"><table>${top.map(([sc,n],i)=>`<tr${sel.includes(sc)?' style="color:var(--accent);font-weight:600"':''}><td style="width:34px">#${i+1}</td><td>${esc(sc)}</td><td class="num">${n}</td></tr>`).join('')}</table></div></div>`;
+  if(!scope)h=`<p class="hint" style="margin:0 0 12px">Pick schools above to see your players\u2019 playoff runs.</p>`+h;
+  return h;
+}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 boot();
 document.getElementById('noteForm').onsubmit=async e=>{

@@ -248,19 +248,23 @@ def main():
     }
     weekly = defaultdict(dict)
     season = defaultdict(lambda: defaultdict(float))
+    post_weekly = defaultdict(dict)
+    post_season = defaultdict(lambda: defaultdict(float))
     for r in stats_rows:
         pid = r["player_id"]
-        if pid not in active or r["season_type"] != "REG":
+        if pid not in active or r["season_type"] not in ("REG", "POST"):
             continue
+        post = r["season_type"] == "POST"
+        wk_map, sn_map = (post_weekly, post_season) if post else (weekly, season)
         line = {}
         for src, dst in STAT_FIELDS.items():
             v = r.get(src) or ""
             if v and float(v) != 0:
                 num = float(v)
                 line[dst] = int(num) if num == int(num) else num
-                season[pid][dst] += num
+                sn_map[pid][dst] += num
         line["opp"] = r["opponent_team"]
-        weekly[pid][int(r["week"])] = line
+        wk_map[pid][int(r["week"])] = line
 
     # ---- starters from snap counts; specialists count by games played ----
     snap_acc = defaultdict(lambda: {"off": [], "def": []})
@@ -319,6 +323,13 @@ def main():
                for k, v in season[pid].items()}
         stats_out[pid] = {"w": weekly[pid], "s": tot, "g": len(weekly[pid])}
 
+    # ---- playoffs.json (empty until POST stats exist) ----
+    post_out = {}
+    for pid in post_weekly:
+        tot = {k: (int(v) if v == int(v) else round(v, 1))
+               for k, v in post_season[pid].items()}
+        post_out[pid] = {"w": post_weekly[pid], "s": tot, "g": len(post_weekly[pid])}
+
     # ---- games.json ----
     games = [{"id": r["game_id"], "wk": int(r["week"]), "type": r["game_type"],
               "date": r["gameday"], "time": r["gametime"],
@@ -361,7 +372,7 @@ def main():
         rk_out[cat] = [[s, int(v) if v == int(v) else round(v, 1)] for s, v in rows]
 
     for name, obj in [("schools", schools), ("players", pout), ("games", games),
-                      ("stats", stats_out), ("rankings", rk_out)]:
+                      ("stats", stats_out), ("rankings", rk_out), ("playoffs", post_out)]:
         path = os.path.join(OUT, f"{name}.json")
         json.dump(obj, open(path, "w"), separators=(",", ":"))
         print(f"{name}.json {os.path.getsize(path)//1024} KB", file=sys.stderr)
