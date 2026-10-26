@@ -417,9 +417,11 @@ def main(yr=SEASON, archive=False):
         snap_acc[pid]["off"].append((int(r["week"]), float(r["offense_pct"] or 0)))
         snap_acc[pid]["def"].append((int(r["week"]), float(r["defense_pct"] or 0)))
     # Starters. Each game: ESPN's starting lineup (on the field for the first
-    # snap). Season: the players with the most starts at each position group on
-    # each team, as many as that team usually starts there. Kickers and punters
-    # count after two games. If ESPN is unreachable, fall back to 50%+ of snaps.
+    # snap). Season: at each position group on each team, the usual number of
+    # starters (most starts first) plus anyone else who started at least a
+    # quarter of the team's games, so splits, benchings and long fill-ins count.
+    # Kickers and punters count after two games. If ESPN is unreachable, fall
+    # back to 50%+ of snaps.
     POS_GROUP = {"T": "OL", "G": "OL", "C": "OL", "OT": "OL", "OG": "OL", "OL": "OL",
                  "DE": "DL", "DT": "DL", "NT": "DL", "DL": "DL", "EDGE": "DL",
                  "LB": "LB", "ILB": "LB", "OLB": "LB", "MLB": "LB",
@@ -438,7 +440,7 @@ def main(yr=SEASON, archive=False):
     starts_raw = espn_starts(season_games, cache) if not os.environ.get("NO_ESPN") else {}
     game_starts = defaultdict(list)            # pid -> [week, ...]
     team_starts = defaultdict(lambda: defaultdict(int))   # (team, grp) -> pid -> starts
-    team_slots = defaultdict(list)             # (team, grp) -> [starters per game]
+    team_games = defaultdict(int)              # team -> regular-season games with a lineup
     unmapped = 0
     for gid, sides in starts_raw.items():
         if gid not in week_of:
@@ -457,16 +459,21 @@ def main(yr=SEASON, archive=False):
                     team_starts[(team, grp)][pid] += 1
                     per[grp] += 1
             if gid in regular:
-                for grp, n in per.items():
-                    team_slots[(team, grp)].append(n)
+                team_games[team] += 1
     print(f"starts mapped for {len(game_starts)} players, {unmapped} unmapped", file=sys.stderr)
     starters = set()
+    # The usual number of starters at the spot (most starts first, ties go in
+    # together), plus anyone else who started at least a quarter of the team's games.
     for key, counts in team_starts.items():
-        slots = team_slots[key]
-        n = max(set(slots), key=lambda v: (slots.count(v), v))   # usual number started
-        ranked = sorted(counts.values(), reverse=True)
-        cut = ranked[min(n, len(ranked)) - 1]
-        starters |= {pid for pid, c in counts.items() if c >= cut}
+        games = team_games[key[0]]
+        n = max(1, round(sum(counts.values()) / games)) if games else 1
+        chosen = 0
+        for c in sorted(set(counts.values()), reverse=True):
+            if chosen >= n and c < 0.25 * games:
+                break
+            tied = [pid for pid, v in counts.items() if v == c]
+            starters.update(tied)
+            chosen += len(tied)
     for pid, a in snap_acc.items():
         if len(a["off"]) < 2:
             continue
@@ -684,8 +691,8 @@ a{{color:#a3261e}}li{{margin:4px 0}}</style></head><body>
 {'<h2>Played at ' + e(name) + ', finished elsewhere</h2><ul>' + ''.join(also) + '</ul>' if also else ''}
 <p><a href="/">Track {'these' if nc else e(name)} players game by game on CFB Sundays</a>. Pick your schools
 and see who is in each NFL game this week with per-game and season stats.</p>
-<p>Data: nflverse (free, open NFL data) and ESPN starting lineups. A starter has the most starts at
-his position on his team this season.</p>
+<p>Data: nflverse (free, open NFL data) and ESPN starting lineups. A starter is one of the most-started
+players at his position on his team this season, or started at least a quarter of its games.</p>
 </body></html>"""
         open(os.path.join(sdir, f"{slug}.html"), "w").write(page)
         urls.append(f"{DOMAIN}/s/{slug}.html")

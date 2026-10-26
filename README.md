@@ -12,7 +12,7 @@ See which former players from your college teams are in each NFL game this week,
     cd site && python3 -m http.server
 
 ## Definitions
-- A **start** comes from ESPN's starting lineup for each game, which matches who was on the field for the first snap. A **starter** for the season is one of the players with the most starts at his position group on his team, as many as that team usually starts there (regular season only). Kickers and punters count after two games played. If ESPN can't be reached, the build falls back to 50%+ of snaps.
+- A **start** comes from ESPN's starting lineup for each game, which matches who was on the field for the first snap. A **starter** for the season: at each position group on each team, the usual number of most-started players, plus anyone else who started at least a quarter of the team's games (regular season only). QB splits, benchings and long injury fill-ins all count; one-off spot starts don't. Kickers and punters count after two games played. If ESPN can't be reached, the build falls back to 50%+ of snaps.
 - Each build reuses the previous deploy's `data/starts.json`, so it only asks ESPN for games it hasn't seen.
 - Rebuild past seasons by pushing to the `archive-build` branch; the workflow uploads `site/archive` as an artifact to commit.
 - Rankings credit the school a player **finished** at. A "finished at X" badge marks a player who also played at the selected school.
