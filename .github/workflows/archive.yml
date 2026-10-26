@@ -1,7 +1,7 @@
 name: Rebuild past seasons
 
 # Push any commit to the "archive-build" branch to rebuild site/archive
-# (2013 through last season) with ESPN starting lineups. The job commits the
+# (2013 through the season before SEASON in build.py) with ESPN starting lineups. The job commits the
 # result back to archive-build (that push does not retrigger it) so it can be
 # reviewed and copied to main; nothing deploys from here.
 on:
@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build log
-        run: python3 scripts/build.py --archive 2013-2025 2> build-log.txt || (cat build-log.txt; exit 1)
+        run: python3 scripts/build.py --archive all 2> build-log.txt || (cat build-log.txt; exit 1)
       - name: Commit result to archive-build
         run: |
           grep -v '^fetching' build-log.txt > site/archive/build-log.txt

@@ -208,19 +208,21 @@ function saveSel(){try{localStorage.setItem('schools',JSON.stringify(sel))}catch
 // past seasons live in archive/YYYY/ and load only when picked (?season=YYYY)
 const ARCH_YR=+(new URLSearchParams(location.search).get('season')||0);
 async function boot(){
-  const meta=await fetch('data/meta.json').then(r=>r.json()).catch(()=>({}));
+  const [meta,archived]=await Promise.all([fetch('data/meta.json').then(r=>r.json()).catch(()=>({})),
+    fetch('archive/seasons.json').then(r=>r.json()).catch(()=>[])]);
   const curYr=meta.season||SEASON_YR;
-  const archived=await fetch('archive/seasons.json').then(r=>r.json()).catch(()=>[]);
   const isArch=ARCH_YR&&ARCH_YR!==curYr&&archived.includes(ARCH_YR);
   SEASON_YR=isArch?ARCH_YR:curYr;
   const base=isArch?'archive/'+ARCH_YR+'/':'data/';
-  const [s,p,g,st,rk,po]=await Promise.all(['schools','players','games','stats','rankings','playoffs'].map(n=>fetch(base+n+'.json').then(r=>r.json()).catch(()=>({}))));
+  // rankings are computed in the page (buildRanks), so archived seasons skip that file
+  const [s,p,g,st,rk,po]=await Promise.all(['schools','players','games','stats',isArch?null:'rankings','playoffs'].map(n=>n?fetch(base+n+'.json').then(r=>r.json()).catch(()=>({})):({})));
   const ss=document.getElementById('seasonSel');
   ss.innerHTML=[curYr,...archived.filter(y=>y!==curYr)].map(y=>`<option value="${y}" ${y===SEASON_YR?'selected':''}>${y}${y===curYr?' (current)':''}</option>`).join('');
   ss.onchange=()=>{const y=+ss.value;location.href=location.pathname+(y===curYr?'':'?season='+y)+location.hash};
   if(isArch){const ab=document.getElementById('archiveBar');ab.hidden=false;
     ab.innerHTML=`<b>Viewing the ${ARCH_YR} season.</b> <a href="${location.pathname}" style="color:var(--accent);font-weight:600">Back to ${curYr}</a><br><span class="hint">Teams are where each player finished that season. Active means on an active roster at any point that year. No depth chart slots for past seasons.</span>`}
   SCHOOLS=s;PLAYERS=p;GAMES=g;STATS=st;RANKS=rk;POST=po;
+  for(const [id,pl] of Object.entries(PLAYERS))_pidOf.set(pl,id);
   loadSel();
   const today=new Date().toISOString().slice(0,10);
   const wks=[...new Set(GAMES.map(g=>g.wk))].sort((a,b)=>a-b);
@@ -266,11 +268,22 @@ function guysLabel(){
   if(sh.length===2)return sh[0]+' + '+sh[1];
   return 'your guys';
 }
-function teamIndex(){
+// team a player was on in a given week (traded players carry a history in p.tm);
+// weeks after his last game with a known team use his current team
+function teamFor(p,wk){
+  if(!p.tm)return p.t;
+  if(wk>lastKnownWk(p))return p.t;
+  let t=p.tm[0][1];for(const [w,tt] of p.tm){if(w<=wk)t=tt;else break}
+  return t;
+}
+const _pidOf=new Map();
+function lastKnownWk(p){const w=Object.keys(STATS[_pidOf.get(p)]?.w||{}).map(Number);return Math.max(p.tm[p.tm.length-1][0],...(p.gs||[]),...w)}
+function teamIndex(wk){
   const byTeam={};
   for(const sc of sel){
     for(const e of playersOf(sc)){
-      (byTeam[e.p.t]=byTeam[e.p.t]||[]).push({...e,school:sc});
+      const t=teamFor(e.p,wk);
+      (byTeam[t]=byTeam[t]||[]).push({...e,school:sc});
     }
   }
   return byTeam;
@@ -527,7 +540,7 @@ function weekLabel(w){
   return g&&g.type!=='REG'?(ROUND_SHORT[g.type]||g.type):w;
 }
 function weekView(){
-  const idx=teamIndex();
+  const idx=teamIndex(curWeek);
   const today=new Date().toISOString().slice(0,10);
   const lastReg=GAMES.filter(g=>g.type==='REG').map(g=>g.date).sort().pop();
   const inPlayoffs=GAMES.some(g=>g.type!=='REG')&&today>lastReg;
@@ -593,7 +606,7 @@ function playerRow(e,wk,played){
 
 function gameDetail(id){
   const g=GAMES.find(x=>x.id===id);if(!g)return'';
-  const idx=teamIndex(),played=g.as!=='';
+  const idx=teamIndex(g.wk),played=g.as!=='';
   const side=t=>{
     const dr=e=>e.p.d?+(e.p.d.match(/\d+$/)||[9])[0]:9;
     const gs=e=>played&&e.p.gs&&e.p.gs.includes(g.wk)?0:1;
@@ -981,7 +994,7 @@ function recapHtml(wk){
   for(const [pid,p] of Object.entries(PLAYERS)){const w=STATS[pid]?.w?.[wk];if(w)lines.push({pid,p,w})}
   if(!lines.length)return '';
   const r1=v=>Math.round(v*10)/10;
-  const row=(l,c,school)=>`<div class="row"><b>${esc(l.p.n)}</b> <span class="hint">${l.p.t}${school?` · <span style="color:var(--accent)">${esc(school)}</span>`:''}</span><br>${esc(c.line(l.w))}</div>`;
+  const row=(l,c,school)=>`<div class="row"><b>${esc(l.p.n)}</b> <span class="hint">${teamFor(l.p,wk)}${school?` · <span style="color:var(--accent)">${esc(school)}</span>`:''}</span><br>${esc(c.line(l.w))}</div>`;
   let body='';
   if(sel.length){
     for(const sc of sel){
@@ -990,7 +1003,7 @@ function recapHtml(wk){
       const sum=k=>mine.reduce((a,l)=>a+(l.w[k]||0),0);
       const tds=sum('ptd')+sum('rtd')+sum('rectd');
       const leads=RECAP_CATS.map(c=>{const l=recapLeaders(mine,c,1)[0];
-        return l?`<div class="row"><span class="hint">${c.lbl}</span><br><b>${esc(l.p.n)}</b> <span class="hint">${l.p.t}</span> ${esc(c.line(l.w))}</div>`:''}).join('');
+        return l?`<div class="row"><span class="hint">${c.lbl}</span><br><b>${esc(l.p.n)}</b> <span class="hint">${teamFor(l.p,wk)}</span> ${esc(c.line(l.w))}</div>`:''}).join('');
       body+=`<div style="margin:6px 0 12px"><div class="disp" style="font-size:18px;text-transform:uppercase;letter-spacing:.4px">${esc(sc)}</div>
         <p class="sub" style="margin:2px 0 6px">${sum('py').toLocaleString()} pass yds · ${sum('ry').toLocaleString()} rush yds · ${sum('recy').toLocaleString()} rec yds · ${tds} TD${tds===1?'':'s'} · ${r1(sum('sk'))} sack${r1(sum('sk'))===1?'':'s'} · ${sum('dint')} INT${sum('dint')===1?'':'s'}</p>
         <div class="recapgrid">${leads}</div></div>`;
@@ -1026,7 +1039,7 @@ function h2hHtml(){
     return `<tr><td>${lbl}</td>${col.map(v=>`<td class="num">${v===mx&&mx>0?`<b style="color:var(--accent)">${v.toLocaleString()}</b>`:v.toLocaleString()}</td>`).join('')}</tr>`;
   }).join('');
   // games this week with players from 2+ of the picked schools on opposite sides
-  const idx=teamIndex();
+  const idx=teamIndex(curWeek);
   const side=t=>{const c={};for(const e of idx[t]||[])c[e.school]=(c[e.school]||0)+1;return c};
   // biggest cross-school matchups: picked school X on one sideline, school Y on the other
   const faceoffs=GAMES.filter(g=>g.wk===curWeek).map(g=>{const a=side(g.away),b=side(g.home);

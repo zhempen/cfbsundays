@@ -33,4 +33,4 @@ Each summer before week 1:
 3. Commit both.
 
 Rebuild every archived season (after a conference or nickname fix, say) with
-`python3 scripts/build.py --archive 2013-2025`.
+`python3 scripts/build.py --archive all` (2013 through last season).

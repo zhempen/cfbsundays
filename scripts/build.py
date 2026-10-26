@@ -383,6 +383,7 @@ def main(yr=SEASON, archive=False):
         "fantasy_points_ppr": "fp", "fantasy_points": "fs",
     }
     weekly = defaultdict(dict)
+    wk_team = defaultdict(dict)    # pid -> {week: team}, to place traded players in the right games
     season = defaultdict(lambda: defaultdict(float))
     post_weekly = defaultdict(dict)
     post_season = defaultdict(lambda: defaultdict(float))
@@ -400,6 +401,8 @@ def main(yr=SEASON, archive=False):
                 line[dst] = int(num) if num == int(num) else num
                 sn_map[pid][dst] += num
         line["opp"] = r["opponent_team"]
+        if r.get("team"):
+            wk_team[pid][int(r["week"])] = r["team"]
         wk_map[pid][int(r["week"])] = line
 
     # ---- starters from snap counts; specialists count by games played ----
@@ -448,6 +451,7 @@ def main(yr=SEASON, archive=False):
                     unmapped += 1
                     continue
                 game_starts[pid].append(week_of[gid])
+                wk_team[pid][week_of[gid]] = team
                 if pid in active and gid in regular:   # season starters: regular season only
                     grp = POS_GROUP.get(active[pid]["pos"], active[pid]["pos"])
                     team_starts[(team, grp)][pid] += 1
@@ -498,6 +502,14 @@ def main(yr=SEASON, archive=False):
             row["st"] = 1
         if game_starts.get(pid):
             row["gs"] = sorted(set(game_starts[pid]))
+        # team history for players who changed teams mid-season: [[from_week, team], ...]
+        hist = []
+        for w in sorted(wk_team.get(pid, {})):
+            t = wk_team[pid][w]
+            if not hist or hist[-1][1] != t:
+                hist.append([w, t])
+        if len({t for _, t in hist} | {p["team"]}) > 1:
+            row["tm"] = hist
         if pid in depth:
             _, rank, abb = depth[pid]
             row["d"] = f"{abb}{rank}"
@@ -638,10 +650,23 @@ def prerender(schools, active, starters, depth):
         also = [f"<li><strong>{e(p['name'])}</strong> ({e(p['pos'])}, {e(p['team'])}), "
                 f"finished at {e(p['colleges'][0])}</li>"
                 for pid, p in sorted(by_school[name]["also"], key=lambda x: x[1]["name"])]
-        title = f"{name} players in the NFL ({SEASON})"
-        desc = (f"All {s['count']} {name}{' (' + alias + ')' if alias else ''} players "
+        nc = name == NO_COLLEGE
+        title = (f"NFL players who didn't play college football ({SEASON})" if nc
+                 else f"{name} players in the NFL ({SEASON})")
+        desc = (f"All {s['count']} NFL players in {SEASON} with no college listed, mostly "
+                f"International Pathway players: teams, positions and depth chart spots. Updated daily."
+                if nc else
+                f"All {s['count']} {name}{' (' + alias + ')' if alias else ''} players "
                 f"in the NFL in {SEASON}: current teams, positions, depth chart spots, "
                 f"and who transferred in or out. Updated daily.")
+        intro = (f"<strong>{s['count']}</strong> players in the NFL in {SEASON} have no college "
+                 f"listed in NFL roster records, including practice squads and injured reserve. "
+                 f"Most came through the International Pathway; a few may simply be missing "
+                 f"from the records. Updated {today}." if nc else
+                 f"{e(name)}{' (' + e(alias) + ')' if alias else ''} has <strong>{s['count']}</strong> players\n"
+                 f"in the NFL in {SEASON}, including practice squads and injured reserve.\n"
+                 f"Finished their college career at {e(name)}: <strong>{s['primary']}</strong>.\n"
+                 f"Updated {today} from NFL roster data.")
         page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{e(title)} - CFB Sundays</title>
@@ -654,15 +679,13 @@ def prerender(schools, active, starters, depth):
 a{{color:#a3261e}}li{{margin:4px 0}}</style></head><body>
 <p><a href="/">&larr; CFB Sundays: see these players by NFL game, live stats and rankings</a></p>
 <h1>{e(title)}</h1>
-<p>{e(name)}{' (' + e(alias) + ')' if alias else ''} has <strong>{s['count']}</strong> players
-in the NFL in {SEASON}, including practice squads and injured reserve.
-Finished their college career at {e(name)}: <strong>{s['primary']}</strong>.
-Updated {today} from NFL roster data.</p>
-<h2>Players who finished at {e(name)}</h2><ul>{''.join(rows)}</ul>
+<p>{intro}</p>
+<h2>{'Players' if nc else 'Players who finished at ' + e(name)}</h2><ul>{''.join(rows)}</ul>
 {'<h2>Played at ' + e(name) + ', finished elsewhere</h2><ul>' + ''.join(also) + '</ul>' if also else ''}
-<p><a href="/">Track {e(name)} players game by game on CFB Sundays</a> &mdash; pick your schools,
-see who is in each NFL game this week with per-game and season stats.</p>
-<p>Data: nflverse (free, open NFL data). A starter averages 50%+ of team snaps over 2+ games.</p>
+<p><a href="/">Track {'these' if nc else e(name)} players game by game on CFB Sundays</a>. Pick your schools
+and see who is in each NFL game this week with per-game and season stats.</p>
+<p>Data: nflverse (free, open NFL data) and ESPN starting lineups. A starter has the most starts at
+his position on his team this season.</p>
 </body></html>"""
         open(os.path.join(sdir, f"{slug}.html"), "w").write(page)
         urls.append(f"{DOMAIN}/s/{slug}.html")
@@ -682,7 +705,9 @@ def write_season_list():
 
 if __name__ == "__main__":
     if len(sys.argv) > 2 and sys.argv[1] == "--archive":
-        a, _, b = sys.argv[2].partition("-")
+        # "all" = every finished season: FIRST_ARCHIVE through SEASON - 1
+        rng = f"{FIRST_ARCHIVE}-{SEASON - 1}" if sys.argv[2] == "all" else sys.argv[2]
+        a, _, b = rng.partition("-")
         for yr in range(int(a), int(b or a) + 1):
             main(yr, archive=True)
         write_season_list()
