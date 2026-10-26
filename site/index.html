@@ -148,6 +148,9 @@ tr.rk.open .chev{transform:rotate(90deg)}
   <button data-v="games" class="on">NFL Week</button>
   <button data-v="boards">Leaderboards</button>
   <button data-v="rank">School rankings</button>
+  <button data-v="conf">Conferences</button>
+  <button data-v="draft">Draft</button>
+  <button data-v="fan">Fantasy</button>
   <button data-v="post" id="postTab" hidden>Playoffs</button>
 </nav>
 
@@ -315,6 +318,9 @@ function render(){
   if(tab==='games')v.innerHTML=addBtn+(openGame?gameDetail(openGame):weekView());
   else if(tab==='rank')v.innerHTML=addBtn+rankView();
   else if(tab==='post')v.innerHTML=addBtn+postView();
+  else if(tab==='conf')v.innerHTML=addBtn+confView();
+  else if(tab==='draft')v.innerHTML=addBtn+draftView();
+  else if(tab==='fan')v.innerHTML=addBtn+fanView();
   else v.innerHTML=addBtn+boardsView();
   wire(v);
 }
@@ -325,6 +331,9 @@ function wire(v){
   v.querySelectorAll('[data-w]').forEach(el=>el.onclick=()=>{curWeek=+el.dataset.w;render()});
   const bk=v.querySelector('.back');if(bk)bk.onclick=()=>{openGame=null;render()};
   const cs=v.querySelector('#catSel');if(cs)cs.onchange=()=>{rankCat=cs.value;render()};
+  const cfs=v.querySelector('#confSel');if(cfs)cfs.onchange=()=>{confCat=cfs.value;expanded=null;render()};
+  v.querySelectorAll('[data-fan]').forEach(el=>el.onclick=()=>{fanMode=el.dataset.fan;try{localStorage.setItem('fanMode',fanMode)}catch(e){};render()});
+  const rc=v.querySelector('details.recap');if(rc)rc.addEventListener('toggle',()=>{recapOpen=rc.open});
   const ab=v.querySelector('.addbtn');
   if(ab)ab.onclick=()=>{scrollTo(0,0);document.getElementById('schoolSearch').focus()};
   v.querySelectorAll('[data-bo]').forEach(el=>el.onclick=()=>{
@@ -471,6 +480,10 @@ function rankView(){
   return h;
 }
 
+function splitLabel(g,idx){
+  const c={};for(const t of [g.away,g.home])for(const e of idx[t]||[])c[e.school]=(c[e.school]||0)+1;
+  return sel.map(sc=>shortName(sc)+' '+(c[sc]||0)).join(' \u00b7 ');
+}
 function weekLabel(w){
   const g=GAMES.find(x=>x.wk===w);
   return g&&g.type!=='REG'?(ROUND_SHORT[g.type]||g.type):w;
@@ -485,6 +498,7 @@ function weekView(){
   const lbl=guysLabel();
   const cols=wks.length<=6?wks.length:Math.ceil(wks.length/2);
   let h=`<div class="weekbar" style="--cols:${cols}">`+wks.map(w=>`<button data-w="${w}" class="${w===curWeek?'on':''}">${weekLabel(w)}</button>`).join('')+`</div>`;
+  h+=recapHtml(curWeek);
   const gs=GAMES.filter(g=>g.wk===curWeek);
   h+=gs.map(g=>{
     const n=(idx[g.away]||[]).length+(idx[g.home]||[]).length;
@@ -494,7 +508,7 @@ function weekView(){
       <div><div class="teams">${g.away} @ ${g.home} ${played?`<span class="score">${g.as}–${g.hs}</span>`:''}${round}</div>
       <div class="meta">${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
       <div class="mine">${sel.length
-        ?`<div class="count ${n?'':'zero'}">${n}</div><div class="countlbl">${esc(lbl)}</div>`
+        ?`<div class="count ${n?'':'zero'}">${n}</div><div class="countlbl">${esc(sel.length>1?splitLabel(g,idx):lbl)}</div>`
         :`<div class="addcol">+ Add a college</div>`}</div>
     </div>`;
   }).join('');
@@ -554,7 +568,7 @@ function gameDetail(id){
 }
 
 function boardsView(){
-  let h='';
+  let h=h2hHtml();
   for(const sc of sel){
     const ps=playersOf(sc);
     const act=ps.filter(e=>e.p.s==='ACT');
@@ -689,6 +703,277 @@ function postView(){
   if(!scope)h=`<p class="hint" style="margin:0 0 12px">Pick schools above to see your players\u2019 playoff runs.</p>`+h;
   return h;
 }
+// ===================== shared helpers for the newer views =====================
+const SEASON_YR=2026;
+const ST_LBL={RES:'IR',DEV:'practice squad',INA:'inactive',TRT:'returning'};
+function plBits(p,extra){
+  const b=[p.d||p.p,p.t];
+  if(p.st)b.push('starter');
+  if(p.s!=='ACT')b.push(ST_LBL[p.s]||'');
+  if(extra)b.push(extra);
+  return b.filter(Boolean).join(', ');
+}
+function plRow(p,tail,extra){
+  return `<div class="row"><b>${esc(p.n)}</b> (${esc(plBits(p,extra))})${tail?` · ${tail}`:''}</div>`;
+}
+// generic ranked table with tap-to-expand rows; rows: [{key,label,value,sub,list:()=>html}]
+function rankRows(kind,rows,valFmt){
+  return rows.map((r,i)=>{
+    const k=kind+'|'+r.key+'|',open=expanded===k;
+    return `<tr class="rk${open?' open':''}" data-kind="${kind}" data-sc="${esc(r.key)}" data-cat="">
+      <td style="width:34px">${r.rank||('#'+(i+1))}</td><td><span class="chev">▸</span>${esc(r.label)}${r.mine?' <span class="badge">yours</span>':''}</td>
+      ${r.sub!==undefined?`<td class="hint">${r.sub}</td>`:''}
+      <td class="num"><b>${valFmt?valFmt(r.value):Number(r.value).toLocaleString()}</b></td></tr>`+
+      (open?`<tr><td colspan="${r.sub!==undefined?4:3}" class="expand">${r.list()}</td></tr>`:'');
+  }).join('');
+}
+function compRankLabel(sorted,i,val){ // sorted desc values
+  let higher=0,same=0;for(const v of sorted){if(v>val)higher++;else if(v===val)same++}
+  return (same>1?'T-':'#')+(higher+1);
+}
+function fmtLine(o){
+  if(!o)return '';
+  const parts=[];
+  if(o.py)parts.push(`${o.cmp||0}/${o.att||0}, ${o.py} pass yds, ${o.ptd||0} TD${o.int?`, ${o.int} INT`:''}`);
+  if(o.ry)parts.push(`${o.car||0} car, ${o.ry} rush yds${o.rtd?`, ${o.rtd} TD`:''}`);
+  if(o.rec||o.recy)parts.push(`${o.rec||0} rec, ${o.recy||0} yds${o.rectd?`, ${o.rectd} TD`:''}`);
+  if(o.sk)parts.push(`${o.sk} sack${o.sk===1?'':'s'}`);
+  if(o.dint)parts.push(`${o.dint} INT`);
+  if((o.tk||o.ast)&&!o.py&&!o.ry&&!o.recy)parts.push(`${(o.tk||0)+(o.ast||0)} tackles`);
+  if(o.fgm!==undefined)parts.push(`${o.fgm}/${o.fga||0} FG`);
+  return parts.join(' · ');
+}
+function latestStatWeek(){
+  let m=0;for(const s of Object.values(STATS))for(const w in s.w)m=Math.max(m,+w);
+  return m;
+}
+
+// ===================== Conferences tab =====================
+let confCat='active';
+const CONF_CATS=[['active','Active players'],['starters','Starters'],['total','In the league (incl. IR/PS)'],
+  ...LEAD_CATS,['fp','Fantasy pts (PPR)']];
+const G5=new Set(['American','Mountain West','Conference USA','MAC','Sun Belt']);
+function confVal(cat,p,pid){
+  const s=STATS[pid]?.s||{};
+  if(cat==='total')return 1;
+  if(cat==='active')return p.s==='ACT'?1:0;
+  if(cat==='starters')return p.s==='ACT'&&p.st?1:0;
+  if(cat==='fp')return s.fp||0;
+  return STATV[cat]?STATV[cat](s):0;
+}
+function confPairs(p){ // [[school,conf]] credited under the counting toggle
+  if(!p.cf)return [];
+  if(mode==='fin')return [[p.c[0],p.cf[0]]];
+  const seen=new Set(),out=[];
+  p.c.forEach((c,i)=>{const k=c+'|'+p.cf[i];if(!seen.has(k)){seen.add(k);out.push([c,p.cf[i]])}});
+  return out;
+}
+function confTallies(cat){
+  const conf={},bySchool={};
+  for(const [pid,p] of Object.entries(PLAYERS)){
+    const v=confVal(cat,p,pid);if(!v)continue;
+    const pairs=confPairs(p);
+    for(const cf of new Set(pairs.map(x=>x[1])))conf[cf]=(conf[cf]||0)+v;
+    for(const [sc,cf] of pairs){(bySchool[cf]=bySchool[cf]||{});bySchool[cf][sc]=(bySchool[cf][sc]||0)+v}
+  }
+  return {conf,bySchool};
+}
+function confView(){
+  const round=v=>Math.round(v*10)/10;
+  const lbl=Object.fromEntries(CONF_CATS);
+  // scoreboard
+  const cols=[['active','Active'],['starters','Starters'],['tds','Rush + Rec TDs'],['sk','Sacks'],['fp','PPR pts']];
+  const T=Object.fromEntries(cols.map(([c])=>[c,confTallies(c).conf]));
+  const groups=[['SEC',['SEC']],['Big Ten',['Big Ten']],['ACC',['ACC']],['Big 12',['Big 12']],['Pac-12',['Pac-12']],
+    ['Group of 5',[...G5]],['Independent',['Independent']],['FCS & lower',['FCS & lower']],['Big East / WAC (defunct)',['Big East','WAC']]];
+  const gv=(c,members)=>members.reduce((a,m)=>a+(T[c][m]||0),0);
+  const sbRows=groups.map(([name,m])=>({name,vals:cols.map(([c])=>round(gv(c,m)))})).sort((a,b)=>b.vals[0]-a.vals[0]);
+  const best=cols.map((_,i)=>Math.max(...sbRows.map(r=>r.vals[i])));
+  let h=`<div class="card"><h2 style="margin:0 0 4px">Conference scoreboard</h2>
+    <p class="sub" style="margin:0 0 10px">Group of 5 combines the American, Mountain West, Conference USA, MAC and Sun Belt.</p>
+    <div class="tablewrap"><table><tr><th>Conference</th>${cols.map(([,l])=>`<th class="num">${l}</th>`).join('')}</tr>
+    ${sbRows.map(r=>`<tr><td>${esc(r.name)}</td>${r.vals.map((v,i)=>`<td class="num">${v===best[i]?`<b style="color:var(--accent)">${v.toLocaleString()}</b>`:v.toLocaleString()}</td>`).join('')}</tr>`).join('')}
+    </table></div></div>`;
+  // ranked by chosen category with school breakdown
+  const {conf,bySchool}=confTallies(confCat);
+  const sorted=Object.entries(conf).sort((a,b)=>b[1]-a[1]);
+  const vals=sorted.map(x=>x[1]);
+  const rows=sorted.map(([cf,v],i)=>({key:cf,label:cf,value:round(v),rank:compRankLabel(vals,i,v),
+    list:()=>Object.entries(bySchool[cf]||{}).sort((a,b)=>b[1]-a[1]).map(([sc,x])=>
+      `<div class="row"><b${sel.includes(sc)?' style="color:var(--accent)"':''}>${esc(sc)}</b> · ${round(x).toLocaleString()}</div>`).join('')}));
+  h+=`<div class="card"><h2 style="margin:0 0 8px">Conferences by
+    <select id="confSel" style="font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:4px 8px">
+    ${CONF_CATS.map(([k,l])=>`<option value="${k}" ${k===confCat?'selected':''}>${l}</option>`).join('')}</select></h2>
+    <div class="tablewrap"><table>${rankRows('CF',rows)}</table></div>
+    <p class="hint" style="margin:8px 0 0">Tap a conference to see which schools add up to it.</p></div>
+    <p class="hint">Players count for the conference their school was in during their last season there, so a Texas player drafted in 2024 counts for the Big 12 and one drafted in 2025 counts for the SEC. ${mode==='fin'?'Counting the school each player finished at.':'Counting every school a player played for; earlier stops use the season before his last one, an estimate.'} Pac-10 and Pac-12 are combined.</p>`;
+  return h;
+}
+
+// ===================== Draft tab =====================
+const draftTag=p=>p.dr?`R${p.dr}, #${p.dp} overall, ${p.dy} (${p.dt})`:`Undrafted${p.ey?', '+p.ey:''}`;
+function draftView(){
+  let h='';
+  const act=e=>e.p.s==='ACT';
+  for(const sc of sel){
+    const ps=playersOf(sc).filter(act);
+    const byR={};for(const e of ps){const k=e.p.dr?'R'+e.p.dr:'Undrafted';(byR[k]=byR[k]||[]).push(e)}
+    const order=['R1','R2','R3','R4','R5','R6','R7','Undrafted'].filter(k=>byR[k]);
+    const id=k=>sc+'|draft|'+k;
+    const chips=order.map(k=>`<button class="chip${boardOpen===id(k)?' sel':''}" data-bo="${esc(id(k))}">${k} · ${byR[k].length}</button>`).join('');
+    let openList='';
+    if(boardOpen&&boardOpen.startsWith(sc+'|draft|')){
+      const k=boardOpen.split('|')[2];
+      openList=`<div class="expand" style="padding:6px 0 4px 4px">`+(byR[k]||[]).sort((a,b)=>(a.p.dp||999)-(b.p.dp||999)||a.p.n.localeCompare(b.p.n))
+        .map(e=>plRow(e.p,esc(draftTag(e.p)))).join('')+`</div>`;
+    }
+    const firsts=ps.filter(e=>e.p.dr===1).length;
+    const value=ps.filter(e=>e.p.st&&(!e.p.dr||e.p.dr>=4)).sort((a,b)=>(b.p.dp||999)-(a.p.dp||999));
+    const rookies=ps.filter(e=>e.p.ey===SEASON_YR).sort((a,b)=>(a.p.dp||999)-(b.p.dp||999));
+    h+=`<div class="card"><h2 style="margin:0 0 4px">${esc(sc)} draft</h2>
+      <p class="sub" style="margin:0 0 10px">${ps.length} on active rosters · ${firsts} first-rounders · ${(byR.Undrafted||[]).length} went undrafted</p>
+      <div class="chips">${chips}</div>${openList}
+      <p class="hint" style="margin:10px 0 4px">Best value: starters taken in round 4 or later, or undrafted</p>
+      <div class="expand" style="padding:2px 0 6px 4px">${value.map(e=>plRow(e.p,esc(draftTag(e.p)))).join('')||'<div class="row">None right now.</div>'}</div>
+      <p class="hint" style="margin:10px 0 4px">${SEASON_YR} rookies</p>
+      <div class="expand" style="padding:2px 0 6px 4px">${rookies.map(e=>plRow(e.p,esc(draftTag(e.p)))).join('')||'<div class="row">No rookies on active rosters.</div>'}</div>
+      </div>`;
+  }
+  if(!sel.length){
+    const tally=fn=>{const t={};for(const p of Object.values(PLAYERS)){if(p.s!=='ACT'||!fn(p))continue;for(const sc of creditSchools(p))(t[sc]=t[sc]||[]).push(p)}
+      return Object.entries(t).sort((a,b)=>b[1].length-a[1].length).slice(0,15)};
+    const card=(kind,title,fn,sortP)=>{
+      const top=tally(fn);const vals=top.map(x=>x[1].length);
+      const rows=top.map(([sc,list],i)=>({key:sc,label:sc,value:list.length,rank:compRankLabel(vals,i,list.length),
+        list:()=>list.slice().sort(sortP).map(p=>plRow(p,esc(draftTag(p)))).join('')}));
+      return `<div class="card"><h2 style="margin:0 0 8px">${title}</h2><div class="tablewrap"><table>${rankRows(kind,rows)}</table></div></div>`;
+    };
+    const byPick=(a,b)=>(a.dp||999)-(b.dp||999);
+    h+=`<p class="hint" style="margin:0 0 12px">Active NFL rosters by how players entered the league. Tap a school to see the players.</p>`;
+    h+=card('D1','First-round picks on NFL rosters',p=>p.dr===1,byPick);
+    h+=card('DU','Undrafted players on NFL rosters',p=>!p.dr,(a,b)=>(b.st?1:0)-(a.st?1:0)||a.n.localeCompare(b.n));
+    h+=card('DV','Late-round and undrafted starters',p=>p.st&&(!p.dr||p.dr>=4),(a,b)=>(b.dp||999)-(a.dp||999));
+    h+=card('DR',`${SEASON_YR} rookie class`,p=>p.ey===SEASON_YR,byPick);
+  }
+  h+=`<p class="hint">Round and pick from the NFL draft record. Undrafted means signed as a free agent. Active rosters only.</p>`;
+  return h;
+}
+
+// ===================== Fantasy tab =====================
+let fanMode='fp';try{fanMode=localStorage.getItem('fanMode')||'fp'}catch(e){}
+function fanView(){
+  const k=fanMode,lw=latestStatWeek();
+  const pts=pid=>STATS[pid]?.s?.[k]||0;
+  const games=pid=>STATS[pid]?.g||0;
+  const wkPts=(pid,w)=>STATS[pid]?.w?.[w]?.[k]||0;
+  const r1=v=>Math.round(v*10)/10;
+  let h=`<div class="chips" style="margin:0 0 12px">
+    <button class="chip${k==='fp'?' sel':''}" data-fan="fp">PPR</button>
+    <button class="chip${k==='fs'?' sel':''}" data-fan="fs">Standard</button></div>`;
+  // school totals for ranking
+  const tot={};
+  for(const [pid,p] of Object.entries(PLAYERS)){const v=pts(pid);if(!v)continue;for(const sc of creditSchools(p))tot[sc]=(tot[sc]||0)+v}
+  const sortedTot=Object.entries(tot).sort((a,b)=>b[1]-a[1]);const totVals=sortedTot.map(x=>x[1]);
+  const scorerRow=(pid,p)=>plRow(p,`<b>${r1(pts(pid))}</b> pts · ${games(pid)?r1(pts(pid)/games(pid)):0}/gm${lw?` · Wk ${lw}: ${r1(wkPts(pid,lw))}`:''}`);
+  for(const sc of sel){
+    const list=Object.entries(PLAYERS).filter(([pid,p])=>creditSchools(p).includes(sc)&&pts(pid)>0).sort((a,b)=>pts(b[0])-pts(a[0]));
+    const i=sortedTot.findIndex(x=>x[0]===sc);
+    const wkTot=list.reduce((a,[pid])=>a+wkPts(pid,lw),0);
+    const kk='FS|'+sc+'|',open=expanded===kk;
+    h+=`<div class="card"><h2 style="margin:0 0 4px">${esc(sc)} fantasy</h2>
+      <p class="sub" style="margin:0 0 10px">${r1(tot[sc]||0).toLocaleString()} season pts · ${i>=0?compRankLabel(totVals,i,tot[sc])+' of '+totVals.length+' schools':'unranked'}${lw?` · Week ${lw}: ${r1(wkTot)} pts`:''}</p>
+      <div class="expand" style="padding:2px 0 4px 4px">${list.slice(0,10).map(([pid,p])=>scorerRow(pid,p)).join('')||'<div class="row">No fantasy points yet.</div>'}</div>
+      ${list.length>10?`<table><tr class="rk${open?' open':''}" data-kind="FS" data-sc="${esc(sc)}" data-cat=""><td><span class="chev">▸</span>All ${list.length} scorers</td></tr>
+        ${open?`<tr><td class="expand">${list.slice(10).map(([pid,p])=>scorerRow(pid,p)).join('')}</td></tr>`:''}</table>`:''}
+      </div>`;
+  }
+  if(!sel.length){
+    const rows=sortedTot.slice(0,25).map(([sc,v],i)=>{
+      let best=null,bv=0;for(const [pid,p] of Object.entries(PLAYERS)){if(!creditSchools(p).includes(sc))continue;const x=pts(pid);if(x>bv){bv=x;best=p}}
+      return {key:sc,label:sc,value:r1(v),rank:compRankLabel(totVals,i,v),sub:best?`${esc(best.n)} (${best.t}) · ${r1(bv)}`:'',
+        list:()=>Object.entries(PLAYERS).filter(([pid,p])=>creditSchools(p).includes(sc)&&pts(pid)>0).sort((a,b)=>pts(b[0])-pts(a[0])).map(([pid,p])=>scorerRow(pid,p)).join('')};
+    });
+    h+=`<div class="card"><h2 style="margin:0 0 8px">Fantasy points by school</h2><div class="tablewrap"><table>${rankRows('FT',rows)}</table></div>
+      <p class="hint" style="margin:8px 0 0">Tap a school to see every scorer.</p></div>`;
+    const topP=Object.entries(PLAYERS).filter(([pid])=>pts(pid)>0).sort((a,b)=>pts(b[0])-pts(a[0])).slice(0,25);
+    h+=`<div class="card"><h2 style="margin:0 0 8px">Top 25 fantasy players and where they played</h2>
+      <div class="expand" style="padding:2px 0 4px 4px">${topP.map(([pid,p])=>plRow(p,`<b>${r1(pts(pid))}</b> pts · <span style="color:var(--accent)">${esc(p.c[0])}</span>`)).join('')}</div></div>`;
+  }
+  h+=`<p class="hint">${k==='fp'?'PPR (a point per catch)':'Standard scoring'} from the official weekly stats. Offensive players and kickers; defensive players don’t score in standard leagues.</p>`;
+  return h;
+}
+
+// ===================== Weekly recap (top of NFL Week) =====================
+function recapHtml(wk){
+  const lines=[];
+  for(const [pid,p] of Object.entries(PLAYERS)){const w=STATS[pid]?.w?.[wk];if(w)lines.push({pid,p,w})}
+  if(!lines.length)return '';
+  const r1=v=>Math.round(v*10)/10;
+  const offense=l=>(l.w.fp||0)>0;
+  const defScore=w=>(w.sk||0)*3+(w.dint||0)*4+((w.tk||0)+(w.ast||0))*0.5;
+  const isDef=l=>(l.w.sk||l.w.dint||((l.w.tk||0)+(l.w.ast||0))>=6)&&!(l.w.fp>0);
+  const lineRow=(l,school)=>`<div class="row"><b>${esc(l.p.n)}</b> <span class="hint">${l.p.t}${school?` · <span style="color:var(--accent)">${esc(school)}</span>`:''}</span><br>${esc(fmtLine(l.w))}${l.w.fp?` <span class="nflrk">${r1(l.w.fp)} PPR</span>`:''}</div>`;
+  let body='';
+  if(sel.length){
+    for(const sc of sel){
+      const mine=lines.filter(l=>creditSchools(l.p).includes(sc));
+      if(!mine.length){body+=`<p class="hint" style="margin:8px 0">${esc(sc)}: no stat lines this week.</p>`;continue}
+      const sum=k=>mine.reduce((a,l)=>a+(l.w[k]||0),0);
+      const tds=sum('ptd')+sum('rtd')+sum('rectd');
+      const top=mine.filter(offense).sort((a,b)=>(b.w.fp||0)-(a.w.fp||0)).slice(0,3);
+      const def=mine.filter(isDef).sort((a,b)=>defScore(b.w)-defScore(a.w)).slice(0,2);
+      body+=`<div style="margin:6px 0 12px"><div class="disp" style="font-size:18px;text-transform:uppercase;letter-spacing:.4px">${esc(sc)}</div>
+        <p class="sub" style="margin:2px 0 6px">${sum('py').toLocaleString()} pass yds · ${sum('ry').toLocaleString()} rush yds · ${sum('recy').toLocaleString()} rec yds · ${tds} TD${tds===1?'':'s'} · ${r1(sum('sk'))} sack${r1(sum('sk'))===1?'':'s'} · ${sum('dint')} INT${sum('dint')===1?'':'s'}</p>
+        <div class="expand" style="padding:0 0 0 4px">${top.map(l=>lineRow(l)).join('')}${def.map(l=>lineRow(l)).join('')}</div></div>`;
+    }
+  }else{
+    const top=lines.filter(offense).sort((a,b)=>(b.w.fp||0)-(a.w.fp||0)).slice(0,8);
+    const def=lines.filter(isDef).sort((a,b)=>defScore(b.w)-defScore(a.w)).slice(0,4);
+    body=`<div class="expand" style="padding:0 0 0 4px">${top.map(l=>lineRow(l,l.p.c[0])).join('')}
+      <p class="hint" style="margin:8px 0 2px">On defense</p>${def.map(l=>lineRow(l,l.p.c[0])).join('')}</div>`;
+  }
+  return `<details class="card recap" ${recapOpen?'open':''}><summary class="disp" style="font-size:20px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">Week ${weekLabel(wk)} recap${sel.length?'':': best by former college players'}</summary>${body}</details>`;
+}
+let recapOpen=true;
+
+// ===================== Head-to-head (Leaderboards, 2+ schools) =====================
+const sumv=o=>Object.values(o).reduce((a,b)=>a+b,0);
+function h2hHtml(){
+  if(sel.length<2)return '';
+  const S=sel.slice(0,4);
+  const r1=v=>Math.round(v*10)/10;
+  const metrics=[['Active players',p=>p.s==='ACT'?1:0],['Starters',p=>p.s==='ACT'&&p.st?1:0],['First-rounders (active)',p=>p.s==='ACT'&&p.dr===1?1:0],
+    ['Pass yds',(p,s)=>s.py||0],['Pass TDs',(p,s)=>s.ptd||0],['Rush yds',(p,s)=>s.ry||0],['Rec yds',(p,s)=>s.recy||0],
+    ['Rush + Rec TDs',(p,s)=>(s.rtd||0)+(s.rectd||0)],['Sacks',(p,s)=>s.sk||0],['Tackles',(p,s)=>(s.tk||0)+(s.ast||0)],
+    ['INTs',(p,s)=>s.dint||0],['Fantasy pts (PPR)',(p,s)=>s.fp||0]];
+  const vals=S.map(sc=>metrics.map(()=>0));
+  for(const [pid,p] of Object.entries(PLAYERS)){
+    const s=STATS[pid]?.s||{};const cs=creditSchools(p);
+    S.forEach((sc,i)=>{if(cs.includes(sc))metrics.forEach(([,fn],j)=>{vals[i][j]+=fn(p,s)})});
+  }
+  const wins=S.map(()=>0);
+  const rows=metrics.map(([lbl],j)=>{
+    const col=S.map((_,i)=>r1(vals[i][j]));const mx=Math.max(...col);
+    const leaders=col.filter(v=>v===mx).length;
+    if(mx>0&&leaders===1)wins[col.indexOf(mx)]++;
+    return `<tr><td>${lbl}</td>${col.map(v=>`<td class="num">${v===mx&&mx>0?`<b style="color:var(--accent)">${v.toLocaleString()}</b>`:v.toLocaleString()}</td>`).join('')}</tr>`;
+  }).join('');
+  // games this week with players from 2+ of the picked schools on opposite sides
+  const idx=teamIndex();
+  const side=t=>{const c={};for(const e of idx[t]||[])c[e.school]=(c[e.school]||0)+1;return c};
+  // biggest cross-school matchups: picked school X on one sideline, school Y on the other
+  const faceoffs=GAMES.filter(g=>g.wk===curWeek).map(g=>{const a=side(g.away),b=side(g.home);
+    let score=0;for(const x of S)for(const y of S)if(x!==y)score=Math.max(score,Math.min(a[x]||0,b[y]||0));
+    return {g,a,b,score}}).filter(f=>f.score>0).sort((p,q)=>q.score-p.score||(sumv(q.a)+sumv(q.b))-(sumv(p.a)+sumv(p.b))).slice(0,3);
+  const fmtSide=c=>Object.entries(c).map(([s,n])=>`${esc(shortName(s))} ${n}`).join(', ')||'none';
+  return `<div class="card"><h2 style="margin:0 0 8px">Head to head</h2>
+    <div class="tablewrap"><table><tr><th></th>${S.map(sc=>`<th class="num">${esc(shortName(sc))}</th>`).join('')}</tr>${rows}
+    <tr><td><b>Categories won</b></td>${wins.map(w=>`<td class="num"><b>${w}</b></td>`).join('')}</tr></table></div>
+    ${faceoffs.length?`<p class="hint" style="margin:12px 0 4px">Biggest matchups in week ${weekLabel(curWeek)}</p>
+      <div class="expand" style="padding:0 0 0 4px">${faceoffs.map(f=>`<div class="row"><b>${f.g.away}</b> (${fmtSide(f.a)}) @ <b>${f.g.home}</b> (${fmtSide(f.b)})</div>`).join('')}</div>`:''}
+    ${sel.length>4?'<p class="hint" style="margin:8px 0 0">Showing your first four schools.</p>':''}</div>`;
+}
+
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 boot();
 document.getElementById('noteForm').onsubmit=async e=>{

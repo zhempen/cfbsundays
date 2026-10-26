@@ -6,6 +6,8 @@ charts, schedule) and writes the small JSON files the static site reads.
 Run from the repo root: python3 scripts/build.py
 """
 import csv, io, json, os, re, statistics, sys, urllib.request
+sys.path.insert(0, os.path.dirname(__file__))
+from conferences import conference
 from collections import defaultdict
 
 SEASON = int(os.environ.get("SEASON", "2026"))
@@ -19,6 +21,7 @@ SOURCES = {
     "snaps": f"{NFLVERSE}/snap_counts/snap_counts_{SEASON}.csv",
     "depth": f"{NFLVERSE}/depth_charts/depth_charts_{SEASON}.csv",
     "games": "https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv",
+    "draft": f"{NFLVERSE}/draft_picks/draft_picks.csv",
 }
 
 def fetch_csv(url):
@@ -37,6 +40,10 @@ RENAME = {
     "Connecticut": "UConn", "Texas-San Antonio": "UTSA", "Texas-El Paso": "UTEP",
     "Florida International": "FIU", "Florida Atlantic": "FAU",
     "Appalachian State": "App State", "Miami (Ohio)": "Miami (OH)",
+    # duplicates and long official forms in the roster feed
+    "Louisiana-Lafayette": "Louisiana", "University of South Florida": "South Florida",
+    "UMass Amherst": "UMass", "Middle Tennessee State": "Middle Tennessee",
+    "Texas State-San Marcos": "Texas State", "Jackson State University": "Jackson State",
 }
 
 ALIASES = {
@@ -141,8 +148,8 @@ ALIASES = {
     "Southern Miss": ["USM", "Golden Eagles"],
     "Penn": ["UPenn", "Quakers", "Pennsylvania"],
     "UConn": ["Huskies"],
-    "Massachusetts": ["UMass", "Minutemen"],
-    "Alabama-Birmingham": ["UAB", "Blazers"],
+    "UMass": ["Massachusetts", "Minutemen"],
+    "UAB": ["Alabama-Birmingham", "Blazers"],
     "UTSA": ["Roadrunners"],
     "UTEP": ["Miners"],
     "Nevada": ["Wolf Pack"],
@@ -195,6 +202,8 @@ def main():
     snaps_rows = fetch_csv(SOURCES["snaps"])
     depth_rows = fetch_csv(SOURCES["depth"])
     games_rows = fetch_csv(SOURCES["games"])
+    draft_rows = fetch_csv(SOURCES["draft"])
+    draft = {r["gsis_id"]: r for r in draft_rows if r.get("gsis_id")}
 
     # ---- rosters: dedupe by player, keep latest roster week ----
     players, pfr_to_pid, name_team_to_pid = {}, {}, {}
@@ -213,7 +222,8 @@ def main():
                     for c in (r["college"] or "").split(";") if c.strip()]
         players[pid] = {"_wk": wk, "name": r["full_name"], "team": r["team"],
                         "pos": r["position"], "status": r["status"],
-                        "jersey": r["jersey_number"], "colleges": colleges}
+                        "jersey": r["jersey_number"], "colleges": colleges,
+                        "entry": int(r["entry_year"]) if r["entry_year"] else None}
 
     active = {pid: p for pid, p in players.items()
               if p["status"] in KEEP_STATUS and p["colleges"]}
@@ -245,6 +255,7 @@ def main():
         "def_tackles_solo": "tk", "def_tackle_assists": "ast", "def_sacks": "sk",
         "def_interceptions": "dint", "def_pass_defended": "pd",
         "fg_made": "fgm", "fg_att": "fga", "pat_made": "xpm",
+        "fantasy_points_ppr": "fp", "fantasy_points": "fs",
     }
     weekly = defaultdict(dict)
     season = defaultdict(lambda: defaultdict(float))
@@ -314,6 +325,17 @@ def main():
         if pid in depth:
             _, rank, abb = depth[pid]
             row["d"] = f"{abb}{rank}"
+        # conference of each college stop in the player's season there:
+        # final school = entry year - 1; earlier stops estimated at entry - 2
+        ey = p["entry"]
+        if ey:
+            row["ey"] = ey
+            row["cf"] = [conference(c, ey - 1 if i == 0 else ey - 2)
+                         for i, c in enumerate(p["colleges"])]
+        d = draft.get(pid)
+        if d and d.get("round"):
+            row["dr"] = int(d["round"]); row["dp"] = int(d["pick"])
+            row["dy"] = int(d["season"]); row["dt"] = d["team"]
         pout[pid] = row
 
     # ---- stats.json ----
