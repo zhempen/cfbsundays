@@ -57,6 +57,7 @@ input[type=search]{width:100%;padding:12px 14px;font:inherit;font-size:16px;bord
 .game .mine{margin-left:auto;text-align:right;flex-shrink:0}
 .count{font-family:"Barlow Condensed";font-size:22px;line-height:1;color:var(--accent)}
 .count.zero{color:var(--muted);opacity:.45}
+.addcol{font-family:"Barlow Condensed";font-size:15px;letter-spacing:.4px;text-transform:uppercase;color:var(--accent);white-space:nowrap}
 .countlbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .score{font-variant-numeric:tabular-nums}
 .back{background:none;border:none;color:var(--accent);font:inherit;cursor:pointer;padding:0;margin:14px 0 6px}
@@ -243,7 +244,7 @@ document.getElementById('tabs').onclick=e=>{
 
 function render(){
   const v=document.getElementById('view');
-  if(!sel.length&&tab!=='rank'&&tab!=='post'){v.innerHTML='<div class="empty">Add a school to get started.</div>';return}
+  if(!sel.length)openGame=null;
   if(tab==='games')v.innerHTML=openGame?gameDetail(openGame):weekView();
   else if(tab==='rank')v.innerHTML=rankView();
   else if(tab==='post')v.innerHTML=postView();
@@ -251,7 +252,9 @@ function render(){
   wire(v);
 }
 function wire(v){
-  v.querySelectorAll('[data-g]').forEach(el=>el.onclick=()=>{openGame=el.dataset.g;render();scrollTo(0,0)});
+  v.querySelectorAll('[data-g]').forEach(el=>el.onclick=()=>{
+    if(!sel.length){scrollTo(0,0);document.getElementById('schoolSearch').focus();return}
+    openGame=el.dataset.g;render();scrollTo(0,0)});
   v.querySelectorAll('[data-w]').forEach(el=>el.onclick=()=>{curWeek=+el.dataset.w;render()});
   const bk=v.querySelector('.back');if(bk)bk.onclick=()=>{openGame=null;render()};
   const cs=v.querySelector('#catSel');if(cs)cs.onchange=()=>{rankCat=cs.value;render()};
@@ -376,18 +379,12 @@ function rankView(){
       <div class="tablewrap"><table>
       <tr><th>Category</th><th class="num">Rank</th><th class="num">Value</th><th>Context</th></tr>${rows}</table></div></div>`;
   }
-  if(!sel.length){
-    h+=`<p class="hint" style="margin:0 0 12px">Top 10 in every category. Pick schools above to see their full rank cards.</p>`;
-    for(const [cat,lbl] of Object.entries(CATS)){
-      h+=`<div class="card"><h2 style="margin:0 0 8px">${lbl}</h2>
-        <div class="tablewrap"><table>${topList(cat,10)}</table></div></div>`;
-    }
-  }else{
-    h+=`<div class="card"><h2 style="margin:0 0 8px">Top 10 ·
-      <select id="catSel" style="font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:4px 8px">
-      ${Object.entries(CATS).map(([k,lbl])=>`<option value="${k}" ${k===rankCat?'selected':''}>${lbl}</option>`).join('')}</select></h2>
-      <div class="tablewrap"><table>${topList(rankCat,10)}</table></div></div>`;
-  }
+  const topN=sel.length?10:25;
+  if(!sel.length)h+=`<p class="hint" style="margin:0 0 12px">Pick a category to see the top schools. Add schools above to see their full rank cards.</p>`;
+  h+=`<div class="card"><h2 style="margin:0 0 8px">Top ${topN} ·
+    <select id="catSel" style="font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:4px 8px">
+    ${Object.entries(CATS).map(([k,lbl])=>`<option value="${k}" ${k===rankCat?'selected':''}>${lbl}</option>`).join('')}</select></h2>
+    <div class="tablewrap"><table>${topList(rankCat,topN)}</table></div></div>`;
   h+=`<p class="hint">Tap a category to see which of your players are behind the number. Ties share a rank (T-1 means tied for first). ${mode==='fin'?'Rankings credit the school a player finished at.':'Rankings credit every school a player played for, so transfers count for each stop.'} A starter is anyone taking 50%+ of his team's offensive or defensive snaps on average, minimum two games.</p>`;
   return h;
 }
@@ -414,7 +411,9 @@ function weekView(){
     return `<div class="game" data-g="${g.id}">
       <div><div class="teams">${g.away} @ ${g.home} ${played?`<span class="score">${g.as}–${g.hs}</span>`:''}${round}</div>
       <div class="meta">${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
-      <div class="mine"><div class="count ${n?'':'zero'}">${n}</div><div class="countlbl">${esc(lbl)}</div></div>
+      <div class="mine">${sel.length
+        ?`<div class="count ${n?'':'zero'}">${n}</div><div class="countlbl">${esc(lbl)}</div>`
+        :`<div class="addcol">+ Add a college</div>`}</div>
     </div>`;
   }).join('');
   return h;
@@ -508,6 +507,26 @@ function boardsView(){
       ${top('sk').slice(0,2).map(x=>row(x,'sacks')).join('')}
       ${top('fgm').slice(0,1).map(x=>row(x,'FG')).join('')}
       </table></div></div>`;
+  }
+  if(!sel.length){
+    buildRanks();
+    const LEAD=[['py','Pass yds'],['ry','Rush yds'],['recy','Rec yds'],['tds','Rush + rec TDs'],
+                ['sk','Sacks'],['tkl','Tackles'],['dint','INTs'],['fgm','FG made']];
+    h+=`<p class="hint" style="margin:0 0 12px">Season stat totals by school, with each school\u2019s top contributor. Add schools above for their player leaderboards.</p>`;
+    for(const [cat,lbl] of LEAD){
+      const rows=(RANKS[cat]||[]).slice(0,5).map(([sc,v],i)=>{
+        let best=null,bv=0;
+        for(const [pid,p] of Object.entries(PLAYERS)){
+          if(!creditSchools(p).includes(sc))continue;
+          const x=STATV[cat](STATS[pid]?.s||{});
+          if(x>bv){bv=x;best=p}
+        }
+        return `<tr><td style="width:34px">#${i+1}</td><td>${esc(sc)}</td>
+          <td class="hint">${best?`${esc(best.n)} (${best.t}) \u00b7 ${bv.toLocaleString()}`:''}</td>
+          <td class="num"><b>${v.toLocaleString()}</b></td></tr>`;
+      }).join('');
+      h+=`<div class="card"><h2 style="margin:0 0 8px">${lbl}</h2><div class="tablewrap"><table>${rows}</table></div></div>`;
+    }
   }
   const tally=SCHOOLS.slice(0,15);
   h+=`<div class="card"><h2 style="margin:0 0 8px">Most players in the NFL, by school</h2>
