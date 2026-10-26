@@ -234,7 +234,7 @@ async function boot(){
   if(Array.isArray(meta.ap)&&meta.ap.length)document.getElementById('schoolSearch').placeholder=
     'Search a school ('+meta.ap.slice(0,3).map(shortName).join(', ')+'\u2026)';
   const h=location.hash.replace('#','');
-  if(h==='boards')tab='boards';
+  if([...document.querySelectorAll('#tabs button')].some(b=>b.dataset.v===h&&!b.hidden))tab=h;
   renderPicker();render();
   if(!sel.length&&matchMedia('(pointer:fine)').matches)document.getElementById('schoolSearch').focus();
 }
@@ -359,13 +359,14 @@ document.getElementById('modeSel').onchange=e=>{mode=e.target.value;try{localSto
 document.getElementById('tabs').onclick=e=>{
   const b=e.target.closest('button');if(!b)return;
   tab=b.dataset.v;openGame=null;
-  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  history.replaceState(null,'',location.pathname+location.search+(tab==='games'?'':'#'+tab));
   render();
 };
 
 function render(){
   const v=document.getElementById('view');
   if(!sel.length)openGame=null;
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.v===tab));
   const addBtn=sel.length?'':'<button class="addbtn" type="button">+ Add a school</button>';
   if(tab==='games')v.innerHTML=addBtn+(openGame?gameDetail(openGame):weekView());
   else if(tab==='rank')v.innerHTML=addBtn+rankView();
@@ -449,9 +450,11 @@ function topList(cat,n){
   let cut=Math.min(n,rows.length);
   while(cut<rows.length&&rows[cut][1]===rows[n-1]?.[1])cut++; // include ties at the cutoff
   cut=Math.min(cut,n+8);
-  return rows.slice(0,cut).map((x,i)=>
-    `<tr${sel.includes(x[0])?' style="color:var(--accent);font-weight:600"':''}><td style="width:40px">${rankLabel(rows,i)}</td><td>${esc(x[0])}</td><td class="num">${x[1].toLocaleString()}</td></tr>`
-  ).join('');
+  return rows.slice(0,cut).map((x,i)=>{
+    const open=expanded==='TOP|'+x[0]+'|'+cat;
+    return `<tr class="rk${open?' open':''}" data-kind="TOP" data-sc="${esc(x[0])}" data-cat="${cat}"${sel.includes(x[0])?' style="color:var(--accent);font-weight:600"':''}><td style="width:46px;white-space:nowrap">${rankLabel(rows,i)}</td><td><span class="chev">\u25b8</span>${esc(x[0])}</td><td class="num">${x[1].toLocaleString()}</td></tr>`+
+      (open?`<tr><td colspan="3" class="expand">${expandHtml(cat,x[0])}</td></tr>`:'');
+  }).join('');
 }
 const GRP=p=>({T:'OL',G:'OL',C:'OL',OT:'OL',OG:'OL',DE:'DL',DT:'DL',NT:'DL',EDGE:'DL',
   ILB:'LB',OLB:'LB',MLB:'LB',CB:'DB',S:'DB',FS:'DB',SS:'DB',FB:'RB',LS:'ST'}[p]||p);
