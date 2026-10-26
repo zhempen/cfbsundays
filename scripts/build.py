@@ -705,11 +705,14 @@ def prerender(schools, active, starters, depth):
 <link rel="canonical" href="{DOMAIN}/s/{slug}.html">
 <meta property="og:title" content="{e(title)}">
 <meta property="og:description" content="{e(desc)}">
-<style>body{{font:16px/1.6 system-ui,sans-serif;max-width:680px;margin:0 auto;padding:16px;color:#1b1b18;background:#f6f5f1}}
-@media(prefers-color-scheme:dark){{body{{color:#ece9df;background:#16150f}}a{{color:#d9544a}}}}
-a{{color:#a3261e}}li{{margin:4px 0}}</style>
+<style>body{{font:16px/1.6 system-ui,sans-serif;max-width:680px;margin:0 auto;padding:0 16px 32px;color:#0c1526;background:#e4e9f0}}
+@media(prefers-color-scheme:dark){{body{{color:#e7edf8;background:#090f1d}}a{{color:#6f9bff}}}}
+a{{color:#1546b8;text-underline-offset:3px}}li{{margin:4px 0}}
+header{{margin:0 -16px 16px;padding:14px 16px;background:#1546b8;border-bottom:3px solid #ffc629}}
+header a{{color:#fff;font-weight:700}}
+h1{{font-style:oblique 9deg;text-transform:uppercase;line-height:1.1}}</style>
 <script data-goatcounter="https://cfbsundays.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script></head><body>
-<p><a href="/">&larr; CFB Sundays: see these players by NFL game, live stats and rankings</a></p>
+<header><a href="/">&larr; CFB Sundays: see these players by NFL game, live stats and rankings</a></header>
 <h1>{e(title)}</h1>
 <p>{intro}</p>
 <h2>{'Players' if nc else 'Players who finished at ' + e(name)}</h2><ul>{''.join(rows)}</ul>

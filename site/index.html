@@ -12,135 +12,258 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <style>
-/* Layout: one narrow column, scoreboard-style condensed display type, chips per school */
+/* CFB Sundays: an early-2000s console college football menu. The site is the team-select screen:
+   glossy team-color band, dark menu rail with a gold selection bar, score-bug game rows. Colors only, never logos. */
+@font-face{font-family:"Saira";src:url(/fonts/saira-latin-var.woff2) format("woff2-variations"),url(/fonts/saira-latin-var.woff2) format("woff2");
+  font-weight:100 900;font-stretch:50% 125%;font-style:normal;font-display:swap}
+@font-face{font-family:"Saira";src:url(/fonts/saira-latin-var-italic.woff2) format("woff2-variations"),url(/fonts/saira-latin-var-italic.woff2) format("woff2");
+  font-weight:100 900;font-stretch:50% 125%;font-style:italic;font-display:swap}
 :root{
-  --bg:#f6f5f1; --surface:#ffffff; --ink:#1b1b18; --muted:#6e6a60;
-  --line:#dedacf; --accent:#a3261e; --accent-ink:#ffffff; --chip:#eceadf;
-  --badge:#8a6d00; --badge-bg:#f5ecc8;
+  --bg:#cdd5df; --surface:#edf1f6; --ink:#0c1526; --muted:#3d4a5f; --line:#aeb9c8;
+  --accent:#1546b8; --accent-ink:#ffffff; --chip:#dde3eb;
+  --gold:#ffc629; --gold-ink:#1b1400; --rail:#0e1830; --rail-ink:#c7d2e8;
+  --badge:#5c4300; --badge-bg:#ffe9a8;
+  --team1:#1546b8; --team2:#ffc629; --team-ink:#ffffff;
+  --lift:inset 0 1px 0 rgba(255,255,255,.75),0 1px 2px rgba(12,21,38,.08),0 8px 18px -10px rgba(12,21,38,.35);
+  --disp:"Saira",system-ui,sans-serif;
+  color-scheme:light;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#16150f; --surface:#201f17; --ink:#ece9df; --muted:#a09a8a;
-  --line:#37352a; --accent:#d9544a; --accent-ink:#1b0d0c; --chip:#2b2a1f;
-  --badge:#e3c45a; --badge-bg:#352e14; color-scheme:dark
+  --bg:#090f1d; --surface:#111a2e; --ink:#e7edf8; --muted:#97a6c0; --line:#24314b;
+  --accent:#6f9bff; --accent-ink:#06102a; --chip:#1a2540;
+  --rail:#050a16; --rail-ink:#b9c6df; --badge:#ffd65c; --badge-bg:#3a2e08;
+  --lift:inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.4),0 10px 22px -12px rgba(0,0,0,.8);
+  color-scheme:dark
 }}
 :root[data-theme="dark"]{
-  --bg:#16150f; --surface:#201f17; --ink:#ece9df; --muted:#a09a8a;
-  --line:#37352a; --accent:#d9544a; --accent-ink:#1b0d0c; --chip:#2b2a1f;
-  --badge:#e3c45a; --badge-bg:#352e14; color-scheme:dark
+  --bg:#090f1d; --surface:#111a2e; --ink:#e7edf8; --muted:#97a6c0; --line:#24314b;
+  --accent:#6f9bff; --accent-ink:#06102a; --chip:#1a2540;
+  --rail:#050a16; --rail-ink:#b9c6df; --badge:#ffd65c; --badge-bg:#3a2e08;
+  --lift:inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.4),0 10px 22px -12px rgba(0,0,0,.8);
+  color-scheme:dark
 }
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font:15px/1.5 Barlow,system-ui,sans-serif;
-  padding-left:max(16px,env(safe-area-inset-left,0px));
-  padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-block:0 48px}
-.wrap{max-width:720px;margin:0 auto}
-h1,h2,h3,.disp{font-family:"Barlow Condensed",Barlow,system-ui,sans-serif;text-wrap:balance}
-h1{font-size:34px;line-height:1.05;margin:20px 0 2px;text-transform:uppercase;letter-spacing:.5px}
+html{scrollbar-color:var(--accent) var(--chip)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--disp);font-stretch:96%;
+  font-variant-numeric:tabular-nums;padding-bottom:48px;caret-color:var(--accent)}
+::selection{background:var(--gold);color:var(--gold-ink)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+a{color:var(--accent);text-underline-offset:3px}
+.wrap{max-width:760px;margin:0 auto;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3,.disp{font-family:var(--disp);font-stretch:70%;font-weight:800;font-style:italic;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance}
+h2{font-size:24px;line-height:1.05}
+h3{font-size:19px}
 .sub{color:var(--muted);margin:0 0 14px;font-size:14px}
-nav{display:flex;gap:6px;margin:0 0 16px;border-bottom:2px solid var(--line);flex-wrap:wrap}
-nav button{font-family:"Barlow Condensed";font-size:17px;text-transform:uppercase;letter-spacing:.6px;
-  background:none;border:none;color:var(--muted);padding:8px 10px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
-nav button.on{color:var(--ink);border-bottom-color:var(--accent)}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.hint{color:var(--muted);font-size:13px;margin:4px 0 0}
+
+/* the band: lead school's colors, glossy, with a slanted stripe in the second color */
+.band{position:relative;overflow:hidden;color:var(--team-ink);background:var(--team1);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.4);view-transition-name:band}
+.band::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.26) 0,rgba(255,255,255,.08) 46%,rgba(0,0,0,.06) 54%,rgba(0,0,0,.26) 100%)}
+.bandin{position:relative;z-index:1;padding-top:18px;padding-bottom:14px}
+.bandin::after{content:"";position:absolute;top:0;bottom:0;right:calc((100% - 100vw)/2);width:calc((100vw - 100%)/2 + min(34%,250px));z-index:-1;
+  background:var(--team2);clip-path:polygon(84px 0,100% 0,100% 100%,0 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+.bandmeta{position:absolute;top:14px;right:max(16px,env(safe-area-inset-right,0px));margin:0;font-family:var(--disp);font-stretch:72%;font-weight:800;
+  font-style:italic;text-transform:uppercase;letter-spacing:.05em;font-size:15px;color:var(--team2-ink,#1b1400)}
+.wordmark{font-size:clamp(40px,8vw,58px);line-height:.92;margin:0;text-shadow:0 2px 0 rgba(0,0,0,.28)}
+.tag{margin:6px 0 0;font-size:15px;max-width:min(30em,62%)}
+.tag a{color:inherit;font-weight:700;white-space:nowrap}
+
+/* the menu rail: dark strip, slanted labels, gold selection bar */
+nav{background:var(--rail);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 var(--gold)}
+nav .navin{display:flex;flex-wrap:wrap;gap:2px 4px;padding-top:6px;padding-bottom:6px}
+nav button{position:relative;font:inherit;font-family:var(--disp);font-stretch:72%;font-weight:700;font-style:italic;
+  font-size:17px;text-transform:uppercase;letter-spacing:.03em;background:none;border:none;color:var(--rail-ink);
+  padding:7px 14px;cursor:pointer;isolation:isolate}
+nav button .hl{position:absolute;inset:2px 0;z-index:-1;background:var(--gold);transform:skewX(-14deg);border-radius:2px;opacity:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -2px 0 rgba(0,0,0,.18)}
+nav button.on{color:var(--gold-ink)}
+nav button.on .hl{opacity:1;view-transition-name:tabhl}
+nav button:not(.on):hover{color:#fff}
+::view-transition-old(root),::view-transition-new(root){animation:none}
+::view-transition-group(tabhl){animation-duration:.28s;animation-timing-function:cubic-bezier(.16,1,.3,1)}
+::view-transition-new(band){animation:wipe .5s cubic-bezier(.16,1,.3,1) both}
+::view-transition-old(band){animation:none}
+@keyframes wipe{from{clip-path:polygon(0 0,0 0,-12% 100%,-12% 100%)}to{clip-path:polygon(0 0,112% 0,100% 100%,-12% 100%)}}
+@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-new(*),::view-transition-old(*){animation:none!important}}
+
+.picker{padding-top:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}
+.chip{font:inherit;font-size:13px;font-weight:600;background:var(--chip);color:var(--ink);border:1px solid var(--line);
+  padding:4px 12px;cursor:pointer;transform:skewX(-12deg);border-radius:2px}
+.chip>span{display:inline-block;transform:skewX(12deg)}
+.chip.sel{--c1:var(--accent);--c2:var(--gold);--ci:#fff;background:linear-gradient(90deg,var(--c2) 0 7px,var(--c1) 7px);color:var(--ci);
+  border-color:transparent;font-family:var(--disp);font-stretch:74%;font-weight:800;text-transform:uppercase;letter-spacing:.03em;
+  font-size:15px;padding:5px 14px 5px 18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px -2px rgba(0,0,0,.4)}
+.chip .x{width:.7em;height:.7em;margin-left:8px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;opacity:.8}
 .searchwrap{position:relative;margin-bottom:10px}
-.dropdown{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.35);max-height:min(60vh,380px);overflow-y:auto}
+input[type=search],.field{width:100%;padding:12px 14px;font:inherit;font-size:16px;border:1px solid var(--line);border-radius:3px;
+  background:var(--surface);color:var(--ink);box-shadow:inset 0 2px 3px rgba(12,21,38,.08)}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
+.dropdown{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:3px;
+  box-shadow:0 14px 30px -8px rgba(0,0,0,.45);max-height:min(60vh,380px);overflow-y:auto}
 .opt{display:flex;justify-content:space-between;align-items:baseline;gap:12px;width:100%;padding:12px 14px;border:none;border-bottom:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-size:15px;text-align:left;cursor:pointer}
 .opt:last-child{border-bottom:none}
-.opt.act,.opt:hover{background:var(--chip)}
+.opt.act,.opt:hover{background:var(--gold);color:var(--gold-ink)}
+.opt.act .nick,.opt.act .cnt,.opt:hover .nick,.opt:hover .cnt{color:var(--gold-ink)}
 .opt .nick{color:var(--muted);font-size:13px;margin-left:6px}
 .opt .cnt{color:var(--muted);font-size:13px;white-space:nowrap}
 .opt.picked{opacity:.55;cursor:default}
 .dropdown .none{padding:12px 14px;color:var(--muted)}
-.chip{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:13px;cursor:pointer}
-.chip.sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.chip .x{margin-left:6px;opacity:.7}
-input[type=search]{width:100%;padding:12px 14px;font:inherit;font-size:16px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
-.hint{color:var(--muted);font-size:13px;margin:4px 0 0}
-.weekbar{display:grid;grid-template-columns:repeat(var(--cols,9),minmax(0,1fr));gap:4px;padding:2px 0 8px}
-.weekbar button{min-width:0;padding:5px 0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;font-family:"Barlow Condensed";font-size:15px;cursor:pointer}
-.weekbar button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.game{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 8px;cursor:pointer}
-.game:hover{border-color:var(--accent)}
-.game .teams{font-family:"Barlow Condensed";font-size:19px;letter-spacing:.4px;min-width:0}
-.game .meta{color:var(--muted);font-size:12.5px}
-.game .mine{margin-left:auto;text-align:right;flex-shrink:0}
-.count{font-family:"Barlow Condensed";font-size:22px;line-height:1;color:var(--accent)}
-.count.zero{color:var(--muted);opacity:.45}
-.addbtn{display:block;width:100%;margin:0 0 14px;padding:12px 16px;font-family:"Barlow Condensed";font-size:18px;letter-spacing:.6px;text-transform:uppercase;background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;cursor:pointer}
-.addbtn:hover{filter:brightness(1.08)}
-#egg{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px 16px;text-align:center;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--accent) 22%,var(--bg)) 0%,var(--bg) 70%);overflow-y:auto}
-#egg[hidden]{display:none}
-#eggClose{position:absolute;top:14px;right:16px;font:inherit;font-size:15px;background:none;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 12px;cursor:pointer}
-#eggBtn{font-family:"Barlow Condensed";font-weight:600;font-size:clamp(28px,5vw,44px);line-height:1.1;text-transform:uppercase;letter-spacing:.5px;max-width:760px;padding:22px 30px;border-radius:14px;border:2px solid var(--accent);background:var(--surface);color:var(--ink);cursor:pointer}
-#eggBtn:hover,#eggBtn:focus-visible{background:var(--accent);color:var(--bg)}
-#eggAns .lbl{font-size:15px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
-#eggAns .big{font-family:"Barlow Condensed";font-weight:600;font-size:clamp(84px,20vw,200px);line-height:.9;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin:8px 0 18px}
-#eggAns p{margin:0 auto;max-width:620px;font-size:18px;line-height:1.5}
-#eggBack{font:inherit;font-size:16px;font-weight:600;background:none;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px 20px;cursor:pointer;margin-top:26px}
-body.egg-on{overflow:hidden}
-.recapgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px 28px;padding:0 0 0 4px}
-@media (max-width:600px){.recapgrid{grid-template-columns:1fr}}
-@media (prefers-reduced-motion:no-preference){#egg:not([hidden]){animation:eggIn .35s ease-out}#eggAns:not([hidden]) .big{animation:eggIn .5s ease-out}}
-@keyframes eggIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
-.addcol{font-family:"Barlow Condensed";font-size:15px;letter-spacing:.4px;text-transform:uppercase;color:var(--accent);white-space:nowrap}
-.countlbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.selmini,#catSel,#confSel{font:inherit;font-size:13px;font-weight:600;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:3px;
+  padding:4px 28px 4px 9px;appearance:none;-webkit-appearance:none;cursor:pointer;max-width:100%;
+  background-image:linear-gradient(45deg,transparent 50%,var(--gold) 50%),linear-gradient(-45deg,transparent 50%,var(--gold) 50%),linear-gradient(var(--rail),var(--rail));
+  background-size:5px 5px,5px 5px,22px 100%;background-position:calc(100% - 11px) 52%,calc(100% - 6px) 52%,100% 0;background-repeat:no-repeat}
+
+#view{padding-top:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:14px 16px;margin:0 0 14px;box-shadow:var(--lift)}
+.card>h2:first-child,.card>h2{margin:0 0 4px}
+.empty{color:var(--muted);padding:24px 0;text-align:center}
+
+.weekbar{display:grid;grid-template-columns:repeat(var(--cols,9),minmax(0,1fr));gap:5px;padding:2px 2px 12px}
+.weekbar button{min-width:0;padding:5px 0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:2px;
+  font:inherit;font-family:var(--disp);font-stretch:72%;font-weight:700;font-size:15px;cursor:pointer;transform:skewX(-12deg)}
+.weekbar button>span{display:inline-block;transform:skewX(12deg)}
+.weekbar button:hover{border-color:var(--accent)}
+.weekbar button.on{background:var(--gold);color:var(--gold-ink);border-color:var(--gold);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 6px -2px rgba(0,0,0,.4)}
+
+/* game rows as broadcast score bugs */
+.game{display:flex;align-items:stretch;gap:0;color:#e7edf8;border:1px solid #0a1226;border-radius:3px;margin:0 0 8px;cursor:pointer;overflow:hidden;
+  background:linear-gradient(180deg,#22325a 0,#18264a 48%,#121d3a 52%,#0f1832 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 2px 4px rgba(0,0,0,.25);transition:box-shadow .15s,transform .15s cubic-bezier(.16,1,.3,1)}
+.game:hover,.game:focus-visible{outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 2px var(--gold),0 6px 14px -6px rgba(0,0,0,.5);transform:translateX(3px)}
+.game .meta{color:#a9b6d0}
+.game .final{color:#c9d4ea}
+.game .pts{color:#9fb0cf}
+.game .pts.win{color:#fff}
+.bug{flex:1;min-width:0;padding:9px 12px}
+.bugrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.line{display:flex;align-items:center;gap:12px;max-width:190px;padding:2px 0}
+.line .pts{margin-left:auto}
+@media (min-width:641px){
+  .bug{display:grid;grid-template-columns:200px auto;justify-content:start;column-gap:22px;align-items:center;padding:8px 14px}
+  .bug>*{grid-column:1}
+  .bug>.meta{grid-column:2;grid-row:1/span 3;margin:0;font-size:14px}
+}
+.tm{--c1:#334;--c2:#889;--ci:#fff;display:inline-flex;align-items:center;justify-content:center;min-width:52px;padding:2px 8px 2px 10px;
+  font-family:var(--disp);font-stretch:70%;font-weight:800;font-style:italic;font-size:18px;letter-spacing:.03em;
+  color:var(--ci);background:linear-gradient(90deg,var(--c2) 0 5px,var(--c1) 5px);transform:skewX(-12deg);border-radius:2px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.tm>span{display:inline-block;transform:skewX(12deg)}
+.pts{font-family:var(--disp);font-stretch:70%;font-weight:800;font-size:22px;line-height:1;min-width:1.6em;text-align:center}
+.pts.win{color:var(--ink)}
+.at{color:var(--muted);font-size:13px}
+.card .pts{color:var(--ink)}
+.game .meta{font-size:12.5px;margin-top:4px}
+.final{font-family:var(--disp);font-stretch:72%;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:12px;color:var(--muted)}
+.game .mine{margin-left:auto;text-align:center;flex-shrink:0;min-width:86px;padding:8px 10px;display:flex;flex-direction:column;justify-content:center;
+  background:#070d1c;color:var(--rail-ink);box-shadow:inset 1px 0 0 rgba(255,255,255,.08)}
+.count{font-family:var(--disp);font-stretch:70%;font-weight:800;font-size:26px;line-height:1;color:var(--gold)}
+.count.zero{color:#7d8bab}
+.countlbl{font-size:10.5px;color:var(--rail-ink);text-transform:uppercase;letter-spacing:.05em;line-height:1.25;margin-top:3px}
+.addcol{font-family:var(--disp);font-stretch:72%;font-weight:700;font-size:14px;letter-spacing:.03em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
 .score{font-variant-numeric:tabular-nums}
-.back{background:none;border:none;color:var(--accent);font:inherit;cursor:pointer;padding:0;margin:14px 0 6px}
-.side h3{margin:16px 0 6px;font-size:20px;text-transform:uppercase;letter-spacing:.5px}
+
+.addbtn{display:block;width:100%;margin:0 0 14px;padding:12px 16px;font:inherit;font-family:var(--disp);font-stretch:72%;font-weight:800;font-style:italic;
+  font-size:20px;letter-spacing:.03em;text-transform:uppercase;background:var(--gold);color:var(--gold-ink);border:none;border-radius:3px;cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -3px 0 rgba(0,0,0,.18),0 4px 10px -4px rgba(0,0,0,.45)}
+.addbtn:hover{filter:brightness(1.05)}
+.back{background:none;border:none;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;padding:0;margin:0 0 10px}
+.side h3{margin:16px 0 6px;display:flex;align-items:center;gap:10px}
 .player{display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.player .nm{font-weight:600}
-.pos{color:var(--muted);font-size:12.5px;min-width:42px}
-.badge{font-size:11px;padding:1px 7px;border-radius:5px;background:var(--badge-bg);color:var(--badge);white-space:nowrap}
+.player .nm{font-weight:650}
+.pos{color:var(--muted);font-size:12.5px;min-width:42px;font-family:var(--disp);font-stretch:74%;font-weight:700}
+.badge{font-size:11px;padding:1px 7px;border-radius:2px;background:var(--badge-bg);color:var(--badge);white-space:nowrap;font-weight:600}
 .badge.status{background:var(--chip);color:var(--muted)}
-.schooltag{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.schooltag{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
 /* team colors: a small two-tone dot, never logos */
 .sw{display:inline-block;width:.62em;height:.62em;border-radius:50%;margin:0 .4em .05em 0;vertical-align:middle;background:linear-gradient(90deg,var(--c1) 50%,var(--c2) 50%);box-shadow:0 0 0 1px var(--line)}
 .chip.sel .sw{box-shadow:0 0 0 1.5px rgba(255,255,255,.75)}
-.stat{width:100%;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;padding-left:34px}
-.stat b{color:var(--ink);font-weight:600}
-table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
-th{font-family:"Barlow Condensed";text-transform:uppercase;letter-spacing:.5px;font-size:13.5px;color:var(--muted);text-align:left;padding:6px 10px 6px 0;border-bottom:2px solid var(--line)}
+.stat{width:100%;color:var(--muted);font-size:13px;padding-left:50px}
+.stat b{color:var(--ink);font-weight:650}
+
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font-family:var(--disp);font-stretch:72%;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:13px;color:var(--muted);text-align:left;padding:6px 10px 6px 0;border-bottom:2px solid var(--accent)}
 td{padding:6px 10px 6px 0;border-bottom:1px solid var(--line)}
 td.num,th.num{text-align:right}
 .tablewrap{overflow-x:auto}
 tr.rk{cursor:pointer}
 tr.rk:hover td{background:var(--chip)}
-tr.rk .chev{display:inline-block;width:14px;color:var(--muted);transition:transform .12s}
+tr.rk .chev{display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:-1px;fill:none;stroke:var(--muted);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:transform .12s}
 tr.rk.open .chev{transform:rotate(90deg)}
 .expand{padding:4px 0 10px 14px;color:var(--muted);font-size:13.5px}
-.expand b{color:var(--ink);font-weight:600}
+.expand b{color:var(--ink);font-weight:650}
 .expand .row{padding:2px 0}
-.nflrk{margin-left:6px;font-size:12px;color:var(--accent)}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:0 0 12px}
-.empty{color:var(--muted);padding:24px 0;text-align:center}
-.foot{color:var(--muted);font-size:12px;margin-top:28px}
-.contact{margin-top:28px;color:var(--muted);font-size:13px}
-.signup{margin-top:32px;padding:22px 22px 18px;border:2px solid var(--accent)}
-.signup h2{font-family:"Barlow Condensed";font-weight:600;font-size:clamp(26px,4.5vw,34px);line-height:1.05;text-transform:uppercase;letter-spacing:.4px;margin:0 0 6px}
+.nflrk{margin-left:6px;font-size:12px;color:var(--accent);font-weight:600}
+.recapgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px 28px;padding:0 0 0 4px}
+@media (max-width:600px){.recapgrid{grid-template-columns:1fr}}
+details.recap>summary{list-style:none}
+details.recap>summary::-webkit-details-marker{display:none}
+details.recap>summary::before{content:"";display:inline-block;width:0;height:0;border-left:7px solid var(--gold);border-top:6px solid transparent;border-bottom:6px solid transparent;margin-right:9px;vertical-align:2px;transition:transform .15s}
+details.recap[open]>summary::before{transform:rotate(90deg)}
+.addcol,.countlbl{white-space:normal}
+
+/* email signup: a menu panel with the band's colors */
+.signup{margin-top:30px;padding:0;overflow:hidden}
+.signup .signhead{background:var(--team1);color:var(--team-ink);padding:16px 20px 12px;position:relative;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.3)}
+.signup .signhead::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.04) 48%,rgba(0,0,0,.06) 52%,rgba(0,0,0,.22));pointer-events:none}
+.signup h2{position:relative;font-size:clamp(26px,4.6vw,36px);margin:0}
+.signup .signbody{padding:14px 20px 18px}
 .signup .sub{font-size:16px;color:var(--ink);margin:0 0 14px;max-width:560px}
 .signup form{display:flex;flex-direction:column;gap:10px;max-width:480px}
-.signup input[type=email]{font:inherit;font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%}
-.signup button{white-space:nowrap;font-family:"Barlow Condensed";font-size:19px;text-transform:uppercase;letter-spacing:.6px;background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:10px 26px;cursor:pointer}
-.signup button:disabled{opacity:.6}
-.contact summary{cursor:pointer;color:var(--accent)}
-.contact form{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-width:440px}
-.contact textarea,.contact input[type=email]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%}
-.formrow{display:flex;align-items:center;gap:10px}
+.signup input[type=email]{font:inherit;font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:3px;background:var(--bg);color:var(--ink);width:100%}
+.btn,.signup button,.contact button{white-space:nowrap;font:inherit;font-family:var(--disp);font-stretch:72%;font-weight:800;font-style:italic;font-size:19px;
+  text-transform:uppercase;letter-spacing:.03em;background:var(--gold);color:var(--gold-ink);border:none;border-radius:3px;padding:9px 26px;cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -3px 0 rgba(0,0,0,.18),0 3px 8px -4px rgba(0,0,0,.45)}
+.signup button:disabled,.contact button:disabled{opacity:.6}
 #suSchools label{display:inline-flex;align-items:center;gap:5px;margin:0 12px 4px 0;color:var(--ink);font-size:14px;cursor:pointer}
 #suSchools input{width:16px;height:16px;accent-color:var(--accent)}
-.contact button{white-space:nowrap;font-family:"Barlow Condensed";font-size:17px;text-transform:uppercase;letter-spacing:.6px;background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:9px 22px;cursor:pointer}
-.contact button:disabled{opacity:.6}
-@media (prefers-reduced-motion:no-preference){.game{transition:border-color .15s}}
+.formrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.contact{margin-top:24px;color:var(--muted);font-size:13px}
+.contact summary{cursor:pointer;color:var(--accent);font-weight:600;list-style:none}
+.contact summary::-webkit-details-marker{display:none}
+.contact summary::before{content:"";display:inline-block;border-left:7px solid var(--gold);border-top:6px solid transparent;border-bottom:6px solid transparent;margin-right:9px;vertical-align:1px;transition:transform .15s}
+.contact[open] summary::before{transform:rotate(90deg)}
+.contact form{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-width:440px}
+.contact textarea,.contact input[type=email]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink);width:100%}
+.foot{color:var(--muted);font-size:12px;margin-top:22px}
+
+/* the easter egg: a championship screen */
+#egg{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px 16px;text-align:center;
+  color:#fff;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(0,0,0,.35)),var(--team1);overflow-y:auto}
+#egg[hidden]{display:none}
+#eggClose{position:absolute;top:14px;right:16px;font:inherit;font-size:15px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:3px;padding:6px 12px;cursor:pointer}
+#eggBtn{font-family:var(--disp);font-stretch:70%;font-weight:800;font-style:italic;font-size:clamp(28px,5vw,46px);line-height:1.05;text-transform:uppercase;letter-spacing:.02em;
+  max-width:760px;padding:20px 30px;border-radius:3px;border:none;background:var(--gold);color:var(--gold-ink);cursor:pointer;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.6),inset 0 -4px 0 rgba(0,0,0,.2),0 10px 26px -8px rgba(0,0,0,.6)}
+#eggBtn:hover{filter:brightness(1.06)}
+#eggAns .lbl{font-size:15px;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+#eggAns .big{font-family:var(--disp);font-stretch:62%;font-weight:900;font-style:italic;font-size:clamp(84px,20vw,200px);line-height:.9;text-transform:uppercase;
+  color:var(--gold);margin:8px 0 18px;text-shadow:0 4px 0 rgba(0,0,0,.35)}
+#eggAns p{margin:0 auto;max-width:620px;font-size:18px;line-height:1.5}
+#eggBack{font:inherit;font-size:16px;font-weight:700;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:3px;padding:10px 20px;cursor:pointer;margin-top:26px}
+body.egg-on{overflow:hidden}
+@media (prefers-reduced-motion:no-preference){#egg:not([hidden]){animation:eggIn .35s cubic-bezier(.16,1,.3,1)}#eggAns:not([hidden]) .big{animation:eggIn .5s cubic-bezier(.16,1,.3,1)}
+  .game{transition:border-color .15s}}
+@keyframes eggIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+
 @media (max-width:640px){
   body{font-size:16px}
-  h1{font-size:40px}
-  nav button{font-size:19px;padding:12px 12px}
+  nav .navin{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;
+    -webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+  nav .navin::-webkit-scrollbar{display:none}
+  nav button{flex:none;scroll-snap-align:start}
+  .tag{font-size:15px}
+  nav button{font-size:18px;padding:9px 12px}
   .chip{padding:9px 16px;font-size:15px}
-  .weekbar button{padding:11px 0;font-size:16px}
-  .game{padding:14px 16px}
-  .game .teams{font-size:22px}
+  .chip.sel{font-size:17px;padding:8px 16px 8px 20px}
+  .weekbar button{padding:10px 0;font-size:16px}
+  .tm{font-size:20px;min-width:56px}
+  .pts{font-size:24px}
   .game .meta{font-size:14px}
-  .count{font-size:26px}
+  .count{font-size:28px}
   .player{padding:12px 0}
   .pos{min-width:48px;font-size:14px}
   .badge{font-size:12.5px;padding:3px 9px}
@@ -148,14 +271,19 @@ tr.rk.open .chev{transform:rotate(90deg)}
   table{font-size:15px}
 }
 </style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@500;600&display=swap">
+<link rel="preload" href="/fonts/saira-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/saira-latin-var-italic.woff2" as="font" type="font/woff2" crossorigin>
 <script data-goatcounter="https://cfbsundays.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
-<div class="wrap">
-<h1>CFB Sundays</h1>
-<p class="sub">Pick your schools. See where your guys are playing on Sundays. <a href="#signup" id="emailLink" style="color:var(--accent);white-space:nowrap">Get it by email</a></p>
-
+<header class="band" id="band">
+<div class="wrap bandin">
+<h1 class="wordmark">CFB Sundays</h1>
+<p class="bandmeta" id="bandMeta" aria-live="polite"></p>
+<p class="tag">Pick your schools. See where your guys are playing on Sundays. <a href="#signup" id="emailLink">Get it by email</a></p>
+</div>
+</header>
+<div class="wrap picker">
 <div id="archiveBar" class="card" hidden></div>
 
 <div id="pickerArea">
@@ -166,14 +294,15 @@ tr.rk.open .chev{transform:rotate(90deg)}
   </div>
   <p class="hint" id="pickHint"></p>
   <p class="hint" style="margin-top:8px">Counting:
-    <select id="modeSel" style="font:inherit;font-size:13px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 7px">
+    <select id="modeSel" class="selmini">
       <option value="fin">Finished at the school (drafted from there)</option>
       <option value="all">Everyone who played there (transfers out too)</option>
     </select>
   </p>
 </div>
+</div>
 
-<nav id="tabs">
+<nav aria-label="Sections"><div class="wrap navin" id="tabs">
   <button data-v="games" class="on">NFL Week</button>
   <button data-v="boards">Leaderboards</button>
   <button data-v="rank">School rankings</button>
@@ -181,7 +310,8 @@ tr.rk.open .chev{transform:rotate(90deg)}
   <button data-v="draft">Draft</button>
   <button data-v="fan">Fantasy</button>
   <button data-v="post" id="postTab" hidden>Playoffs</button>
-</nav>
+</div></nav>
+<div class="wrap">
 <div id="egg" role="dialog" aria-modal="true" aria-label="Who's the best team" hidden>
   <button id="eggClose" type="button" aria-label="Back to the site">✕ Close</button>
   <button id="eggBtn" type="button">So who’s the best team, based on all this?</button>
@@ -190,7 +320,8 @@ tr.rk.open .chev{transform:rotate(90deg)}
 
 <div id="view"></div>
 <section class="card signup" id="signup">
-<h2>This website could have been an email.</h2>
+<div class="signhead"><h2>This website could have been an email.</h2></div>
+<div class="signbody">
 <p class="sub">Every Tuesday morning: how your schools' former players did in the NFL that week. Stat leaders, who started, all in one short email.</p>
 <form id="signupForm" novalidate>
   <div id="suSchools" class="hint"></div>
@@ -199,6 +330,7 @@ tr.rk.open .chev{transform:rotate(90deg)}
   <div class="formrow"><button type="submit" id="suSend">Sign up</button><span class="hint" id="suStatus" role="status"></span></div>
   <p class="hint" style="margin:0">One email a week during the season, covering up to 4 schools. You'll get a confirmation link first. Unsubscribe any time; your address is used for nothing else.</p>
 </form>
+</div>
 </section>
 <details class="contact" id="contact">
 <summary>Questions, bugs, or a school nickname I missed? Send me a note</summary>
@@ -209,13 +341,27 @@ tr.rk.open .chev{transform:rotate(90deg)}
   <div class="formrow"><button type="submit" id="noteSend">Send</button><span class="hint" id="noteStatus"></span></div>
 </form>
 </details>
-<p class="hint" style="margin:18px 0 0">Season: <select id="seasonSel" aria-label="Season" style="font:inherit;font-size:13px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 7px"></select> Past seasons go back to 2013, the first year of snap counts.</p>
+<p class="hint" style="margin:18px 0 0">Season: <select id="seasonSel" aria-label="Season" class="selmini"></select> Past seasons go back to 2013, the first year of snap counts.</p>
 <p class="foot">Data: nflverse rosters, weekly stats, team depth charts &amp; schedule (free, open NFL data). Starting lineups from ESPN. Position labels like QB1 or LCB2 are the team's own depth chart slot. College history from NFL roster records; the school listed first is where the player finished. Data refreshes automatically every day and after game days.</p>
 </div>
 
 <script>
 let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},POST={},sel=[],curWeek=1,tab='games',openGame=null,rankCat='starters',expanded=null,boardOpen=null;
 let COLORS={nfl:{},school:{}};
+// readable text on a team color
+function inkFor(hex){const m=/^#?([0-9a-f]{6})$/i.exec(hex||'');if(!m)return '#fff';const v=parseInt(m[1],16),r=v>>16&255,g=v>>8&255,b=v&255;
+  const L=x=>{x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)};return (.2126*L(r)+.7152*L(g)+.0722*L(b))>.36?'#0c1526':'#ffffff'}
+function tmTag(t){const c=(COLORS.nfl||{})[t]||['#33405a','#8a96ad'];return `<span class="tm" style="--c1:${c[0]};--c2:${c[1]||c[0]};--ci:${inkFor(c[0])}"><span>${t}</span></span>`}
+// team-select reskin: the band and signup header take the lead school's colors
+let teamKey=null;
+function applyTeam(){
+  const c=(sel[0]&&(COLORS.school||{})[sel[0]])||null;
+  const c1=c?c[0]:'#1546b8',c2=c&&c[1]?c[1]:'#ffc629',key=c1+c2;
+  if(key===teamKey)return;
+  const set=()=>{const r=document.documentElement.style;r.setProperty('--team1',c1);r.setProperty('--team2',c2);r.setProperty('--team-ink',inkFor(c1));r.setProperty('--team2-ink',inkFor(c2))};
+  const first=teamKey===null;teamKey=key;
+  if(!first&&document.startViewTransition&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.startViewTransition(set);else set();
+}
 function sw(kind,n){const c=(COLORS[kind]||{})[n];return c&&c.length?`<i class="sw" style="--c1:${c[0]};--c2:${c[1]||c[0]}" aria-hidden="true"></i>`:''}
 let mode='fin';try{mode=localStorage.getItem('mode')||'fin'}catch(e){}
 const ROUND={WC:'Wild Card',DIV:'Division',CON:'Conference',SB:'Super Bowl'};
@@ -367,8 +513,9 @@ document.getElementById('signupForm').onsubmit=async e=>{
 
 function renderPicker(){
   try{renderSignupSchools()}catch(e){}
+  applyTeam();
   const selDiv=document.getElementById('selChips');
-  selDiv.innerHTML=sel.map(s=>`<button class="chip sel" data-s="${esc(s)}">${sw('school',s)}${esc(s)}<span class="x">×</span></button>`).join('');
+  selDiv.innerHTML=sel.map(s=>{const c=(COLORS.school||{})[s];const st=c?` style="--c1:${c[0]};--c2:${c[1]||c[0]};--ci:${inkFor(c[0])}"`:'';return `<button class="chip sel" data-s="${esc(s)}"${st} aria-label="Remove ${esc(s)}"><span>${esc(s)}<svg class="x" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 2l6 6M8 2l-6 6"/></svg></span></button>`}).join('');
   selDiv.querySelectorAll('button').forEach(b=>b.onclick=()=>{sel=sel.filter(x=>x!==b.dataset.s);saveSel();renderPicker();render()});
   const ph=document.getElementById('pickHint');
   ph.textContent=sel.length?(sel.includes('No college')?'No college means the NFL\u2019s records list no school. That\u2019s mostly International Pathway players, plus a few whose college is missing from the records.':''):'Nothing picked yet. Tap here or search above. Add more than one for watch parties.';
@@ -431,17 +578,21 @@ document.getElementById('schoolSearch').addEventListener('blur',()=>setTimeout(c
 document.getElementById('schoolSearch').addEventListener('focus',e=>{if(e.target.value.trim().length>=2)e.target.dispatchEvent(new Event('input',{bubbles:true}))});
 document.getElementById('modeSel').value=mode;
 document.getElementById('modeSel').onchange=e=>{mode=e.target.value;try{localStorage.setItem('mode',mode)}catch(err){};render()};
+// the gold selection bar: one highlight per tab, morphed between tabs with a view transition
+document.querySelectorAll('#tabs button').forEach(b=>b.insertAdjacentHTML('afterbegin','<span class="hl" aria-hidden="true"></span>'));
 document.getElementById('tabs').onclick=e=>{
-  const b=e.target.closest('button');if(!b)return;
-  tab=b.dataset.v;openGame=null;
-  history.replaceState(null,'',location.pathname+location.search+(tab==='games'?'':'#'+tab));
-  render();
+  const b=e.target.closest('button');if(!b||b.dataset.v===tab)return;
+  const go=()=>{tab=b.dataset.v;openGame=null;
+    history.replaceState(null,'',location.pathname+location.search+(tab==='games'?'':'#'+tab));render()};
+  if(document.startViewTransition&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.startViewTransition(go);else go();
 };
 
 function render(){
   const v=document.getElementById('view');
   if(!sel.length)openGame=null;
-  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.v===tab));
+  document.querySelectorAll('#tabs button').forEach(x=>{x.classList.toggle('on',x.dataset.v===tab);x.setAttribute('aria-current',x.dataset.v===tab?'page':'false')});
+  {const on=document.querySelector('#tabs button.on'),rail=document.getElementById('tabs');if(on&&rail.scrollWidth>rail.clientWidth)rail.scrollTo({left:Math.max(0,on.offsetLeft-24),behavior:'smooth'})}
+  const bm=document.getElementById('bandMeta');if(bm&&GAMES.length)bm.textContent=`${/^\d+$/.test(String(weekLabel(curWeek)))?'Week '+weekLabel(curWeek):weekLabel(curWeek)} \u00b7 ${SEASON_YR}`;
   const addBtn=sel.length?'':'<button class="addbtn" type="button">+ Add a school</button>';
   if(tab==='games')v.innerHTML=addBtn+(openGame?gameDetail(openGame):weekView());
   else if(tab==='rank')v.innerHTML=addBtn+rankView();
@@ -453,6 +604,7 @@ function render(){
   wire(v);
 }
 function wire(v){
+  v.querySelectorAll('.game[data-g]').forEach(el=>el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click()}});
   v.querySelectorAll('[data-g]').forEach(el=>el.onclick=()=>{
     if(!sel.length){scrollTo(0,0);document.getElementById('schoolSearch').focus();return}
     openGame=el.dataset.g;render();scrollTo(0,0)});
@@ -586,7 +738,7 @@ function rankView(){
       const open=expanded===sc+'|'+cat;
       const exp=open?`<tr><td colspan="4" class="expand">${expandHtml(cat,sc)}</td></tr>`:'';
       const click=`class="rk${open?' open':''}" data-cat="${cat}" data-sc="${esc(sc)}"`;
-      const chev='<span class="chev">▸</span>';
+      const chev='<svg class="chev" viewBox="0 0 10 10" aria-hidden="true"><path d="M3.5 2l3.5 3-3.5 3"/></svg>';
       if(!r)return `<tr ${click}><td>${chev}${CATS[cat]}</td><td class="num">–</td><td class="num">0</td><td class="hint">${leaderCtx(RANKS[cat]||[])}</td></tr>`+exp;
       const tops=tiedAt(r.rows,r.rows[0][1]);
       let ctx;
@@ -604,7 +756,7 @@ function rankView(){
   const topN=sel.length?10:25;
   if(!sel.length)h+=`<p class="hint" style="margin:0 0 12px">Pick a category to see the top schools. Add schools above to see their full rank cards.</p>`;
   h+=`<div class="card"><h2 style="margin:0 0 8px">Top ${topN} ·
-    <select id="catSel" style="font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:4px 8px">
+    <select id="catSel">
     ${Object.entries(CATS).map(([k,lbl])=>`<option value="${k}" ${k===rankCat?'selected':''}>${lbl}</option>`).join('')}</select></h2>
     <div class="tablewrap"><table>${topList(rankCat,topN)}</table></div></div>`;
   h+=`<p class="hint">Tap a category to see which of your players are behind the number. Ties share a rank (T-1 means tied for first). ${mode==='fin'?'Rankings credit the school a player finished at.':'Rankings credit every school a player played for, so transfers count for each stop.'} A start means he was in his team's lineup for the first snap. At each position on each team, starters are the usual number of most-started players plus anyone else who started at least a quarter of the team's games${ARCH_YR&&SEASON_YR===ARCH_YR?'':' so far'}, so QB splits, benchings and long fill-ins all count. Kickers and punters count after two games.</p>`;
@@ -628,7 +780,7 @@ function weekView(){
   if(inPlayoffs)wks=wks.filter(w=>{const g=GAMES.find(x=>x.wk===w);return g&&g.type!=='REG'});
   const lbl=guysLabel();
   const cols=wks.length<=6?wks.length:Math.ceil(wks.length/2);
-  let h=`<div class="weekbar" style="--cols:${cols}">`+wks.map(w=>`<button data-w="${w}" class="${w===curWeek?'on':''}">${weekLabel(w)}</button>`).join('')+`</div>`;
+  let h=`<div class="weekbar" style="--cols:${cols}">`+wks.map(w=>`<button data-w="${w}" class="${w===curWeek?'on':''}"><span>${weekLabel(w)}</span></button>`).join('')+`</div>`;
   h+=recapHtml(curWeek);
   // live and upcoming games first, finished games below; kickoff order within each
   const gs=GAMES.filter(g=>g.wk===curWeek).sort((a,b)=>(a.as!==''?1:0)-(b.as!==''?1:0));
@@ -636,9 +788,11 @@ function weekView(){
     const n=(idx[g.away]||[]).length+(idx[g.home]||[]).length;
     const played=g.as!=='';
     const round=g.type!=='REG'?`<span class="badge" style="margin-left:6px">${ROUND[g.type]||g.type}</span>`:'';
-    return `<div class="game" data-g="${g.id}">
-      <div><div class="teams">${sw('nfl',g.away)}${g.away} @ ${sw('nfl',g.home)}${g.home} ${played?`<span class="score">${g.as}–${g.hs}</span>`:''}${round}</div>
-      <div class="meta">${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
+    const a=+g.as,hm=+g.hs;
+    return `<div class="game" data-g="${g.id}" role="button" tabindex="0" aria-label="${g.away} at ${g.home}${played?`, final ${g.as} to ${g.hs}`:''}">
+      <div class="bug"><div class="line">${tmTag(g.away)}${played?`<span class="pts${a>hm?' win':''}">${g.as}</span>`:''}</div>
+      <div class="line">${tmTag(g.home)}${played?`<span class="pts${hm>a?' win':''}">${g.hs}</span>`:''}</div>${round?`<div>${round}</div>`:''}
+      <div class="meta">${played?'<span class="final">Final</span> · ':''}${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
       <div class="mine">${sel.length
         ?`<div class="count ${n?'':'zero'}">${n}</div><div class="countlbl">${esc(sel.length>1?splitLabel(g,idx):lbl)}</div>`
         :`<div class="addcol">+ Add a college</div>`}</div>
@@ -692,12 +846,12 @@ function gameDetail(id){
     const dr=e=>e.p.d?+(e.p.d.match(/\d+$/)||[9])[0]:9;
     const gs=e=>played&&e.p.gs&&e.p.gs.includes(g.wk)?0:1;
     const list=(idx[t]||[]).sort((a,b)=>(a.p.s==='ACT'?0:1)-(b.p.s==='ACT'?0:1)||gs(a)-gs(b)||dr(a)-dr(b)||a.p.n.localeCompare(b.p.n));
-    return `<div class="side"><h3>${sw('nfl',t)}${t}${played?` · ${t===g.away?g.as:g.hs}`:''}</h3>`+
+    return `<div class="side"><h3>${tmTag(t)}${played?` · ${t===g.away?g.as:g.hs}`:''}</h3>`+
       (list.length?list.map(e=>playerRow(e,g.wk,played)).join(''):'<p class="hint">None of your guys here.</p>')+`</div>`;
   };
   return `<button class="back">← Week ${g.wk}</button>
-    <div class="card"><div class="teams disp" style="font-size:24px">${sw('nfl',g.away)}${g.away} @ ${sw('nfl',g.home)}${g.home}
-    ${played?`<span class="score">${g.as}–${g.hs}</span>`:''}</div>
+    <div class="card"><div class="bugrow">${tmTag(g.away)}<span class="at">at</span>${tmTag(g.home)}
+    ${played?`<span class="pts">${g.as}–${g.hs}</span><span class="final">Final</span>`:''}</div>
     <div class="meta">${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
     ${side(g.away)}${side(g.home)}`;
 }
@@ -860,7 +1014,7 @@ function rankRows(kind,rows,valFmt){
   return rows.map((r,i)=>{
     const k=kind+'|'+r.key+'|',open=expanded===k;
     return `<tr class="rk${open?' open':''}" data-kind="${kind}" data-sc="${esc(r.key)}" data-cat="">
-      <td style="width:34px">${r.rank||('#'+(i+1))}</td><td><span class="chev">▸</span>${esc(r.label)}${r.mine?' <span class="badge">yours</span>':''}</td>
+      <td style="width:34px">${r.rank||('#'+(i+1))}</td><td><svg class="chev" viewBox="0 0 10 10" aria-hidden="true"><path d="M3.5 2l3.5 3-3.5 3"/></svg>${esc(r.label)}${r.mine?' <span class="badge">yours</span>':''}</td>
       ${r.sub!==undefined?`<td class="hint">${r.sub}</td>`:''}
       <td class="num"><b>${valFmt?valFmt(r.value):Number(r.value).toLocaleString()}</b></td></tr>`+
       (open?`<tr><td colspan="${r.sub!==undefined?4:3}" class="expand">${r.list()}</td></tr>`:'');
@@ -945,7 +1099,7 @@ function confView(){
     list:()=>Object.entries(bySchool[cf]||{}).sort((a,b)=>b[1]-a[1]).map(([sc,x])=>
       `<div class="row"><b${sel.includes(sc)?' style="color:var(--accent)"':''}>${esc(sc)}</b> · ${round(x).toLocaleString()}</div>`).join('')}));
   h+=`<div class="card"><h2 style="margin:0 0 8px">Conferences by
-    <select id="confSel" style="font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:4px 8px">
+    <select id="confSel">
     ${CONF_CATS.map(([k,l])=>`<option value="${k}" ${k===confCat?'selected':''}>${l}</option>`).join('')}</select></h2>
     <div class="tablewrap"><table>${rankRows('CF',rows)}</table></div>
     <p class="hint" style="margin:8px 0 0">Tap a conference to see which schools add up to it.</p></div>
@@ -1037,7 +1191,7 @@ function fanView(){
     h+=`<div class="card"><h2 style="margin:0 0 4px">${sw('school',sc)}${esc(sc)} fantasy</h2>
       <p class="sub" style="margin:0 0 10px">${per}: ${r1(tot[sc]||0).toLocaleString()} pts · ${i>=0?compRankLabel(totVals,i,tot[sc])+' of '+totVals.length+' schools':'unranked'}${!wkSel&&lw?` · Week ${weekLabel(lw)}: ${r1(wkTot)} pts`:''}</p>
       <div class="expand" style="padding:2px 0 4px 4px">${list.slice(0,10).map(([pid,p])=>scorerRow(pid,p)).join('')||'<div class="row">No fantasy points yet.</div>'}</div>
-      ${list.length>10?`<table><tr class="rk${open?' open':''}" data-kind="FS" data-sc="${esc(sc)}" data-cat=""><td><span class="chev">▸</span>All ${list.length} scorers</td></tr>
+      ${list.length>10?`<table><tr class="rk${open?' open':''}" data-kind="FS" data-sc="${esc(sc)}" data-cat=""><td><svg class="chev" viewBox="0 0 10 10" aria-hidden="true"><path d="M3.5 2l3.5 3-3.5 3"/></svg>All ${list.length} scorers</td></tr>
         ${open?`<tr><td class="expand">${list.slice(10).map(([pid,p])=>scorerRow(pid,p)).join('')}</td></tr>`:''}</table>`:''}
       </div>`;
   }
@@ -1097,7 +1251,7 @@ function recapHtml(wk){
   }
   return `<details class="card recap" ${recapOpen?'open':''}><summary class="disp" style="font-size:20px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">Week ${weekLabel(wk)} recap${sel.length?'':': stat leaders'}</summary>${body}</details>`;
 }
-let recapOpen=true;
+let recapOpen=!matchMedia('(max-width:640px)').matches;
 
 // ===================== Head-to-head (Leaderboards, 2+ schools) =====================
 const sumv=o=>Object.values(o).reduce((a,b)=>a+b,0);
