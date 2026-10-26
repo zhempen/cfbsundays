@@ -115,6 +115,13 @@ tr.rk.open .chev{transform:rotate(90deg)}
 .empty{color:var(--muted);padding:24px 0;text-align:center}
 .foot{color:var(--muted);font-size:12px;margin-top:28px}
 .contact{margin-top:28px;color:var(--muted);font-size:13px}
+.signup{margin-top:32px;padding:22px 22px 18px;border:2px solid var(--accent)}
+.signup h2{font-family:"Barlow Condensed";font-weight:600;font-size:clamp(26px,4.5vw,34px);line-height:1.05;text-transform:uppercase;letter-spacing:.4px;margin:0 0 6px}
+.signup .sub{font-size:16px;color:var(--ink);margin:0 0 14px;max-width:560px}
+.signup form{display:flex;flex-direction:column;gap:10px;max-width:480px}
+.signup input[type=email]{font:inherit;font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%}
+.signup button{white-space:nowrap;font-family:"Barlow Condensed";font-size:19px;text-transform:uppercase;letter-spacing:.6px;background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:10px 26px;cursor:pointer}
+.signup button:disabled{opacity:.6}
 .contact summary{cursor:pointer;color:var(--accent)}
 .contact form{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-width:440px}
 .contact textarea,.contact input[type=email]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%}
@@ -182,8 +189,9 @@ tr.rk.open .chev{transform:rotate(90deg)}
 </div>
 
 <div id="view"></div>
-<details class="contact" id="signup">
-<summary>This website could have been an email. Get it Tuesday mornings</summary>
+<section class="card signup" id="signup">
+<h2>This website could have been an email.</h2>
+<p class="sub">Every Tuesday morning: how your schools' former players did in the NFL that week. Stat leaders, who started, all in one short email.</p>
 <form id="signupForm" novalidate>
   <div id="suSchools" class="hint"></div>
   <input type="email" name="email" required placeholder="Your email" autocomplete="email" aria-label="Your email">
@@ -191,7 +199,7 @@ tr.rk.open .chev{transform:rotate(90deg)}
   <div class="formrow"><button type="submit" id="suSend">Sign up</button><span class="hint" id="suStatus" role="status"></span></div>
   <p class="hint" style="margin:0">One email a week during the season, covering up to 4 schools. You'll get a confirmation link first. Unsubscribe any time; your address is used for nothing else.</p>
 </form>
-</details>
+</section>
 <details class="contact" id="contact">
 <summary>Questions, bugs, or a school nickname I missed? Send me a note</summary>
 <form id="noteForm">
@@ -338,8 +346,9 @@ function loadTurnstile(){
 }
 // hidden until the handler is deployed and the sending domain is verified
 if(!SIGNUP_LIVE&&!new URLSearchParams(location.search).has('signup')){document.getElementById('signup').hidden=true;document.getElementById('emailLink').hidden=true}
-document.getElementById('signup').addEventListener('toggle',e=>{if(e.target.open){renderSignupSchools();loadTurnstile()}});
-document.getElementById('emailLink').onclick=e=>{e.preventDefault();const d=document.getElementById('signup');d.open=true;d.scrollIntoView({behavior:'smooth',block:'center'})};
+// the captcha script loads only when the signup box comes near the screen, so the page stays light
+if('IntersectionObserver' in window){new IntersectionObserver((es,o)=>{if(es.some(e=>e.isIntersecting)){loadTurnstile();o.disconnect()}},{rootMargin:'300px'}).observe(document.getElementById('signup'))}else loadTurnstile();
+document.getElementById('emailLink').onclick=e=>{e.preventDefault();document.getElementById('signup').scrollIntoView({behavior:'smooth',block:'center'})};
 document.getElementById('signupForm').onsubmit=async e=>{
   e.preventDefault();
   const st=document.getElementById('suStatus'),btn=document.getElementById('suSend');
@@ -357,6 +366,7 @@ document.getElementById('signupForm').onsubmit=async e=>{
 };
 
 function renderPicker(){
+  try{renderSignupSchools()}catch(e){}
   const selDiv=document.getElementById('selChips');
   selDiv.innerHTML=sel.map(s=>`<button class="chip sel" data-s="${esc(s)}">${sw('school',s)}${esc(s)}<span class="x">×</span></button>`).join('');
   selDiv.querySelectorAll('button').forEach(b=>b.onclick=()=>{sel=sel.filter(x=>x!==b.dataset.s);saveSel();renderPicker();render()});
