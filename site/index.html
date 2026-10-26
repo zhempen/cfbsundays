@@ -341,7 +341,7 @@ function catPlayers(cat,school){
     if(!creditSchools(p).includes(school))continue;
     if(STATV[cat]){
       const v=STATV[cat](STATS[pid]?.s||{});
-      if(v>0)out.push({p,v});
+      if(v>0)out.push({p,v,pid});
       continue;
     }
     if(cat==='total'){out.push({p});continue}
@@ -357,11 +357,13 @@ function catPlayers(cat,school){
 function expandHtml(cat,school){
   const list=catPlayers(cat,school);
   if(!list.length)return '<div class="row">Nobody qualifies.</div>';
-  return list.map(({p,v})=>{
+  return list.map(({p,v,pid})=>{
     const bits=[p.d||p.p,p.t];
     if(p.st&&!cat.startsWith('start')&&cat!=='starters')bits.push('starter');
     if(p.s!=='ACT')bits.push({RES:'IR',DEV:'practice squad',INA:'inactive',TRT:'returning'}[p.s]||'');
-    return `<div class="row"><b>${esc(p.n)}</b> (${esc(bits.filter(Boolean).join(', '))})${v!==undefined?` · ${v.toLocaleString()}`:''}</div>`;
+    let split='';
+    if(cat==='tds'){const st=STATS[pid]?.s||{};split=` (${st.rtd||0} Rush, ${st.rectd||0} Rec)`}
+    return `<div class="row"><b>${esc(p.n)}</b> (${esc(bits.filter(Boolean).join(', '))})${v!==undefined?` · ${v.toLocaleString()}${split}`:''}</div>`;
   }).join('');
 }
 function rankView(){
