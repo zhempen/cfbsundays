@@ -142,6 +142,11 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .bugrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .line{display:flex;align-items:center;gap:12px;max-width:190px;padding:2px 0}
 .line .pts{margin-left:auto}
+.game.open{margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 2px var(--gold)}
+.gamex{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:0 0 3px 3px;padding:2px 14px 10px;margin:0 0 12px;box-shadow:var(--lift)}
+.gamex .side h3{margin:12px 0 4px}
+.gamex .side h3 .pts{font-size:20px}
+@media (min-width:760px){.gamex{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}}
 @media (min-width:641px){
   .bug{display:grid;grid-template-columns:200px auto;justify-content:start;column-gap:22px;align-items:center;padding:8px 14px}
   .bug>*{grid-column:1}
@@ -170,7 +175,6 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
   font-size:20px;letter-spacing:.03em;text-transform:uppercase;background:var(--gold);color:var(--gold-ink);border:none;border-radius:3px;cursor:pointer;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -3px 0 rgba(0,0,0,.18),0 4px 10px -4px rgba(0,0,0,.45)}
 .addbtn:hover{filter:brightness(1.05)}
-.back{background:none;border:none;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;padding:0;margin:0 0 10px}
 .side h3{margin:16px 0 6px;display:flex;align-items:center;gap:10px}
 .player{display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .player .nm{font-weight:650}
@@ -348,7 +352,7 @@ body.egg-on{overflow:hidden}
 </div>
 
 <script>
-let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},POST={},sel=[],curWeek=1,tab='games',openGame=null,rankCat='starters',expanded=null,boardOpen=null;
+let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},POST={},sel=[],curWeek=1,tab='games',openGames=new Set(),rankCat='starters',expanded=null,boardOpen=null;
 let COLORS={nfl:{},school:{}};
 // readable text on a team color
 function inkFor(hex){const m=/^#?([0-9a-f]{6})$/i.exec(hex||'');if(!m)return '#fff';const v=parseInt(m[1],16),r=v>>16&255,g=v>>8&255,b=v&255;
@@ -585,19 +589,19 @@ document.getElementById('modeSel').onchange=e=>{mode=e.target.value;try{localSto
 document.querySelectorAll('#tabs button').forEach(b=>b.insertAdjacentHTML('afterbegin','<span class="hl" aria-hidden="true"></span>'));
 document.getElementById('tabs').onclick=e=>{
   const b=e.target.closest('button');if(!b||b.dataset.v===tab)return;
-  const go=()=>{tab=b.dataset.v;openGame=null;
+  const go=()=>{tab=b.dataset.v;
     history.replaceState(null,'',location.pathname+location.search+(tab==='games'?'':'#'+tab));render()};
   if(document.startViewTransition&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.startViewTransition(go);else go();
 };
 
 function render(){
   const v=document.getElementById('view');
-  if(!sel.length)openGame=null;
+  if(!sel.length)openGames.clear();
   document.querySelectorAll('#tabs button').forEach(x=>{x.classList.toggle('on',x.dataset.v===tab);x.setAttribute('aria-current',x.dataset.v===tab?'page':'false')});
   {const on=document.querySelector('#tabs button.on'),rail=document.getElementById('tabs');if(on&&rail.scrollWidth>rail.clientWidth)rail.scrollTo({left:Math.max(0,on.offsetLeft-24),behavior:'smooth'})}
   const bm=document.getElementById('bandMeta');if(bm&&GAMES.length)bm.textContent=`${/^\d+$/.test(String(weekLabel(curWeek)))?'Week '+weekLabel(curWeek):weekLabel(curWeek)} \u00b7 ${SEASON_YR}`;
   const addBtn=sel.length?'':'<button class="addbtn" type="button">+ Add a school</button>';
-  if(tab==='games')v.innerHTML=addBtn+(openGame?gameDetail(openGame):weekView());
+  if(tab==='games')v.innerHTML=addBtn+weekView();
   else if(tab==='rank')v.innerHTML=addBtn+rankView();
   else if(tab==='post')v.innerHTML=addBtn+postView();
   else if(tab==='conf')v.innerHTML=addBtn+confView();
@@ -608,11 +612,14 @@ function render(){
 }
 function wire(v){
   v.querySelectorAll('.game[data-g]').forEach(el=>el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click()}});
+  // a game expands in place to show your players; tap again to close
   v.querySelectorAll('[data-g]').forEach(el=>el.onclick=()=>{
     if(!sel.length){scrollTo(0,0);document.getElementById('schoolSearch').focus();return}
-    openGame=el.dataset.g;render();scrollTo(0,0)});
+    const id=el.dataset.g,top=el.getBoundingClientRect().top;
+    openGames.has(id)?openGames.delete(id):openGames.add(id);render();
+    const again=document.querySelector(`.game[data-g="${id}"]`);
+    if(again){scrollBy(0,again.getBoundingClientRect().top-top);again.focus({preventScroll:true})}});
   v.querySelectorAll('[data-w]').forEach(el=>el.onclick=()=>{curWeek=+el.dataset.w;render()});
-  const bk=v.querySelector('.back');if(bk)bk.onclick=()=>{openGame=null;render()};
   const cs=v.querySelector('#catSel');if(cs)cs.onchange=()=>{rankCat=cs.value;render()};
   const cfs=v.querySelector('#confSel');if(cfs)cfs.onchange=()=>{confCat=cfs.value;expanded=null;render()};
   v.querySelectorAll('[data-fper]').forEach(el=>el.onclick=()=>{fanPeriod=el.dataset.fper;expanded=null;render()});
@@ -792,14 +799,15 @@ function weekView(){
     const played=g.as!=='';
     const round=g.type!=='REG'?`<span class="badge" style="margin-left:6px">${ROUND[g.type]||g.type}</span>`:'';
     const a=+g.as,hm=+g.hs;
-    return `<div class="game" data-g="${g.id}" role="button" tabindex="0" aria-label="${g.away} at ${g.home}${played?`, final ${g.as} to ${g.hs}`:''}">
+    const open=openGames.has(g.id);
+    return `<div class="game${open?' open':''}" data-g="${g.id}" role="button" tabindex="0" aria-expanded="${open}" aria-controls="gx-${g.id}" aria-label="${g.away} at ${g.home}${played?`, final ${g.as} to ${g.hs}`:''}">
       <div class="bug"><div class="line">${tmTag(g.away)}${played?`<span class="pts${a>hm?' win':''}">${g.as}</span>`:''}</div>
       <div class="line">${tmTag(g.home)}${played?`<span class="pts${hm>a?' win':''}">${g.hs}</span>`:''}</div>${round?`<div>${round}</div>`:''}
       <div class="meta">${played?'<span class="final">Final</span> · ':''}${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
       <div class="mine">${sel.length
         ?`<div class="count ${n?'':'zero'}">${n}</div><div class="countlbl">${esc(sel.length>1?splitLabel(g,idx):lbl)}</div>`
         :`<div class="addcol">+ Add a college</div>`}</div>
-    </div>`;
+    </div>${open?`<div class="gamex" id="gx-${g.id}">${gameSides(g)}</div>`:''}`;
   }).join('');
   return h;
 }
@@ -842,21 +850,16 @@ function playerRow(e,wk,played){
   </div>`;
 }
 
-function gameDetail(id){
-  const g=GAMES.find(x=>x.id===id);if(!g)return'';
+function gameSides(g){
   const idx=teamIndex(g.wk),played=g.as!=='';
   const side=t=>{
     const dr=e=>e.p.d?+(e.p.d.match(/\d+$/)||[9])[0]:9;
     const gs=e=>played&&e.p.gs&&e.p.gs.includes(g.wk)?0:1;
     const list=(idx[t]||[]).sort((a,b)=>(a.p.s==='ACT'?0:1)-(b.p.s==='ACT'?0:1)||gs(a)-gs(b)||dr(a)-dr(b)||a.p.n.localeCompare(b.p.n));
-    return `<div class="side"><h3>${tmTag(t)}${played?` · ${t===g.away?g.as:g.hs}`:''}</h3>`+
+    return `<div class="side"><h3>${tmTag(t)}${played?`<span class="pts">${t===g.away?g.as:g.hs}</span>`:''}</h3>`+
       (list.length?list.map(e=>playerRow(e,g.wk,played)).join(''):'<p class="hint">None of your guys here.</p>')+`</div>`;
   };
-  return `<button class="back">← Week ${g.wk}</button>
-    <div class="card"><div class="bugrow">${tmTag(g.away)}<span class="at">at</span>${tmTag(g.home)}
-    ${played?`<span class="pts">${g.as}–${g.hs}</span><span class="final">Final</span>`:''}</div>
-    <div class="meta">${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
-    ${side(g.away)}${side(g.home)}`;
+  return side(g.away)+side(g.home);
 }
 
 function boardsView(){
