@@ -78,7 +78,8 @@ input[type=search]{width:100%;padding:12px 14px;font:inherit;font-size:16px;bord
 #eggAns p{margin:0 auto;max-width:620px;font-size:18px;line-height:1.5}
 #eggBack{font:inherit;font-size:16px;font-weight:600;background:none;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px 20px;cursor:pointer;margin-top:26px}
 body.egg-on{overflow:hidden}
-.recapgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:2px 28px;padding:0 0 0 4px}
+.recapgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px 28px;padding:0 0 0 4px}
+@media (max-width:600px){.recapgrid{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:no-preference){#egg:not([hidden]){animation:eggIn .35s ease-out}#eggAns:not([hidden]) .big{animation:eggIn .5s ease-out}}
 @keyframes eggIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
 .addcol{font-family:"Barlow Condensed";font-size:15px;letter-spacing:.4px;text-transform:uppercase;color:var(--accent);white-space:nowrap}
@@ -1002,15 +1003,17 @@ function recapHtml(wk){
       if(!mine.length){body+=`<p class="hint" style="margin:8px 0">${esc(sc)}: no stat lines this week.</p>`;continue}
       const sum=k=>mine.reduce((a,l)=>a+(l.w[k]||0),0);
       const tds=sum('ptd')+sum('rtd')+sum('rectd');
-      const leads=RECAP_CATS.map(c=>{const l=recapLeaders(mine,c,1)[0];
-        return l?`<div class="row"><span class="hint">${c.lbl}</span><br><b>${esc(l.p.n)}</b> <span class="hint">${teamFor(l.p,wk)}</span> ${esc(c.line(l.w))}</div>`:''}).join('');
+      const lead=c=>{const l=recapLeaders(mine,c,1)[0];
+        return l?`<div class="row"><span class="hint">${c.lbl}</span><br><b>${esc(l.p.n)}</b> <span class="hint">${teamFor(l.p,wk)}</span> ${esc(c.line(l.w))}</div>`:''};
+      const leads=`<div>${RECAP_CATS.slice(0,3).map(lead).join('')}</div><div>${RECAP_CATS.slice(3).map(lead).join('')}</div>`;
       body+=`<div style="margin:6px 0 12px"><div class="disp" style="font-size:18px;text-transform:uppercase;letter-spacing:.4px">${esc(sc)}</div>
         <p class="sub" style="margin:2px 0 6px">${sum('py').toLocaleString()} pass yds · ${sum('ry').toLocaleString()} rush yds · ${sum('recy').toLocaleString()} rec yds · ${tds} TD${tds===1?'':'s'} · ${r1(sum('sk'))} sack${r1(sum('sk'))===1?'':'s'} · ${sum('dint')} INT${sum('dint')===1?'':'s'}</p>
         <div class="recapgrid">${leads}</div></div>`;
     }
   }else{
-    body=`<div class="recapgrid">${RECAP_CATS.map(c=>{const top=recapLeaders(lines,c,3);
-      return top.length?`<div><p class="hint" style="margin:8px 0 2px;text-transform:uppercase;letter-spacing:.5px">${c.lbl}</p>${top.map(l=>row(l,c,l.p.c[0])).join('')}</div>`:''}).join('')}</div>`;
+    const block=c=>{const top=recapLeaders(lines,c,3);
+      return top.length?`<p class="hint" style="margin:8px 0 2px;text-transform:uppercase;letter-spacing:.5px">${c.lbl}</p>${top.map(l=>row(l,c,l.p.c[0])).join('')}`:''};
+    body=`<div class="recapgrid"><div>${RECAP_CATS.slice(0,3).map(block).join('')}</div><div>${RECAP_CATS.slice(3).map(block).join('')}</div></div>`;
   }
   return `<details class="card recap" ${recapOpen?'open':''}><summary class="disp" style="font-size:20px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">Week ${weekLabel(wk)} recap${sel.length?'':': stat leaders'}</summary>${body}</details>`;
 }
