@@ -365,19 +365,24 @@ def main(yr=SEASON, archive=False):
             name_team_to_pid.get((norm_name(r["player"]), r["team"]))
         if not pid or pid not in active:
             continue
-        snap_acc[pid]["off"].append(float(r["offense_pct"] or 0))
-        snap_acc[pid]["def"].append(float(r["defense_pct"] or 0))
+        snap_acc[pid]["off"].append((int(r["week"]), float(r["offense_pct"] or 0)))
+        snap_acc[pid]["def"].append((int(r["week"]), float(r["defense_pct"] or 0)))
+    # Past seasons: 50%+ of snaps on average over the season.
+    # Current season: 50%+ over his last three games, so a benched starter
+    # drops off and a newly promoted one shows up within a few weeks.
     starters = set()
     for pid, a in snap_acc.items():
         if len(a["off"]) < 2:
             continue
         if active[pid]["pos"] in ("K", "P"):
             starters.add(pid)
-        else:
-            o = statistics.mean(a["off"])
-            d = statistics.mean(a["def"])
-            if max(o, d) >= 0.5:
-                starters.add(pid)
+            continue
+        off = [v for _, v in sorted(a["off"])]
+        dfn = [v for _, v in sorted(a["def"])]
+        if not archive:
+            off, dfn = off[-3:], dfn[-3:]
+        if max(statistics.mean(off), statistics.mean(dfn)) >= 0.5:
+            starters.add(pid)
 
     # ---- depth charts: latest snapshot, best non-ST slot per player ----
     latest = max((r["dt"] for r in depth_rows), default=None)

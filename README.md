@@ -12,7 +12,7 @@ See which former players from your college teams are in each NFL game this week,
     cd site && python3 -m http.server
 
 ## Definitions
-- A **starter** is anyone averaging 50%+ of his team's offensive or defensive snaps over at least two games; kickers and punters count after two games played.
+- A **starter** is anyone averaging 50%+ of his team's offensive or defensive snaps over his last three games (current season) or the whole season (archived seasons), with a two-game minimum; kickers and punters count after two games played.
 - Rankings credit the school a player **finished** at. A "finished at X" badge marks a player who also played at the selected school.
 
 Data: [nflverse](https://github.com/nflverse/nflverse-data) (rosters, stats, snap counts, depth charts) and [nfldata](https://github.com/nflverse/nfldata) (schedule).

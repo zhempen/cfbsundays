@@ -514,7 +514,7 @@ function rankView(){
     <select id="catSel" style="font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:4px 8px">
     ${Object.entries(CATS).map(([k,lbl])=>`<option value="${k}" ${k===rankCat?'selected':''}>${lbl}</option>`).join('')}</select></h2>
     <div class="tablewrap"><table>${topList(rankCat,topN)}</table></div></div>`;
-  h+=`<p class="hint">Tap a category to see which of your players are behind the number. Ties share a rank (T-1 means tied for first). ${mode==='fin'?'Rankings credit the school a player finished at.':'Rankings credit every school a player played for, so transfers count for each stop.'} A starter is anyone taking 50%+ of his team's offensive or defensive snaps on average, minimum two games.</p>`;
+  h+=`<p class="hint">Tap a category to see which of your players are behind the number. Ties share a rank (T-1 means tied for first). ${mode==='fin'?'Rankings credit the school a player finished at.':'Rankings credit every school a player played for, so transfers count for each stop.'} ${ARCH_YR&&SEASON_YR===ARCH_YR?"A starter is anyone who took 50%+ of his team's offensive or defensive snaps on average that season, minimum two games.":"A starter is anyone taking 50%+ of his team's offensive or defensive snaps over his last three games (minimum two games), so benchings and promotions show up within a few weeks."}</p>`;
   return h;
 }
 
