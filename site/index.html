@@ -551,7 +551,8 @@ function weekView(){
   const cols=wks.length<=6?wks.length:Math.ceil(wks.length/2);
   let h=`<div class="weekbar" style="--cols:${cols}">`+wks.map(w=>`<button data-w="${w}" class="${w===curWeek?'on':''}">${weekLabel(w)}</button>`).join('')+`</div>`;
   h+=recapHtml(curWeek);
-  const gs=GAMES.filter(g=>g.wk===curWeek);
+  // live and upcoming games first, finished games below; kickoff order within each
+  const gs=GAMES.filter(g=>g.wk===curWeek).sort((a,b)=>(a.as!==''?1:0)-(b.as!==''?1:0));
   h+=gs.map(g=>{
     const n=(idx[g.away]||[]).length+(idx[g.home]||[]).length;
     const played=g.as!=='';
