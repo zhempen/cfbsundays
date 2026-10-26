@@ -314,7 +314,8 @@ function teamIndex(wk){
 }
 
 // ===================== Tuesday email signup =====================
-const SIGNUP_URL='https://cfbsundays-signup.__SUBDOMAIN__.workers.dev';
+const SIGNUP_URL='https://cfbsundays-signup.zhempen.workers.dev';
+const SIGNUP_LIVE=false;   // flip to true once Resend has verified mail.cfbsundays.com
 const TURNSTILE_SITEKEY='0x4AAAAAAFm3fLDzKxvcGskm';
 let suToken='',suWidget=null,suPicked=null;
 function renderSignupSchools(){
@@ -335,8 +336,8 @@ function loadTurnstile(){
     callback:t=>{suToken=t},'expired-callback':()=>{suToken=''},'error-callback':()=>{suToken=''}})};
   const sc=document.createElement('script');sc.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileReady';sc.async=true;document.head.appendChild(sc);
 }
-// hidden until the signup handler is deployed (its address is filled in then)
-if(SIGNUP_URL.includes('__')){document.getElementById('signup').hidden=true;document.getElementById('emailLink').hidden=true}
+// hidden until the handler is deployed and the sending domain is verified
+if(!SIGNUP_LIVE){document.getElementById('signup').hidden=true;document.getElementById('emailLink').hidden=true}
 document.getElementById('signup').addEventListener('toggle',e=>{if(e.target.open){renderSignupSchools();loadTurnstile()}});
 document.getElementById('emailLink').onclick=e=>{e.preventDefault();const d=document.getElementById('signup');d.open=true;d.scrollIntoView({behavior:'smooth',block:'center'})};
 document.getElementById('signupForm').onsubmit=async e=>{

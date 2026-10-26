@@ -5,7 +5,7 @@ name = "cfbsundays-signup"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
 workers_dev = true
-account_id = "__ACCOUNT_ID__"
+account_id = "ff4796ba0079d854581dba41b741217c"
 
 [vars]
 SITE = "https://cfbsundays.com"
