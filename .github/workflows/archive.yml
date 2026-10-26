@@ -19,11 +19,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build log
         run: python3 scripts/build.py --archive all 2> build-log.txt || (cat build-log.txt; exit 1)
+      - name: Team colors (NFL from nflverse, colleges from ESPN)
+        run: python3 scripts/colors.py 2> colors-log.txt || cat colors-log.txt
       - name: Commit result to archive-build
         run: |
           grep -v '^fetching' build-log.txt > site/archive/build-log.txt
+          cat colors-log.txt >> site/archive/build-log.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site/archive
+          git add site/archive site/colors.json
           git commit -m "Rebuilt archive with ESPN starters" || echo "no changes"
           git push origin HEAD:archive-build
