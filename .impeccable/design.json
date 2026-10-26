@@ -450,35 +450,15 @@
         "role": "primary",
         "displayName": "Team One (default)",
         "source": "--team1; replaced at runtime by the lead school's first color from site/colors.json",
-        "canonical": "#1546b8",
-        "oklch": "oklch(44.2% 0.187 263.2)",
-        "tonalRamp": [
-          "#00052e",
-          "#021b61",
-          "#0b359a",
-          "#2356c9",
-          "#447af1",
-          "#77a3fb",
-          "#b0cafb",
-          "#e6efff"
-        ]
+        "canonical": "#1b1e25",
+        "note": "Default when no school is picked: Graphite"
       },
       "team2-default": {
         "role": "primary",
         "displayName": "Team Two (default)",
         "source": "--team2; replaced at runtime by the lead school's second color",
-        "canonical": "#ffc629",
-        "oklch": "oklch(85.5% 0.166 86.2)",
-        "tonalRamp": [
-          "#130900",
-          "#312300",
-          "#533f09",
-          "#7a5c08",
-          "#a27c0d",
-          "#ca9e29",
-          "#eac46f",
-          "#ffedc6"
-        ]
+        "canonical": "#c3c9d2",
+        "note": "Default when no school is picked: Chrome"
       },
       "team-fallback-1": {
         "role": "neutral",
@@ -967,7 +947,7 @@
       "kind": "custom",
       "refersTo": "band",
       "description": "Header band in the lead school's colors: split gloss, chrome bevel, slanted second-color stripe, italic wordmark.",
-      "html": "<header class=\"ds-band\"><div class=\"ds-band-in\"><h1 class=\"ds-wordmark\">CFB Sundays</h1><p class=\"ds-band-tag\">Pick your schools. See where your guys are playing on Sundays.</p></div><p class=\"ds-band-meta\">Week 7 · 2026</p></header>",
+      "html": "<header class=\"ds-band\"><div class=\"ds-band-in\"><h1 class=\"ds-wordmark\">CFB Sundays</h1><p class=\"ds-band-tag\">Pick your schools. See where your guys are playing on Sundays.</p></div><p class=\"ds-band-meta\">Week 7 \u00b7 2026</p></header>",
       "css": ".ds-band{position:relative;overflow:hidden;color:var(--team-ink,#fff);background:var(--team1,#1546b8);font-family:Saira,system-ui,sans-serif;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.4)} .ds-band::before{content:\"\";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.26) 0,rgba(255,255,255,.08) 46%,rgba(0,0,0,.06) 54%,rgba(0,0,0,.26) 100%)} .ds-band::after{content:\"\";position:absolute;top:0;bottom:0;right:0;width:34%;background:var(--team2,#ffc629);clip-path:polygon(84px 0,100% 0,100% 100%,0 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)} .ds-band-in{position:relative;z-index:1;padding:18px 16px 14px} .ds-wordmark{margin:0;font-size:48px;line-height:.92;font-weight:800;font-style:italic;font-stretch:70%;text-transform:uppercase;letter-spacing:.01em} .ds-band-tag{margin:6px 0 0;font-size:15px;max-width:62%} .ds-band-meta{position:absolute;z-index:2;top:14px;right:16px;margin:0;font-weight:800;font-style:italic;font-stretch:72%;text-transform:uppercase;letter-spacing:.05em;font-size:15px;color:var(--team2-ink,#1b1400)}"
     },
     {
@@ -991,7 +971,7 @@
       "kind": "chip",
       "refersTo": "chip-selected",
       "description": "Slanted tags. Selected chips carry the school's two colors with computed ink; unselected chips are steel filters.",
-      "html": "<div class=\"ds-chips\"><button class=\"ds-chip ds-sel\" style=\"--c1:#ba0c2f;--c2:#2c2a29;--ci:#ffffff\"><span>Georgia<svg class=\"ds-x\" viewBox=\"0 0 10 10\" aria-hidden=\"true\"><path d=\"M2 2l6 6M8 2l-6 6\"/></svg></span></button><button class=\"ds-chip\"><span>QB · 4</span></button><button class=\"ds-chip\"><span>WR · 7</span></button></div>",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip ds-sel\" style=\"--c1:#ba0c2f;--c2:#2c2a29;--ci:#ffffff\"><span>Georgia<svg class=\"ds-x\" viewBox=\"0 0 10 10\" aria-hidden=\"true\"><path d=\"M2 2l6 6M8 2l-6 6\"/></svg></span></button><button class=\"ds-chip\"><span>QB \u00b7 4</span></button><button class=\"ds-chip\"><span>WR \u00b7 7</span></button></div>",
       "css": ".ds-chips{display:flex;flex-wrap:wrap;gap:8px} .ds-chip{font-family:Saira,system-ui,sans-serif;font-size:13px;font-weight:600;background:var(--chip,#dde3eb);color:var(--ink,#0c1526);border:1px solid var(--line,#aeb9c8);padding:4px 12px;cursor:pointer;transform:skewX(-12deg);border-radius:2px} .ds-chip>span{display:inline-block;transform:skewX(12deg)} .ds-chip:hover{border-color:var(--accent,#1546b8)} .ds-chip:focus-visible{outline:2px solid var(--gold,#ffc629);outline-offset:2px} .ds-chip.ds-sel{--c1:var(--accent,#1546b8);--c2:var(--gold,#ffc629);--ci:#fff;background:linear-gradient(90deg,var(--c2) 0 7px,var(--c1) 7px);color:var(--ci);border-color:transparent;font-stretch:74%;font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:15px;padding:5px 14px 5px 18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px -2px rgba(0,0,0,.4)} .ds-x{width:.7em;height:.7em;margin-left:8px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;opacity:.8}"
     },
     {
@@ -1007,7 +987,7 @@
       "kind": "card",
       "refersTo": "score-bug",
       "description": "A game row as a dark broadcast score bug: two-tone slanted team tags, tabular scores, FINAL meta, gold player count cell. Dark in both themes.",
-      "html": "<div class=\"ds-game\" tabindex=\"0\"><div class=\"ds-bug\"><div class=\"ds-line\"><span class=\"ds-tm\" style=\"--c1:#203731;--c2:#ffb612;--ci:#fff\"><span>GB</span></span><span class=\"ds-pts\">17</span></div><div class=\"ds-line\"><span class=\"ds-tm\" style=\"--c1:#0076b6;--c2:#b0b7bc;--ci:#fff\"><span>DET</span></span><span class=\"ds-pts ds-win\">20</span></div><div class=\"ds-meta\"><span class=\"ds-final\">Final</span> · Sun, Oct 25 · 4:25 PM ET</div></div><div class=\"ds-mine\"><div class=\"ds-count\">11</div><div class=\"ds-countlbl\">UGA 5 · BAMA 6</div></div></div>",
+      "html": "<div class=\"ds-game\" tabindex=\"0\"><div class=\"ds-bug\"><div class=\"ds-line\"><span class=\"ds-tm\" style=\"--c1:#203731;--c2:#ffb612;--ci:#fff\"><span>GB</span></span><span class=\"ds-pts\">17</span></div><div class=\"ds-line\"><span class=\"ds-tm\" style=\"--c1:#0076b6;--c2:#b0b7bc;--ci:#fff\"><span>DET</span></span><span class=\"ds-pts ds-win\">20</span></div><div class=\"ds-meta\"><span class=\"ds-final\">Final</span> \u00b7 Sun, Oct 25 \u00b7 4:25 PM ET</div></div><div class=\"ds-mine\"><div class=\"ds-count\">11</div><div class=\"ds-countlbl\">UGA 5 \u00b7 BAMA 6</div></div></div>",
       "css": ".ds-game{display:flex;align-items:stretch;color:#e7edf8;border:1px solid #0a1226;border-radius:3px;overflow:hidden;cursor:pointer;font-family:Saira,system-ui,sans-serif;font-variant-numeric:tabular-nums;background:linear-gradient(180deg,#22325a 0,#18264a 48%,#121d3a 52%,#0f1832 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 2px 4px rgba(0,0,0,.25);transition:box-shadow .15s,transform .15s cubic-bezier(.16,1,.3,1)} .ds-game:hover,.ds-game:focus-visible{outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 2px var(--gold,#ffc629),0 6px 14px -6px rgba(0,0,0,.5);transform:translateX(3px)} .ds-bug{flex:1;min-width:0;padding:9px 12px} .ds-line{display:flex;align-items:center;gap:12px;max-width:190px;padding:2px 0} .ds-tm{display:inline-flex;align-items:center;justify-content:center;min-width:52px;padding:2px 8px 2px 10px;font-stretch:70%;font-weight:800;font-style:italic;font-size:18px;letter-spacing:.03em;color:var(--ci);background:linear-gradient(90deg,var(--c2) 0 5px,var(--c1) 5px);transform:skewX(-12deg);border-radius:2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)} .ds-tm>span{display:inline-block;transform:skewX(12deg)} .ds-pts{margin-left:auto;font-stretch:70%;font-weight:800;font-size:22px;line-height:1;min-width:1.6em;text-align:center;color:#9fb0cf} .ds-pts.ds-win{color:#fff} .ds-meta{font-size:12.5px;margin-top:4px;color:#a9b6d0} .ds-final{font-stretch:72%;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:12px;color:#c9d4ea} .ds-mine{margin-left:auto;min-width:86px;padding:8px 10px;display:flex;flex-direction:column;justify-content:center;text-align:center;background:#070d1c;box-shadow:inset 1px 0 0 rgba(255,255,255,.08)} .ds-count{font-stretch:70%;font-weight:800;font-size:26px;line-height:1;color:var(--gold,#ffc629)} .ds-countlbl{font-size:10.5px;color:var(--rail-ink,#c7d2e8);text-transform:uppercase;letter-spacing:.05em;line-height:1.25;margin-top:3px}"
     },
     {
@@ -1023,7 +1003,7 @@
       "kind": "input",
       "refersTo": "input-search",
       "description": "Steel search field with an inset well; results float below and the active option fills gold.",
-      "html": "<div class=\"ds-search\"><input type=\"search\" placeholder=\"Search a school (Miami, OSU, UGA…)\"><div class=\"ds-dd\"><button class=\"ds-opt ds-act\">Georgia <span class=\"ds-cnt\">58 in NFL</span></button><button class=\"ds-opt\">Georgia Tech <span class=\"ds-cnt\">14 in NFL</span></button></div></div>",
+      "html": "<div class=\"ds-search\"><input type=\"search\" placeholder=\"Search a school (Miami, OSU, UGA\u2026)\"><div class=\"ds-dd\"><button class=\"ds-opt ds-act\">Georgia <span class=\"ds-cnt\">58 in NFL</span></button><button class=\"ds-opt\">Georgia Tech <span class=\"ds-cnt\">14 in NFL</span></button></div></div>",
       "css": ".ds-search{position:relative;font-family:Saira,system-ui,sans-serif} .ds-search input{width:100%;padding:12px 14px;font:inherit;font-size:16px;border:1px solid var(--line,#aeb9c8);border-radius:3px;background:var(--surface,#edf1f6);color:var(--ink,#0c1526);box-shadow:inset 0 2px 3px rgba(12,21,38,.08);caret-color:var(--accent,#1546b8)} .ds-search input::placeholder{color:var(--muted,#3d4a5f);opacity:1} .ds-search input:focus-visible{outline:2px solid var(--gold,#ffc629);outline-offset:2px} .ds-dd{margin-top:4px;background:var(--surface,#edf1f6);border:1px solid var(--line,#aeb9c8);border-radius:3px;box-shadow:0 14px 30px -8px rgba(0,0,0,.45)} .ds-opt{display:flex;justify-content:space-between;align-items:baseline;gap:12px;width:100%;padding:12px 14px;border:none;border-bottom:1px solid var(--line,#aeb9c8);background:none;color:var(--ink,#0c1526);font:inherit;font-size:15px;text-align:left;cursor:pointer} .ds-opt:last-child{border-bottom:none} .ds-opt .ds-cnt{color:var(--muted,#3d4a5f);font-size:13px} .ds-opt.ds-act,.ds-opt:hover{background:var(--gold,#ffc629);color:var(--gold-ink,#1b1400)} .ds-opt.ds-act .ds-cnt,.ds-opt:hover .ds-cnt{color:var(--gold-ink,#1b1400)}"
     },
     {

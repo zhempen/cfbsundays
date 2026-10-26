@@ -28,8 +28,8 @@ colors:
   stadium-rail-ink: "#b9c6df"
   stadium-badge: "#ffd65c"
   stadium-badge-bg: "#3a2e08"
-  team1-default: "#1546b8"
-  team2-default: "#ffc629"
+  team1-default: "#1b1e25"
+  team2-default: "#c3c9d2"
   team-fallback-1: "#33405a"
   team-fallback-2: "#8a96ad"
   bug-top: "#22325a"
@@ -284,8 +284,8 @@ Team identity is carried by color alone: two-tone swatches, two-tone team tags a
 A cool steel-and-navy neutral field, one gold highlight, one blue link accent, and a runtime team pair that owns the band.
 
 ### Primary
-- **Team One** (`--team1`, defaults to Varsity Blue, see `team1-default`): the lead school's first color, set at runtime from `site/colors.json`. Fills the header band, the email signup header and the easter egg screen. It is the largest color field on the page and the only one the visitor controls.
-- **Team Two** (`--team2`, defaults to Selection Gold, see `team2-default`): the lead school's second color. Fills only the slanted stripe at the right of the band, which bleeds to the viewport edge.
+- **Team One** (`--team1`, defaults to Graphite, see `team1-default`, when no school is picked): the lead school's first color, set at runtime from `site/colors.json`. Fills the header band, the email signup header and the easter egg screen. It is the largest color field on the page and the only one the visitor controls.
+- **Team Two** (`--team2`, defaults to Chrome, see `team2-default`, when no school is picked): the lead school's second color. Fills only the slanted stripe at the right of the band, which bleeds to the viewport edge and carries a brushed-metal sheen gradient over the color.
 - **Team Ink** (`--team-ink`, `--team2-ink`): text color on Team One and Team Two, computed at runtime: dark ink (`ink`) when the color's relative luminance is above 0.36, otherwise white. The same function sets `--ci` on every team tag and selected chip.
 
 ### Secondary
