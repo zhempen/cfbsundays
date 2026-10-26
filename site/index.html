@@ -524,7 +524,7 @@ function boardsView(){
     buildRanks();
     const LEAD=[['py','Pass yds'],['ptd','Pass TDs'],['ry','Rush yds'],['rtd','Rush TDs'],['recy','Rec yds'],['rectd','Rec TDs'],['tds','Rush + rec TDs'],
                 ['sk','Sacks'],['tkl','Tackles'],['dint','INTs'],['fgm','FG made']];
-    h+=`<p class="hint" style="margin:0 0 12px">Season stat totals by school, with each school\u2019s top contributor. Add schools above for their player leaderboards.</p>`;
+    h+=`<p class="hint" style="margin:0 0 12px">Season stat totals by school, with each school\u2019s top contributor. Tap a school to see every player behind its total.</p>`;
     for(const [cat,lbl] of LEAD){
       const rows=(RANKS[cat]||[]).slice(0,5).map(([sc,v],i)=>{
         let best=null,bv=0;
@@ -533,9 +533,11 @@ function boardsView(){
           const x=STATV[cat](STATS[pid]?.s||{});
           if(x>bv){bv=x;best=p}
         }
-        return `<tr><td style="width:34px">#${i+1}</td><td>${esc(sc)}</td>
+        const open=expanded===sc+'|'+cat;
+        return `<tr class="rk${open?' open':''}" data-cat="${cat}" data-sc="${esc(sc)}"><td style="width:34px">#${i+1}</td><td><span class="chev">\u25b8</span>${esc(sc)}</td>
           <td class="hint">${best?`${esc(best.n)} (${best.t}) \u00b7 ${bv.toLocaleString()}`:''}</td>
-          <td class="num"><b>${v.toLocaleString()}</b></td></tr>`;
+          <td class="num"><b>${v.toLocaleString()}</b></td></tr>`+
+          (open?`<tr><td colspan="4" class="expand">${expandHtml(cat,sc)}</td></tr>`:'');
       }).join('');
       h+=`<div class="card"><h2 style="margin:0 0 8px">${lbl}</h2><div class="tablewrap"><table>${rows}</table></div></div>`;
     }
