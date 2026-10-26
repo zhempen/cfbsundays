@@ -337,7 +337,7 @@ function loadTurnstile(){
   const sc=document.createElement('script');sc.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileReady';sc.async=true;document.head.appendChild(sc);
 }
 // hidden until the handler is deployed and the sending domain is verified
-if(!SIGNUP_LIVE){document.getElementById('signup').hidden=true;document.getElementById('emailLink').hidden=true}
+if(!SIGNUP_LIVE&&!new URLSearchParams(location.search).has('signup')){document.getElementById('signup').hidden=true;document.getElementById('emailLink').hidden=true}
 document.getElementById('signup').addEventListener('toggle',e=>{if(e.target.open){renderSignupSchools();loadTurnstile()}});
 document.getElementById('emailLink').onclick=e=>{e.preventDefault();const d=document.getElementById('signup');d.open=true;d.scrollIntoView({behavior:'smooth',block:'center'})};
 document.getElementById('signupForm').onsubmit=async e=>{
