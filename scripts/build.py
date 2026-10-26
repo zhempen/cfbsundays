@@ -683,7 +683,8 @@ def prerender(schools, active, starters, depth):
 <meta property="og:description" content="{e(desc)}">
 <style>body{{font:16px/1.6 system-ui,sans-serif;max-width:680px;margin:0 auto;padding:16px;color:#1b1b18;background:#f6f5f1}}
 @media(prefers-color-scheme:dark){{body{{color:#ece9df;background:#16150f}}a{{color:#d9544a}}}}
-a{{color:#a3261e}}li{{margin:4px 0}}</style></head><body>
+a{{color:#a3261e}}li{{margin:4px 0}}</style>
+<script data-goatcounter="https://cfbsundays.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script></head><body>
 <p><a href="/">&larr; CFB Sundays: see these players by NFL game, live stats and rankings</a></p>
 <h1>{e(title)}</h1>
 <p>{intro}</p>
