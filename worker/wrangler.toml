@@ -7,6 +7,10 @@ compatibility_date = "2026-10-01"
 workers_dev = true
 account_id = "ff4796ba0079d854581dba41b741217c"
 
+# keep error logs so failures can be read in the Cloudflare dashboard
+[observability]
+enabled = true
+
 [vars]
 SITE = "https://cfbsundays.com"
 ORIGINS = "https://cfbsundays.com,https://www.cfbsundays.com"

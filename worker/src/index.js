@@ -77,17 +77,17 @@ async function sendMail(env, { to, subject, html, text, headers }) {
   if (env.DEV_LOG_MAIL === "1") { console.log("MAIL " + JSON.stringify({ to, subject, text })); return; }   // local tests only
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${String(env.RESEND_API_KEY || "").trim()}`, "Content-Type": "application/json" },
     body: JSON.stringify({ from: env.FROM, to: [to], reply_to: env.REPLY_TO, subject, html, text, headers }),
   });
-  if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text()}`);
+  if (!r.ok) throw new Error(`Resend ${r.status}: ${(await r.text()).slice(0, 300)}`);
 }
 
 async function verifyCaptcha(env, token, ip) {
   if (!token) return false;
   if (env.DEV_FAKE_CAPTCHA === "1") return token === "pass";   // local tests only (.dev.vars, never deployed)
   const fd = new FormData();
-  fd.append("secret", env.TURNSTILE_SECRET);
+  fd.append("secret", String(env.TURNSTILE_SECRET || "").trim());
   fd.append("response", token);
   if (ip) fd.append("remoteip", ip);
   const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST", body: fd });
