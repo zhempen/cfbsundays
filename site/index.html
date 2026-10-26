@@ -184,6 +184,13 @@ async function boot(){
   if(!sel.length&&matchMedia('(pointer:fine)').matches)document.getElementById('schoolSearch').focus();
 }
 
+// lowercases, turns & into 'and', drops punctuation and filler words so
+// 'The University of Georgia' and 'Georgia' match the same school
+const FILLER=new Set(['the','university','univ','u','college','of','at']);
+function normSchool(t){
+  return String(t).toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9 ]/g,' ')
+    .split(/\s+/).filter(w=>w&&!FILLER.has(w)).join(' ');
+}
 function playersOf(school){
   const out=[];
   for(const [pid,p] of Object.entries(PLAYERS)){
@@ -229,12 +236,17 @@ function renderPicker(){
 }
 document.addEventListener('input',e=>{
   if(e.target.id!=='schoolSearch')return;
-  const q=e.target.value.trim().toLowerCase(),box=document.getElementById('schoolResults');
-  if(q.length<2){box.innerHTML='';return}
-  const match=s=>s.name.toLowerCase().includes(q)||(s.alias||[]).some(a=>a.toLowerCase().includes(q));
-  const hits=SCHOOLS.filter(s=>match(s)&&!sel.includes(s.name)).slice(0,12);
+  const raw=e.target.value.trim(),box=document.getElementById('schoolResults');
+  if(raw.length<2){box.innerHTML='';return}
+  const q=normSchool(raw)||raw.toLowerCase();
+  const hit=t=>(' '+normSchool(t)).includes(' '+q);
+  const exact=s=>[s.name,...(s.alias||[])].some(t=>normSchool(t)===q);
+  const match=s=>hit(s.name)||(s.alias||[]).some(hit);
+  const hits=SCHOOLS.filter(s=>match(s)&&!sel.includes(s.name))
+    .sort((a,b)=>exact(b)-exact(a)||(normSchool(b.name).startsWith(q))-(normSchool(a.name).startsWith(q))||b.count-a.count)
+    .slice(0,12);
   box.innerHTML=hits.map(s=>{
-    const via=!s.name.toLowerCase().includes(q)?(s.alias||[]).find(a=>a.toLowerCase().includes(q)):null;
+    const via=!hit(s.name)?(s.alias||[]).find(hit):null;
     return `<button class="chip" data-s="${esc(s.name)}">${esc(s.name)}${via?` <span style="opacity:.65">(${esc(via)})</span>`:''} · ${s.count}</button>`;
   }).join('')||'<span class="hint">No school matches.</span>';
   box.querySelectorAll('button').forEach(b=>b.onclick=()=>{sel.push(b.dataset.s);saveSel();
