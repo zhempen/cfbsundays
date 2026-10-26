@@ -42,6 +42,15 @@ nav button{font-family:"Barlow Condensed";font-size:17px;text-transform:uppercas
   background:none;border:none;color:var(--muted);padding:8px 10px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
 nav button.on{color:var(--ink);border-bottom-color:var(--accent)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.searchwrap{position:relative;margin-bottom:10px}
+.dropdown{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.35);max-height:min(60vh,380px);overflow-y:auto}
+.opt{display:flex;justify-content:space-between;align-items:baseline;gap:12px;width:100%;padding:12px 14px;border:none;border-bottom:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-size:15px;text-align:left;cursor:pointer}
+.opt:last-child{border-bottom:none}
+.opt.act,.opt:hover{background:var(--chip)}
+.opt .nick{color:var(--muted);font-size:13px;margin-left:6px}
+.opt .cnt{color:var(--muted);font-size:13px;white-space:nowrap}
+.opt.picked{opacity:.55;cursor:default}
+.dropdown .none{padding:12px 14px;color:var(--muted)}
 .chip{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:13px;cursor:pointer}
 .chip.sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .chip .x{margin-left:6px;opacity:.7}
@@ -122,8 +131,10 @@ tr.rk.open .chev{transform:rotate(90deg)}
 
 <div id="pickerArea">
   <div class="chips" id="selChips"></div>
-  <input type="search" id="schoolSearch" placeholder="Search a school (UGA, Ole Miss, Bama…)" autocomplete="off">
-  <div class="chips" id="schoolResults"></div>
+  <div class="searchwrap">
+    <input type="search" id="schoolSearch" placeholder="Search a school (UGA, Ole Miss, Bama…)" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="schoolResults">
+    <div id="schoolResults" class="dropdown" role="listbox" hidden></div>
+  </div>
   <p class="hint" id="pickHint"></p>
   <p class="hint" style="margin-top:8px">Counting:
     <select id="modeSel" style="font:inherit;font-size:13px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 7px">
@@ -234,10 +245,30 @@ function renderPicker(){
   ph.style.cursor=sel.length?'':'pointer';
   ph.onclick=sel.length?null:()=>document.getElementById('schoolSearch').focus();
 }
+let ddHits=[],ddAct=0;
+function closeDD(){const box=document.getElementById('schoolResults');box.hidden=true;box.innerHTML='';
+  document.getElementById('schoolSearch').setAttribute('aria-expanded','false');ddHits=[]}
+function pickSchool(name){
+  if(!name||sel.includes(name)){closeDD();return}
+  sel.push(name);saveSel();
+  document.getElementById('schoolSearch').value='';closeDD();renderPicker();render();
+}
+function drawDD(){
+  const box=document.getElementById('schoolResults');
+  box.innerHTML=ddHits.length?ddHits.map((s,i)=>{
+    const picked=sel.includes(s.name);
+    const nick=(s.alias||[]).slice(0,2).join(', ');
+    return `<button type="button" role="option" class="opt${i===ddAct?' act':''}${picked?' picked':''}" data-i="${i}">
+      <span>${esc(s.name)}${nick?`<span class="nick">${esc(nick)}</span>`:''}</span>
+      <span class="cnt">${picked?'\u2713 picked':s.count+' in NFL'}</span></button>`;
+  }).join(''):'<div class="none">No school matches. Try a nickname like UGA or Bama.</div>';
+  box.hidden=false;document.getElementById('schoolSearch').setAttribute('aria-expanded','true');
+  const a=box.querySelector('.opt.act');if(a)a.scrollIntoView({block:'nearest'});
+}
 document.addEventListener('input',e=>{
   if(e.target.id!=='schoolSearch')return;
-  const raw=e.target.value.trim(),box=document.getElementById('schoolResults');
-  if(raw.length<2){box.innerHTML='';return}
+  const raw=e.target.value.trim();
+  if(raw.length<2){closeDD();return}
   const q=normSchool(raw)||raw.toLowerCase();
   // partial matches anywhere count (fast typers miss letters); ranking puts
   // exact names/nicknames first, then word-start matches, then the rest
@@ -245,16 +276,24 @@ document.addEventListener('input',e=>{
   const wordHit=t=>(' '+normSchool(t)).includes(' '+q);
   const terms=s=>[s.name,...(s.alias||[])];
   const score=s=>terms(s).some(t=>normSchool(t)===q)?3:terms(s).some(wordHit)?2:1;
-  const hits=SCHOOLS.filter(s=>terms(s).some(hit)&&!sel.includes(s.name))
+  ddHits=SCHOOLS.filter(s=>terms(s).some(hit))
     .sort((a,b)=>score(b)-score(a)||b.count-a.count)
-    .slice(0,12);
-  box.innerHTML=hits.map(s=>{
-    const via=!hit(s.name)?(s.alias||[]).find(hit):null;
-    return `<button class="chip" data-s="${esc(s.name)}">${esc(s.name)}${via?` <span style="opacity:.65">(${esc(via)})</span>`:''} · ${s.count}</button>`;
-  }).join('')||'<span class="hint">No school matches.</span>';
-  box.querySelectorAll('button').forEach(b=>b.onclick=()=>{sel.push(b.dataset.s);saveSel();
-    document.getElementById('schoolSearch').value='';box.innerHTML='';renderPicker();render()});
+    .slice(0,10);
+  ddAct=Math.max(0,ddHits.findIndex(s=>!sel.includes(s.name)));
+  drawDD();
 });
+document.getElementById('schoolSearch').addEventListener('keydown',e=>{
+  if(!ddHits.length)return;
+  if(e.key==='ArrowDown'){e.preventDefault();ddAct=(ddAct+1)%ddHits.length;drawDD()}
+  else if(e.key==='ArrowUp'){e.preventDefault();ddAct=(ddAct-1+ddHits.length)%ddHits.length;drawDD()}
+  else if(e.key==='Enter'){e.preventDefault();pickSchool(ddHits[ddAct]?.name)}
+  else if(e.key==='Escape'){closeDD()}
+});
+const ddBox=document.getElementById('schoolResults');
+ddBox.addEventListener('pointerdown',e=>e.preventDefault());
+ddBox.addEventListener('click',e=>{const o=e.target.closest('.opt');if(o)pickSchool(ddHits[+o.dataset.i]?.name)});
+document.getElementById('schoolSearch').addEventListener('blur',()=>setTimeout(closeDD,120));
+document.getElementById('schoolSearch').addEventListener('focus',e=>{if(e.target.value.trim().length>=2)e.target.dispatchEvent(new Event('input',{bubbles:true}))});
 document.getElementById('modeSel').value=mode;
 document.getElementById('modeSel').onchange=e=>{mode=e.target.value;try{localStorage.setItem('mode',mode)}catch(err){};render()};
 document.getElementById('tabs').onclick=e=>{
