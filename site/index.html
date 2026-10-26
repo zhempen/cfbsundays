@@ -332,6 +332,7 @@ function wire(v){
   const bk=v.querySelector('.back');if(bk)bk.onclick=()=>{openGame=null;render()};
   const cs=v.querySelector('#catSel');if(cs)cs.onchange=()=>{rankCat=cs.value;render()};
   const cfs=v.querySelector('#confSel');if(cfs)cfs.onchange=()=>{confCat=cfs.value;expanded=null;render()};
+  v.querySelectorAll('[data-fper]').forEach(el=>el.onclick=()=>{fanPeriod=el.dataset.fper;expanded=null;render()});
   v.querySelectorAll('[data-fan]').forEach(el=>el.onclick=()=>{fanMode=el.dataset.fan;try{localStorage.setItem('fanMode',fanMode)}catch(e){};render()});
   const rc=v.querySelector('details.recap');if(rc)rc.addEventListener('toggle',()=>{recapOpen=rc.open});
   const ab=v.querySelector('.addbtn');
@@ -861,27 +862,38 @@ function draftView(){
 
 // ===================== Fantasy tab =====================
 let fanMode='fp';try{fanMode=localStorage.getItem('fanMode')||'fp'}catch(e){}
+let fanPeriod='season';
 function fanView(){
   const k=fanMode,lw=latestStatWeek();
-  const pts=pid=>STATS[pid]?.s?.[k]||0;
+  const statWeeks=[...new Set(Object.values(STATS).flatMap(x=>Object.keys(x.w).map(Number)))].sort((a,b)=>a-b);
+  if(fanPeriod!=='season'&&!statWeeks.includes(+fanPeriod))fanPeriod='season';
+  const wkSel=fanPeriod==='season'?null:+fanPeriod;
+  const per=wkSel?`Week ${weekLabel(wkSel)}`:'Season';
+  const pts=pid=>wkSel?(STATS[pid]?.w?.[wkSel]?.[k]||0):(STATS[pid]?.s?.[k]||0);
   const games=pid=>STATS[pid]?.g||0;
   const wkPts=(pid,w)=>STATS[pid]?.w?.[w]?.[k]||0;
   const r1=v=>Math.round(v*10)/10;
   let h=`<div class="chips" style="margin:0 0 12px">
     <button class="chip${k==='fp'?' sel':''}" data-fan="fp">PPR</button>
     <button class="chip${k==='fs'?' sel':''}" data-fan="fs">Standard</button></div>`;
+  const opts=['season',...statWeeks];
+  const cols=opts.length<=10?opts.length:Math.ceil(opts.length/2);
+  h+=`<div class="weekbar" style="--cols:${cols};margin-bottom:10px">${opts.map(o=>
+    `<button data-fper="${o}" class="${String(o)===String(fanPeriod)?'on':''}">${o==='season'?'Season':weekLabel(o)}</button>`).join('')}</div>`;
   // school totals for ranking
   const tot={};
   for(const [pid,p] of Object.entries(PLAYERS)){const v=pts(pid);if(!v)continue;for(const sc of creditSchools(p))tot[sc]=(tot[sc]||0)+v}
   const sortedTot=Object.entries(tot).sort((a,b)=>b[1]-a[1]);const totVals=sortedTot.map(x=>x[1]);
-  const scorerRow=(pid,p)=>plRow(p,`<b>${r1(pts(pid))}</b> pts · ${games(pid)?r1(pts(pid)/games(pid)):0}/gm${lw?` · Wk ${lw}: ${r1(wkPts(pid,lw))}`:''}`);
+  const scorerRow=(pid,p)=>wkSel
+    ?plRow(p,`<b>${r1(pts(pid))}</b> pts · ${esc(fmtLine(STATS[pid]?.w?.[wkSel]))}`)
+    :plRow(p,`<b>${r1(pts(pid))}</b> pts · ${games(pid)?r1(pts(pid)/games(pid)):0}/gm${lw?` · Wk ${weekLabel(lw)}: ${r1(wkPts(pid,lw))}`:''}`);
   for(const sc of sel){
     const list=Object.entries(PLAYERS).filter(([pid,p])=>creditSchools(p).includes(sc)&&pts(pid)>0).sort((a,b)=>pts(b[0])-pts(a[0]));
     const i=sortedTot.findIndex(x=>x[0]===sc);
     const wkTot=list.reduce((a,[pid])=>a+wkPts(pid,lw),0);
     const kk='FS|'+sc+'|',open=expanded===kk;
     h+=`<div class="card"><h2 style="margin:0 0 4px">${esc(sc)} fantasy</h2>
-      <p class="sub" style="margin:0 0 10px">${r1(tot[sc]||0).toLocaleString()} season pts · ${i>=0?compRankLabel(totVals,i,tot[sc])+' of '+totVals.length+' schools':'unranked'}${lw?` · Week ${lw}: ${r1(wkTot)} pts`:''}</p>
+      <p class="sub" style="margin:0 0 10px">${per}: ${r1(tot[sc]||0).toLocaleString()} pts · ${i>=0?compRankLabel(totVals,i,tot[sc])+' of '+totVals.length+' schools':'unranked'}${!wkSel&&lw?` · Week ${weekLabel(lw)}: ${r1(wkTot)} pts`:''}</p>
       <div class="expand" style="padding:2px 0 4px 4px">${list.slice(0,10).map(([pid,p])=>scorerRow(pid,p)).join('')||'<div class="row">No fantasy points yet.</div>'}</div>
       ${list.length>10?`<table><tr class="rk${open?' open':''}" data-kind="FS" data-sc="${esc(sc)}" data-cat=""><td><span class="chev">▸</span>All ${list.length} scorers</td></tr>
         ${open?`<tr><td class="expand">${list.slice(10).map(([pid,p])=>scorerRow(pid,p)).join('')}</td></tr>`:''}</table>`:''}
@@ -893,11 +905,11 @@ function fanView(){
       return {key:sc,label:sc,value:r1(v),rank:compRankLabel(totVals,i,v),sub:best?`${esc(best.n)} (${best.t}) · ${r1(bv)}`:'',
         list:()=>Object.entries(PLAYERS).filter(([pid,p])=>creditSchools(p).includes(sc)&&pts(pid)>0).sort((a,b)=>pts(b[0])-pts(a[0])).map(([pid,p])=>scorerRow(pid,p)).join('')};
     });
-    h+=`<div class="card"><h2 style="margin:0 0 8px">Fantasy points by school</h2><div class="tablewrap"><table>${rankRows('FT',rows)}</table></div>
+    h+=`<div class="card"><h2 style="margin:0 0 8px">Fantasy points by school \u00b7 ${per}</h2><div class="tablewrap"><table>${rankRows('FT',rows)}</table></div>
       <p class="hint" style="margin:8px 0 0">Tap a school to see every scorer.</p></div>`;
     const topP=Object.entries(PLAYERS).filter(([pid])=>pts(pid)>0).sort((a,b)=>pts(b[0])-pts(a[0])).slice(0,25);
-    h+=`<div class="card"><h2 style="margin:0 0 8px">Top 25 fantasy players and where they played</h2>
-      <div class="expand" style="padding:2px 0 4px 4px">${topP.map(([pid,p])=>plRow(p,`<b>${r1(pts(pid))}</b> pts · <span style="color:var(--accent)">${esc(p.c[0])}</span>`)).join('')}</div></div>`;
+    h+=`<div class="card"><h2 style="margin:0 0 8px">Top 25 fantasy players \u00b7 ${per}</h2>
+      <div class="expand" style="padding:2px 0 4px 4px">${topP.map(([pid,p])=>plRow(p,`<b>${r1(pts(pid))}</b> pts · <span style="color:var(--accent)">${esc(p.c[0])}</span>${wkSel?` · ${esc(fmtLine(STATS[pid]?.w?.[wkSel]))}`:''}`)).join('')}</div></div>`;
   }
   h+=`<p class="hint">${k==='fp'?'PPR (a point per catch)':'Standard scoring'} from the official weekly stats. Offensive players and kickers; defensive players don’t score in standard leagues.</p>`;
   return h;
