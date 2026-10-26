@@ -119,6 +119,12 @@ def fetch_csv(url):
 KEEP_STATUS = {"ACT", "RES", "INA", "DEV", "TRT"}
 NO_COLLEGE = "No college"
 
+# Earlier college stops missing from nflverse, by gsis id. Each school is
+# added after the player's listed schools (the final school stays first).
+EXTRA_COLLEGES = {
+    "00-0036945": ["Georgia"],      # Justin Fields: Georgia 2018, then Ohio State
+}
+
 # Schools mostly known by a short form display that form everywhere;
 # the formal name stays searchable as an alias.
 RENAME = {
@@ -335,6 +341,7 @@ def main(yr=SEASON, archive=False):
         # the current season trusts the roster and fills gaps from the master
         college = (m.get("college_name") or r["college"]) if archive else (r["college"] or m.get("college_name"))
         colleges = [RENAME.get(c.strip(), c.strip()) for c in (college or "").split(";") if c.strip()]
+        colleges += [c for c in EXTRA_COLLEGES.get(r["gsis_id"], []) if c not in colleges]
         if not colleges:
             colleges = [NO_COLLEGE]   # mostly International Pathway players
         entry = r["entry_year"] or m.get("rookie_season") or ""
