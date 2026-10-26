@@ -269,13 +269,18 @@ document.addEventListener('input',e=>{
   if(e.target.id!=='schoolSearch')return;
   const raw=e.target.value.trim();
   if(raw.length<2){closeDD();return}
-  const q=normSchool(raw)||raw.toLowerCase();
-  // partial matches anywhere count (fast typers miss letters); ranking puts
-  // exact names/nicknames first, then word-start matches, then the rest
-  const hit=t=>normSchool(t).includes(q);
-  const wordHit=t=>(' '+normSchool(t)).includes(' '+q);
-  const terms=s=>[s.name,...(s.alias||[])];
-  const score=s=>terms(s).some(t=>normSchool(t)===q)?3:terms(s).some(wordHit)?2:1;
+  // Typed text is matched as-is against each school's name, nicknames, and
+  // formal forms ('University of X', 'X University'), so 'university of geor'
+  // works mid-typing. A filler-stripped comparison is a backup for forms like
+  // 'The Ohio State University'. Partial matches anywhere count (fast typers
+  // miss letters); exact matches rank first, then word starts, then the rest.
+  const rq=raw.toLowerCase().replace(/\s+/g,' ');
+  const nq=normSchool(raw);
+  const low=t=>t.toLowerCase();
+  const hit=t=>low(t).includes(rq)||(nq&&normSchool(t).includes(nq));
+  const wordHit=t=>(' '+low(t)).includes(' '+rq)||(nq&&(' '+normSchool(t)).includes(' '+nq));
+  const terms=s=>[s.name,...(s.alias||[]),'University of '+s.name,s.name+' University'];
+  const score=s=>terms(s).some(t=>low(t)===rq||(nq&&normSchool(t)===nq))?3:terms(s).some(wordHit)?2:1;
   ddHits=SCHOOLS.filter(s=>terms(s).some(hit))
     .sort((a,b)=>score(b)-score(a)||b.count-a.count)
     .slice(0,10);
