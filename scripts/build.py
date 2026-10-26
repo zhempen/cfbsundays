@@ -700,6 +700,8 @@ def prerender(schools, active, starters, depth):
                  f"Updated {today} from NFL roster data.")
         page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-180.png">
 <title>{e(title)} - CFB Sundays</title>
 <meta name="description" content="{e(desc)}">
 <link rel="canonical" href="{DOMAIN}/s/{slug}.html">
