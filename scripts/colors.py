@@ -21,7 +21,30 @@ MANUAL = {
     "FAU": "Florida Atlantic", "UTSA": "UTSA", "UTEP": "UTEP", "Louisiana": "Louisiana",
     "Louisiana-Monroe": "UL Monroe", "UMass": "Massachusetts", "Hawaii": "Hawai'i",
     "San Jose State": "San José State", "Texas A&M": "Texas A&M",
+    # renamed schools and roster spellings that differ from ESPN's
+    "Sam Houston State": "Sam Houston", "McNeese State": "McNeese", "Nicholls State": "Nicholls",
+    "Grambling State": "Grambling", "Southeastern Louisiana": "SE Louisiana",
+    "Stephen F. Austin State": "Stephen F. Austin", "Chattanooga": "Chattanooga", "UT Martin": "UT Martin",
+    "Northwestern State (LA)": "Northwestern State", "Towson State": "Towson",
+    "Cal Poly (San Luis Obispo)": "Cal Poly", "Texas A&M-Commerce": "East Texas A&M",
+    "West Texas State": "West Texas A&M", "Southern Utah State": "Southern Utah",
+    "Tennessee Technological Univ": "Tennessee Tech", "Houston Baptist University": "Houston Christian",
+    "Mercer University, Atlanta": "Mercer", "Indiana PA,  University of": "Indiana (PA)",
+    "Pittsburg State (KS)": "Pittsburg State", "Minn. State-Mankato": "Minnesota State",
+    "Grand Valley": "Grand Valley State", "Northeastern University, Mass": "Northeastern",
+    "Colorado State (Pueblo)": "CSU Pueblo", "Texas A&M University-Kingsville": "Texas A&M-Kingsville",
+    "Northeastern State (Ok)": "Northeastern State", "Wayne State, Mich.": "Wayne State (MI)",
+    "University of West Florida": "West Florida", "Nebraska-Omaha": "Omaha",
 }
+
+def variants(name):
+    """Plain forms of a roster spelling: drop University/College, 'University of X' -> X."""
+    n = re.sub(r"\s*\(.*?\)", "", name)
+    out = [n]
+    out.append(re.sub(r"^University of\s+", "", n))
+    out.append(re.sub(r"\s+(University|College|Univ\.?)$", "", n))
+    out.append(re.sub(r"\s+State University$", " State", n))
+    return out
 
 def get(url):
     req = urllib.request.Request(url, headers={"User-Agent": "cfbsundays-build"})
@@ -75,7 +98,7 @@ def main():
     for name, aliases in sorted(schools.items()):
         if name == "No college":
             continue
-        cands = [MANUAL.get(name), name, *aliases,
+        cands = [MANUAL.get(name), name, *variants(name), *aliases,
                  re.sub(r"\bState\b", "St", name), name.replace("Saint", "St")]
         hit = next((by_key[key(c)] for c in cands if c and key(c) in by_key), None)
         if hit:

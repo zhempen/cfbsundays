@@ -5,7 +5,7 @@ Downloads free nflverse data (rosters, weekly stats, snap counts, depth
 charts, schedule) and writes the small JSON files the static site reads.
 Run from the repo root: python3 scripts/build.py
 """
-import csv, io, json, os, re, statistics, sys, urllib.request
+import csv, html, io, json, os, re, statistics, sys, urllib.request
 sys.path.insert(0, os.path.dirname(__file__))
 from conferences import conference
 from collections import defaultdict
@@ -137,6 +137,11 @@ RENAME = {
     "Louisiana-Lafayette": "Louisiana", "University of South Florida": "South Florida",
     "UMass Amherst": "UMass", "Middle Tennessee State": "Middle Tennessee",
     "Texas State-San Marcos": "Texas State", "Jackson State University": "Jackson State",
+    # the same school under two names across seasons (mostly the master player file)
+    "Brigham Young": "BYU", "Texas Christian": "TCU", "Alabama-Birmingham": "UAB",
+    "Mount Union College": "Mount Union", "California Lutheran University": "California Lutheran",
+    "University of Indianapolis": "Indianapolis", "Tennessee-Chattanooga": "Chattanooga",
+    "Tennessee-Martin": "UT Martin", "No College": NO_COLLEGE, "Unknown": NO_COLLEGE,
 }
 
 ALIASES = {
@@ -236,7 +241,7 @@ ALIASES = {
     "East Carolina": ["ECU", "Pirates"],
     "Western Kentucky": ["WKU", "Hilltoppers", "Tops"],
     "Middle Tennessee": ["MTSU", "Blue Raiders"],
-    "Georgia Southern": ["GSU", "Eagles", "Southern"],
+    "Georgia Southern": ["GSU", "Eagles", "Georgia Southern Eagles"],
     "Georgia State": ["GSU", "Panthers"],
     "Louisiana": ["UL", "Ragin Cajuns", "Cajuns", "Louisiana-Lafayette", "ULL"],
     "Louisiana Tech": ["La Tech", "Bulldogs"],
@@ -340,7 +345,12 @@ def main(yr=SEASON, archive=False):
         # archived seasons prefer the master file (fuller transfer lists);
         # the current season trusts the roster and fills gaps from the master
         college = (m.get("college_name") or r["college"]) if archive else (r["college"] or m.get("college_name"))
-        colleges = [RENAME.get(c.strip(), c.strip()) for c in (college or "").split(";") if c.strip()]
+        # unescape first: the master file has "Texas A&amp;M", which split into two schools
+        colleges = []
+        for c in html.unescape(college or "").split(";"):
+            c = RENAME.get(c.strip(), c.strip())
+            if c and c not in colleges:
+                colleges.append(c)
         colleges += [c for c in EXTRA_COLLEGES.get(r["gsis_id"], []) if c not in colleges]
         if not colleges:
             colleges = [NO_COLLEGE]   # mostly International Pathway players
