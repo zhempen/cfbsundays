@@ -84,6 +84,7 @@ tr.rk.open .chev{transform:rotate(90deg)}
 .expand{padding:4px 0 10px 14px;color:var(--muted);font-size:13.5px}
 .expand b{color:var(--ink);font-weight:600}
 .expand .row{padding:2px 0}
+.nflrk{margin-left:6px;font-size:12px;color:var(--accent)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:0 0 12px}
 .empty{color:var(--muted);padding:24px 0;text-align:center}
 .foot{color:var(--muted);font-size:12px;margin-top:28px}
@@ -271,7 +272,7 @@ function wire(v){
     boardOpen=boardOpen===el.dataset.bo?null:el.dataset.bo;render();
   });
   v.querySelectorAll('tr.rk').forEach(el=>el.onclick=()=>{
-    const k=el.dataset.sc+'|'+el.dataset.cat;
+    const k=(el.dataset.kind?el.dataset.kind+'|':'')+el.dataset.sc+'|'+el.dataset.cat;
     expanded=expanded===k?null:k;render();
   });
 }
@@ -335,6 +336,16 @@ const GRP=p=>({T:'OL',G:'OL',C:'OL',OT:'OL',OG:'OL',DE:'DL',DT:'DL',NT:'DL',EDGE
   ILB:'LB',OLB:'LB',MLB:'LB',CB:'DB',S:'DB',FS:'DB',SS:'DB',FB:'RB',LS:'ST'}[p]||p);
 const STATV={py:s=>s.py||0,ptd:s=>s.ptd||0,ry:s=>s.ry||0,rtd:s=>s.rtd||0,recy:s=>s.recy||0,rectd:s=>s.rectd||0,sk:s=>s.sk||0,
   tkl:s=>(s.tk||0)+(s.ast||0),dint:s=>s.dint||0,tds:s=>(s.rtd||0)+(s.rectd||0),fgm:s=>s.fgm||0};
+const LEAD_CATS=[['py','Pass yds'],['ptd','Pass TDs'],['ry','Rush yds'],['rtd','Rush TDs'],['recy','Rec yds'],['rectd','Rec TDs'],['tds','Rush + Rec TDs'],
+  ['sk','Sacks'],['tkl','Tackles'],['dint','INTs'],['fgm','FG made']];
+const _nflVals={};
+function nflRank(cat,v){
+  if(!(v>0))return '';
+  if(!_nflVals[cat])_nflVals[cat]=Object.values(STATS).map(x=>STATV[cat](x.s||{})).filter(x=>x>0);
+  const arr=_nflVals[cat];
+  let higher=0,same=0;for(const x of arr){if(x>v)higher++;else if(x===v)same++}
+  return (same>1?'T-':'#')+(higher+1);
+}
 function catPlayers(cat,school){
   const out=[];
   for(const [pid,p] of Object.entries(PLAYERS)){
@@ -363,7 +374,8 @@ function expandHtml(cat,school){
     if(p.s!=='ACT')bits.push({RES:'IR',DEV:'practice squad',INA:'inactive',TRT:'returning'}[p.s]||'');
     let split='';
     if(cat==='tds'){const st=STATS[pid]?.s||{};split=` (${st.rtd||0} Rush, ${st.rectd||0} Rec)`}
-    return `<div class="row"><b>${esc(p.n)}</b> (${esc(bits.filter(Boolean).join(', '))})${v!==undefined?` · ${v.toLocaleString()}${split}`:''}</div>`;
+    const nr=STATV[cat]&&v!==undefined?` <span class="nflrk">NFL ${nflRank(cat,v)}</span>`:'';
+    return `<div class="row"><b>${esc(p.n)}</b> (${esc(bits.filter(Boolean).join(', '))})${v!==undefined?` · ${v.toLocaleString()}${split}`:''}${nr}</div>`;
   }).join('');
 }
 function rankView(){
@@ -511,21 +523,37 @@ function boardsView(){
       <div class="chips">${topTeams.map(([t,n])=>chip('team',t,n)).join('')}</div>
       ${openList('team')}
       <div class="tablewrap"><table>
-      <tr><th colspan="3">Season leaders</th></tr>
-      ${top('py').slice(0,2).map(x=>row(x,'pass yds')).join('')}
-      ${top('ry').slice(0,3).map(x=>row(x,'rush yds')).join('')}
-      ${top('recy').slice(0,3).map(x=>row(x,'rec yds')).join('')}
-      ${top('sk').slice(0,2).map(x=>row(x,'sacks')).join('')}
-      ${top('ptd').slice(0,1).map(x=>row(x,'pass TD')).join('')}
-      ${top('rtd').slice(0,1).map(x=>row(x,'rush TD')).join('')}
-      ${top('rectd').slice(0,1).map(x=>row(x,'rec TD')).join('')}
-      ${top('fgm').slice(0,1).map(x=>row(x,'FG')).join('')}
+      <tr><th>Season leaders</th><th></th><th class="num">Value</th><th class="num">NFL rank</th></tr>
+      ${LEAD_CATS.map(([cat,lbl])=>{
+        let best=null,bv=0;
+        for(const e of ps){const x=STATV[cat](STATS[e.pid]?.s||{});if(x>bv){bv=x;best=e}}
+        const k='L|'+sc+'|'+cat,open=expanded===k;
+        if(!best)return `<tr><td>${lbl}</td><td class="hint">\u2013</td><td class="num">0</td><td class="num">\u2013</td></tr>`;
+        return `<tr class="rk${open?' open':''}" data-kind="L" data-cat="${cat}" data-sc="${esc(sc)}">
+          <td><span class="chev">\u25b8</span>${lbl}</td>
+          <td><b>${esc(best.p.n)}</b> <span class="hint">${best.p.t}</span>${!best.primary?' <span class="badge">finished at '+esc(best.p.c[0])+'</span>':''}</td>
+          <td class="num">${bv.toLocaleString()}</td><td class="num"><b>${nflRank(cat,bv)}</b></td></tr>`+
+          (open?`<tr><td colspan="4" class="expand">${expandHtml(cat,sc)}</td></tr>`:'');
+      }).join('')}
+      </table></div></div>`;
+    buildRanks();
+    h+=`<div class="card"><h2 style="margin:0 0 8px">${esc(sc)} totals</h2>
+      <div class="tablewrap"><table>
+      <tr><th>Category</th><th class="num">Total</th><th class="num">Rank among schools</th></tr>
+      ${LEAD_CATS.map(([cat,lbl])=>{
+        const r=rankOf(cat,sc);
+        const k='T|'+sc+'|'+cat,open=expanded===k;
+        if(!r)return `<tr><td>${lbl}</td><td class="num">0</td><td class="num">\u2013</td></tr>`;
+        return `<tr class="rk${open?' open':''}" data-kind="T" data-cat="${cat}" data-sc="${esc(sc)}">
+          <td><span class="chev">\u25b8</span>${lbl}</td><td class="num">${r.val.toLocaleString()}</td>
+          <td class="num"><b>${r.label}</b> <span class="hint">of ${(RANKS[cat]||[]).length}</span></td></tr>`+
+          (open?`<tr><td colspan="3" class="expand">${expandHtml(cat,sc)}</td></tr>`:'');
+      }).join('')}
       </table></div></div>`;
   }
   if(!sel.length){
     buildRanks();
-    const LEAD=[['py','Pass yds'],['ptd','Pass TDs'],['ry','Rush yds'],['rtd','Rush TDs'],['recy','Rec yds'],['rectd','Rec TDs'],['tds','Rush + Rec TDs'],
-                ['sk','Sacks'],['tkl','Tackles'],['dint','INTs'],['fgm','FG made']];
+    const LEAD=LEAD_CATS;
     h+=`<p class="hint" style="margin:0 0 12px">Season stat totals by school, with each school\u2019s top contributor. Tap a school to see every player behind its total.</p>`;
     for(const [cat,lbl] of LEAD){
       const rows=(RANKS[cat]||[]).slice(0,5).map(([sc,v],i)=>{
@@ -544,11 +572,13 @@ function boardsView(){
       h+=`<div class="card"><h2 style="margin:0 0 8px">${lbl}</h2><div class="tablewrap"><table>${rows}</table></div></div>`;
     }
   }
-  const tally=SCHOOLS.slice(0,15);
-  h+=`<div class="card"><h2 style="margin:0 0 8px">Most players in the NFL, by school</h2>
-    <div class="tablewrap"><table><tr><th>School</th><th class="num">Players</th><th class="num">Finished there</th></tr>
-    ${tally.map(s=>`<tr><td>${esc(s.name)}</td><td class="num">${s.count}</td><td class="num">${s.primary}</td></tr>`).join('')}
-    </table></div></div>`;
+  if(!sel.length){
+    const tally=SCHOOLS.slice(0,15);
+    h+=`<div class="card"><h2 style="margin:0 0 8px">Most players in the NFL, by school</h2>
+      <div class="tablewrap"><table><tr><th>School</th><th class="num">Players</th><th class="num">Finished there</th></tr>
+      ${tally.map(s=>`<tr><td>${esc(s.name)}</td><td class="num">${s.count}</td><td class="num">${s.primary}</td></tr>`).join('')}
+      </table></div></div>`;
+  }
   return h;
 }
 
