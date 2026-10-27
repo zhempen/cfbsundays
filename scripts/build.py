@@ -425,13 +425,16 @@ def main(yr=SEASON, archive=False):
     # ---- starters from snap counts; specialists count by games played ----
     snap_acc = defaultdict(lambda: {"off": [], "def": []})
     played = defaultdict(set)      # pid -> weeks with any offense, defense or special-teams snap
+    snaps = defaultdict(dict)      # pid -> {week: [offense, defense, special teams]} for the stat lines
     for r in snaps_rows:
         pid = pfr_to_pid.get(r["pfr_player_id"]) or \
             name_team_to_pid.get((norm_name(r["player"]), r["team"]))
         if not pid or pid not in active:
             continue
-        if any(float(r.get(k) or 0) > 0 for k in ("offense_snaps", "defense_snaps", "st_snaps")):
+        sn = [int(float(r.get(k) or 0)) for k in ("offense_snaps", "defense_snaps", "st_snaps")]
+        if any(sn):
             played[pid].add(int(r["week"]))
+            snaps[pid][int(r["week"])] = sn
         if r["game_type"] != "REG":
             continue
         snap_acc[pid]["off"].append((int(r["week"]), float(r["offense_pct"] or 0)))
@@ -533,6 +536,8 @@ def main(yr=SEASON, archive=False):
         pw = played.get(pid, set()) | set(game_starts.get(pid, [])) | set(weekly.get(pid, {})) | set(post_weekly.get(pid, {}))
         if pw:
             row["pw"] = sorted(pw)
+        if snaps.get(pid):
+            row["sn"] = {str(w): v for w, v in sorted(snaps[pid].items())}
         # team history for players who changed teams mid-season: [[from_week, team], ...]
         hist = []
         for w in sorted(wk_team.get(pid, {})):
