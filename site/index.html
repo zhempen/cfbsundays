@@ -69,7 +69,6 @@ h3{font-size:19px}
   font-style:italic;text-transform:uppercase;letter-spacing:.05em;font-size:15px;color:var(--team2-ink,#1b1400)}
 .wordmark{font-size:clamp(40px,8vw,58px);line-height:.92;margin:0;text-shadow:0 2px 0 rgba(0,0,0,.28)}
 .tag{margin:6px 0 0;font-size:15px;max-width:min(30em,62%)}
-.tag a{color:inherit;font-weight:700;white-space:nowrap}
 
 /* the menu rail: dark strip, slanted labels, gold selection bar */
 nav{background:var(--rail);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 var(--gold)}
@@ -287,7 +286,7 @@ body.egg-on{overflow:hidden}
 <div class="wrap bandin">
 <h1 class="wordmark">CFB Sundays</h1>
 <p class="bandmeta" id="bandMeta"></p>
-<p class="tag">Pick your schools. See where your guys are playing on Sundays. <a href="#signup" id="emailLink">Get it by email</a></p>
+<p class="tag">Pick your schools. See where your guys are playing on Sundays.</p>
 </div>
 </header>
 <div class="wrap picker">
@@ -499,10 +498,9 @@ function loadTurnstile(){
   const sc=document.createElement('script');sc.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileReady';sc.async=true;document.head.appendChild(sc);
 }
 // hidden until the handler is deployed and the sending domain is verified
-if(!SIGNUP_LIVE&&!new URLSearchParams(location.search).has('signup')){document.getElementById('signup').hidden=true;document.getElementById('emailLink').hidden=true}
+if(!SIGNUP_LIVE&&!new URLSearchParams(location.search).has('signup')){document.getElementById('signup').hidden=true}
 // the captcha script loads only when the signup box comes near the screen, so the page stays light
 if('IntersectionObserver' in window){new IntersectionObserver((es,o)=>{if(es.some(e=>e.isIntersecting)){loadTurnstile();o.disconnect()}},{rootMargin:'300px'}).observe(document.getElementById('signup'))}else loadTurnstile();
-document.getElementById('emailLink').onclick=e=>{e.preventDefault();document.getElementById('signup').scrollIntoView({behavior:'smooth',block:'center'})};
 document.getElementById('signupForm').onsubmit=async e=>{
   e.preventDefault();
   const st=document.getElementById('suStatus'),btn=document.getElementById('suSend');
