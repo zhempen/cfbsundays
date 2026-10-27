@@ -179,6 +179,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .player{display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .player .nm{font-weight:650}
 .pos{color:var(--muted);font-size:12.5px;min-width:42px;font-family:var(--disp);font-stretch:74%;font-weight:700}
+.jn{color:var(--muted);font-weight:600;font-size:.82em;margin-left:6px;font-variant-numeric:tabular-nums}
 .badge{font-size:11px;padding:1px 7px;border-radius:2px;background:var(--badge-bg);color:var(--badge);white-space:nowrap;font-weight:600}
 .badge.status{background:var(--chip);color:var(--muted)}
 .schooltag{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
@@ -834,6 +835,15 @@ function statLine(pid,wk,played){
   return `<div class="stat">${gm}${gm&&sn?'<br>':''}${sn}</div>`;
 }
 
+// Position for display: the depth chart slot (RCB2, WLB1, LT1) folded to a plain position, else the roster position.
+const POS_MAP={LT:'OL',RT:'OL',LG:'OL',RG:'OL',C:'OL',T:'OL',G:'OL',OT:'OL',OG:'OL',
+  LDE:'DE',RDE:'DE',DE:'DE',EDGE:'DE',LDT:'DT',RDT:'DT',DT:'DT',NT:'DT',
+  SLB:'LB',WLB:'LB',MLB:'LB',LILB:'LB',RILB:'LB',ILB:'LB',OLB:'LB',LOLB:'LB',ROLB:'LB',LB:'LB',
+  LCB:'CB',RCB:'CB',NB:'CB',CB:'CB',FS:'S',SS:'S',S:'S',PK:'K'};
+const POS_RANK=Object.fromEntries(['QB','RB','FB','WR','TE','OL','DE','DT','DL','LB','CB','S','DB','K','P','LS'].map((k,i)=>[k,i]));
+function posOf(p){const d=(p.d||'').replace(/\d+$/,'');return POS_MAP[d]||d||p.p}
+const posRank=p=>POS_RANK[posOf(p)]??99;
+
 function playerRow(e,wk,played){
   const p=e.p;
   const xfer=!e.primary?`<span class="badge">finished at ${esc(p.c[0])}</span>`:'';
@@ -843,7 +853,7 @@ function playerRow(e,wk,played){
   const st=started?`<span class="badge" style="background:var(--accent);color:var(--accent-ink)" title="In the lineup for the first snap">started</span>`
     :(!played&&p.st?`<span class="badge" style="background:var(--chip);color:var(--ink)">starter</span>`:'');
   return `<div class="player">
-    <span class="pos" title="team depth chart">${p.d||p.p}</span><span class="nm">${esc(p.n)}</span>${st}
+    <span class="pos">${posOf(p)}</span><span class="nm">${esc(p.n)}${p.j?`<span class="jn">#${esc(p.j)}</span>`:''}</span>${st}
     ${sel.length>1?`<span class="schooltag">${sw('school',e.school)}${esc(e.school)}</span>`:''}
     ${xfer}${stops}${stat?`<span class="badge status">${stat}</span>`:''}
     ${statLine(e.pid,wk,played)}
@@ -855,7 +865,7 @@ function gameSides(g){
   const side=t=>{
     const dr=e=>e.p.d?+(e.p.d.match(/\d+$/)||[9])[0]:9;
     const gs=e=>played&&e.p.gs&&e.p.gs.includes(g.wk)?0:1;
-    const list=(idx[t]||[]).sort((a,b)=>(a.p.s==='ACT'?0:1)-(b.p.s==='ACT'?0:1)||gs(a)-gs(b)||dr(a)-dr(b)||a.p.n.localeCompare(b.p.n));
+    const list=(idx[t]||[]).sort((a,b)=>(a.p.s==='ACT'?0:1)-(b.p.s==='ACT'?0:1)||posRank(a.p)-posRank(b.p)||gs(a)-gs(b)||dr(a)-dr(b)||a.p.n.localeCompare(b.p.n));
     return `<div class="side"><h3>${tmTag(t)}${played?`<span class="pts">${t===g.away?g.as:g.hs}</span>`:''}</h3>`+
       (list.length?list.map(e=>playerRow(e,g.wk,played)).join(''):'<p class="hint">None of your guys here.</p>')+`</div>`;
   };
