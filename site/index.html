@@ -331,6 +331,7 @@ body.egg-on{overflow:hidden}
 <p class="sub">Every Tuesday morning: how your schools' former players did in the NFL that week. Stat leaders, who started, all in one short email.</p>
 <form id="signupForm" novalidate>
   <div id="suSchools" class="hint"></div>
+  <label class="hint"><input type="checkbox" name="transfers" id="suTransfers"> Include players who transferred out</label>
   <input type="email" name="email" required placeholder="Your email" autocomplete="email" aria-label="Your email">
   <div id="suCaptcha"></div>
   <div class="formrow"><button type="submit" id="suSend">Sign up</button><span class="hint" id="suStatus" role="status"></span></div>
@@ -482,6 +483,8 @@ const TURNSTILE_SITEKEY='0x4AAAAAAFm3fLDzKxvcGskm';
 let suToken='',suWidget=null,suPicked=null;
 function renderSignupSchools(){
   const box=document.getElementById('suSchools');if(!box)return;
+  // starts from the site's own "who counts" setting; the box can still be changed before signing up
+  const tr=document.getElementById('suTransfers');if(tr&&!tr.dataset.touched){tr.checked=mode==='all';tr.onchange=()=>{tr.dataset.touched='1'}}
   if(!sel.length){box.innerHTML='Pick your schools at the top of the page first. The email covers the schools you pick, up to 4.';return}
   if(!suPicked)suPicked=new Set(sel.slice(0,4));
   for(const s of [...suPicked])if(!sel.includes(s))suPicked.delete(s);
@@ -511,7 +514,7 @@ document.getElementById('signupForm').onsubmit=async e=>{
   if(!suToken){st.textContent='Finish the robot check first.';return}
   btn.disabled=true;st.textContent='Sending\u2026';
   try{
-    const r=await fetch(SIGNUP_URL+'/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,schools,token:suToken})});
+    const r=await fetch(SIGNUP_URL+'/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,schools,transfers:e.target.transfers.checked,token:suToken})});
     const j=await r.json().catch(()=>({msg:'Something went wrong. Try again in a minute.'}));
     st.textContent=j.msg||'';if(j.ok)e.target.email.value='';
   }catch(err){st.textContent='Couldn\u2019t reach the signup service. Try again in a minute.'}

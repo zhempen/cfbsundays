@@ -123,6 +123,7 @@ async function subscribe(req, env) {
 
   const confirmToken = randomToken();
   const schoolsJson = JSON.stringify(schools);
+  const transfers = body.transfers === true ? 1 : 0;
   if (!row) {
     await db.prepare(`INSERT INTO subscribers (norm, email, schools, status, pending_email, pending_schools,
         confirm_token, confirm_sent_at, confirms_today, unsub_token, created_at)
@@ -133,6 +134,9 @@ async function subscribe(req, env) {
         confirm_sent_at = ?, confirms_today = ? WHERE norm = ?`)
       .bind(addr.email, schoolsJson, confirmToken, t, sentToday + 1, addr.norm).run();
   }
+
+  await db.prepare(`INSERT INTO prefs (norm, pending_transfers) VALUES (?, ?)
+      ON CONFLICT(norm) DO UPDATE SET pending_transfers = excluded.pending_transfers`).bind(addr.norm, transfers).run();
 
   const link = `${new URL(req.url).origin}/confirm?t=${confirmToken}`;
   const list = schools.join(", ");
@@ -157,6 +161,8 @@ async function confirm(url, env) {
   await env.DB.prepare(`UPDATE subscribers SET email = pending_email, schools = pending_schools, status = 'active',
       pending_email = NULL, pending_schools = NULL, confirm_token = NULL, confirmed_at = ? WHERE norm = ?`)
     .bind(nowSec(), row.norm).run();
+  await env.DB.prepare(`UPDATE prefs SET transfers = COALESCE(pending_transfers, transfers), pending_transfers = NULL WHERE norm = ?`)
+    .bind(row.norm).run();
   const schools = JSON.parse(row.pending_schools).map(esc).join(", ");
   return page(env, "You're in", `<p>The CFB Sundays email arrives Tuesday mornings during the NFL season, covering <b>${schools}</b>.</p>
 <p>To change schools later, sign up again on the site with the same address.</p>`);

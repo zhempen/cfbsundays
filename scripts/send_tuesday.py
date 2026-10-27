@@ -167,8 +167,10 @@ class Week:
             done.append(w)
         return done[-1] if done else None
 
-    def school_block(self, sc):
-        mine = [(pid, p) for pid, p in self.players.items() if p["c"] and p["c"][0] == sc]
+    def school_block(self, sc, transfers=False):
+        # players who finished at the school; with transfers on, also everyone who played there
+        mine = [(pid, p) for pid, p in self.players.items()
+                if p["c"] and (p["c"][0] == sc or (transfers and sc in p["c"]))]
         rows = [(pid, p, self.lines[pid][self.week]) for pid, p in mine
                 if self.week in self.lines.get(pid, {})]
         col = (self.colors.get("school", {}).get(sc) or ["#1546b8"])[0]
@@ -217,16 +219,19 @@ class Week:
                 team = team_for(p, wk, None)
                 started = wk in p.get("gs", [])
                 line = full_line(self.lines.get(pid, {}).get(wk), p.get("sn", {}).get(str(wk)))
+                # same school badges as the site: transfers say where they finished, others where else they played
+                note = (f"finished at {p['c'][0]}" if p["c"][0] != sc else
+                        f"also {', '.join(p['c'][1:])}" if len(p["c"]) > 1 else "")
                 also = (f' <span style="display:inline-block;background:#ffe9a8;color:#5c4300;font-size:11px;font-weight:600;'
-                        f'padding:0 6px;border-radius:2px">also {e(", ".join(p["c"][1:]))}</span>') if len(p["c"]) > 1 else ""
+                        f'padding:0 6px;border-radius:2px">{e(note)}</span>') if note else ""
                 h.append(f'<p style="margin:0 0 6px;color:{INK}"><b>{e(p["n"])}</b> <span style="{mute}">{team}</span>{also}'
                          f'{" " + badge if started else ""}{"<br>" + e(line) if line else ""}</p>')
-                t.append(f"  {p['n']} ({team}{', also ' + ', '.join(p['c'][1:]) if len(p['c']) > 1 else ''}){' started' if started else ''}" + (f": {line}" if line else ""))
+                t.append(f"  {p['n']} ({team}{', ' + note if note else ''}){' started' if started else ''}" + (f": {line}" if line else ""))
         h.append("</td></tr>")
         return "".join(h), "\n".join(t)
 
-    def email(self, schools, unsub_url):
-        blocks = [self.school_block(sc) for sc in schools]
+    def email(self, schools, unsub_url, transfers=False):
+        blocks = [self.school_block(sc, transfers) for sc in schools]
         link = f"{SITE}/?s=" + ",".join(urllib.request.quote(s) for s in schools)
         who = schools[0] if len(schools) == 1 else ", ".join(schools[:-1]) + " and " + schools[-1]
         subject = f"{self.label}: {who} in the pros"
@@ -267,7 +272,7 @@ def main():
     if MODE == "preview":
         out = os.environ.get("PREVIEW_OUT", ".")
         schools = [s.strip() for s in os.environ.get("PREVIEW_SCHOOLS", "Georgia").split(",")]
-        subject, h, t = wk.email(schools, "https://example.invalid/unsubscribe")
+        subject, h, t = wk.email(schools, "https://example.invalid/unsubscribe", os.environ.get("PREVIEW_TRANSFERS") == "1")
         open(os.path.join(out, "preview.html"), "w").write(h)
         open(os.path.join(out, "preview.txt"), "w").write(subject + "\n\n" + t)
         print("preview:", subject)
@@ -289,7 +294,11 @@ def main():
     if MODE == "send" and db.q("SELECT 1 FROM sends WHERE season = ? AND week = ?", (wk.season, wk.week)):
         print(f"{wk.label} {wk.season} already sent; nothing to do")
         return
-    subs = db.q("SELECT norm, email, schools, unsub_token FROM subscribers WHERE status = 'active'")
+    try:   # prefs arrives with the signup handler deploy; older databases don't have it yet
+        subs = db.q("""SELECT s.norm, s.email, s.schools, s.unsub_token, COALESCE(p.transfers, 0) AS transfers
+                       FROM subscribers s LEFT JOIN prefs p ON p.norm = s.norm WHERE s.status = 'active'""")
+    except Exception:
+        subs = db.q("SELECT norm, email, schools, unsub_token, 0 AS transfers FROM subscribers WHERE status = 'active'")
     if MODE == "sample" and len(subs) > 3:
         sys.exit(f"sample mode refuses with {len(subs)} subscribers; use it only while testing")
     if len(subs) > RESEND_DAILY_FREE - 5:
@@ -297,7 +306,7 @@ def main():
     msgs = []
     for s in subs:
         unsub = f"{worker_url}/unsubscribe?t={s['unsub_token']}"
-        subject, h, t = wk.email(json.loads(s["schools"]), unsub)
+        subject, h, t = wk.email(json.loads(s["schools"]), unsub, bool(s["transfers"]))
         msgs.append({"from": FROM, "to": [s["email"]], "reply_to": REPLY_TO, "subject": subject, "html": h, "text": t,
                      "headers": {"List-Unsubscribe": f"<{unsub}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"}})
     if msgs:
