@@ -58,22 +58,60 @@ class D1:
 
 # ---------- content ----------
 ROUND = {"WC": "Wild Card round", "DIV": "Divisional round", "CON": "Conference championships", "SB": "Super Bowl"}
-CATS = [  # label, sort value, tiebreak, did he do it at all, line
-    ("Passing", lambda w: w.get("py", 0), lambda w: w.get("ptd", 0), lambda w: w.get("att", 0) > 0,
-     lambda w: f"{w.get('cmp',0)}/{w.get('att',0)}, {w.get('py',0)} yds, {w.get('ptd',0)} TD" + (f", {w['int']} INT" if w.get("int") else "")),
-    ("Rushing", lambda w: w.get("ry", 0), lambda w: w.get("rtd", 0), lambda w: w.get("car", 0) > 0,
-     lambda w: f"{w.get('car',0)} car, {w.get('ry',0)} yds" + (f", {w['rtd']} TD" if w.get("rtd") else "")),
-    ("Receiving", lambda w: w.get("recy", 0), lambda w: w.get("rectd", 0), lambda w: w.get("rec", 0) > 0,
-     lambda w: f"{w.get('rec',0)} rec, {w.get('recy',0)} yds" + (f", {w['rectd']} TD" if w.get("rectd") else "")),
-    ("Sacks", lambda w: w.get("sk", 0), lambda w: tk(w), lambda w: w.get("sk", 0) > 0,
-     lambda w: f"{fmt(w['sk'])} sack{'s' if w['sk'] != 1 else ''}"),
-    ("Tackles", lambda w: tk(w), lambda w: w.get("sk", 0), lambda w: tk(w) > 0,
-     lambda w: f"{tk(w)} tackle{'s' if tk(w) != 1 else ''}"),
-    ("Interceptions", lambda w: w.get("dint", 0), lambda w: w.get("pd", 0), lambda w: w.get("dint", 0) > 0,
-     lambda w: f"{w['dint']} INT" + (f", {w['pd']} PD" if w.get("pd") else "")),
-]
-POS_ORDER = {p: i for i, p in enumerate(["QB", "RB", "FB", "WR", "TE", "OL", "T", "G", "C", "DL", "DE", "DT", "NT",
-                                         "LB", "OLB", "ILB", "MLB", "DB", "CB", "S", "FS", "SS", "K", "P", "LS"])}
+# position groups, in the order they appear; roster positions fold into them
+GROUPS = [("Quarterbacks", {"QB"}), ("Running backs", {"RB", "FB", "HB"}), ("Wide receivers", {"WR"}),
+          ("Tight ends", {"TE"}), ("Offensive line", {"OL", "T", "G", "C", "OT", "OG"}),
+          ("Defensive line", {"DL", "DE", "DT", "NT"}), ("Linebackers", {"LB", "OLB", "ILB", "MLB"}),
+          ("Defensive backs", {"DB", "CB", "S", "FS", "SS"}), ("Special teams", {"K", "P", "LS"})]
+def group_of(pos):
+    return next((i for i, (_, ps) in enumerate(GROUPS) if pos in ps), len(GROUPS))
+
+def snap_part(sn):
+    """'64 snaps', '64 snaps + 5 ST', or '12 ST snaps'."""
+    if not sn:
+        return ""
+    od, st = sn[0] + sn[1], sn[2]
+    if od:
+        return f"{od} snaps" + (f" + {st} ST" if st else "")
+    return f"{st} ST snaps" if st else ""
+
+def full_line(w, sn):
+    """Snaps first, then every stat he has, offense to defense to kicking."""
+    w = w or {}
+    n = lambda k: w.get(k, 0)
+    s = lambda v, word: f"{fmt(v)} {word}{'' if v == 1 else 's'}"
+    parts = [snap_part(sn)]
+    if n("att"):
+        parts.append(f"{n('cmp')}/{n('att')}, {n('py')} pass yds" + (f", {n('ptd')} TD" if n("ptd") else "") + (f", {n('int')} INT" if n("int") else ""))
+    if n("car"):
+        parts.append(f"{n('car')} car, {n('ry')} rush yds" + (f", {n('rtd')} TD" if n("rtd") else ""))
+    if n("rec") or n("recy"):
+        parts.append(f"{n('rec')} rec, {n('recy')} yds" + (f", {n('rectd')} TD" if n("rectd") else ""))
+    d = [s(tk(w), "tackle")] if tk(w) else []
+    if n("sk"):
+        d.append(s(n("sk"), "sack"))
+    if n("dint"):
+        d.append(f"{n('dint')} INT")
+    if n("pd"):
+        d.append(f"{n('pd')} PD")
+    if d:
+        parts.append(", ".join(d))
+    if n("fga"):
+        parts.append(f"{n('fgm')}/{n('fga')} FG")
+    if n("xpm"):
+        parts.append(f"{n('xpm')} XP")
+    return " · ".join(x for x in parts if x)
+
+def ink_for(hexcol):
+    """Readable text color on a school color (same rule as the site)."""
+    m = re.match(r"^#?([0-9a-fA-F]{6})$", hexcol or "")
+    if not m:
+        return "#ffffff"
+    v = int(m.group(1), 16)
+    lum = lambda x: x / 12.92 if x <= .03928 else ((x + .055) / 1.055) ** 2.4
+    r, g, b = (lum((v >> sh & 255) / 255) for sh in (16, 8, 0))
+    return "#0c1526" if .2126 * r + .7152 * g + .0722 * b > .36 else "#ffffff"
+
 def tk(w): return w.get("tk", 0) + w.get("ast", 0)
 def fmt(v): return int(v) if v == int(v) else v
 e = html.escape
@@ -99,6 +137,7 @@ class Week:
             for pid, s in (src or {}).items():
                 for wk, line in s.get("w", {}).items():
                     self.lines.setdefault(pid, {})[int(wk)] = line
+        self.has_snaps = any("sn" in p for p in self.players.values())
         self.week = self.latest_done_week()
         g = next((g for g in self.games if g["wk"] == self.week), None)
         self.type = g["type"] if g else "REG"
@@ -106,8 +145,8 @@ class Week:
         self.season = self.meta.get("season")
 
     def latest_done_week(self):
-        """Latest week whose games are all final AND have stat lines for both
-        teams (so Monday night is in before anything goes out)."""
+        """Latest week whose games are all final AND have stat lines and snap
+        counts for both teams (so Monday night is in before anything goes out)."""
         weeks = sorted({g["wk"] for g in self.games})
         done = []
         for w in weeks:
@@ -116,8 +155,15 @@ class Week:
                 continue
             teams = {team_for(self.players[pid], w, None) for pid, l in self.lines.items()
                      if w in l and pid in self.players}
-            if all(g["away"] in teams and g["home"] in teams for g in gs):
-                done.append(w)
+            if not all(g["away"] in teams and g["home"] in teams for g in gs):
+                continue
+            # snap counts come from a separate feed; wait for them too (only once the
+            # build saves them, so an older players.json doesn't hold the email forever)
+            if self.has_snaps:
+                snapped = {team_for(p, w, None) for p in self.players.values() if str(w) in p.get("sn", {})}
+                if not all(g["away"] in snapped and g["home"] in snapped for g in gs):
+                    continue
+            done.append(w)
         return done[-1] if done else None
 
     def school_block(self, sc):
@@ -147,27 +193,28 @@ class Week:
         if totals:
             h.append(f'<p style="color:#6e6a60;font-size:14px;margin:4px 0 12px">{totals}</p>')
             t.append(totals)
-        # everyone with a number in each of the six categories, best first
-        for lbl, val, tb, did, line in CATS:
-            cand = sorted((r for r in rows if did(r[2])), key=lambda r: (-val(r[2]), -tb(r[2]), r[1]["n"]))
-            if not cand:
-                continue
-            h.append(f'<p style="margin:10px 0 2px;{mute};text-transform:uppercase;letter-spacing:.5px">{lbl}</p>')
+        # everyone who got on the field, by position: starters first, then most snaps
+        ink = ink_for(col)
+        badge = (f'<span style="display:inline-block;background:{col};color:{ink};font-size:10px;font-weight:700;'
+                 f'letter-spacing:.4px;padding:1px 6px;border-radius:3px;vertical-align:1px">STARTED</span>')
+        def order(x):
+            pid, p = x
+            sn = p.get("sn", {}).get(str(wk)) or [0, 0, 0]
+            return (wk not in p.get("gs", []), -(sn[0] + sn[1]), -sn[2], p["n"])
+        groups = {}
+        for x in on_field:
+            groups.setdefault(group_of(x[1]["p"]), []).append(x)
+        for gi in sorted(groups):
+            lbl = GROUPS[gi][0] if gi < len(GROUPS) else "Other"
+            h.append(f'<p style="margin:14px 0 2px;{mute};text-transform:uppercase;letter-spacing:.5px">{lbl}</p>')
             t.append(f"\n{lbl}")
-            for pid, p, w in cand:
+            for pid, p in sorted(groups[gi], key=order):
                 team = team_for(p, wk, None)
-                h.append(f'<p style="margin:0 0 3px"><b>{e(p["n"])}</b> <span style="{mute}">{team}</span> {e(line(w))}</p>')
-                t.append(f"  {p['n']} ({team}) {line(w)}")
-        def roster(group):
-            group = sorted(group, key=lambda x: (POS_ORDER.get(x[1]["p"], 99), x[1]["n"]))
-            return ", ".join(f"{p['p']} {p['n']} ({team_for(p, wk, None)})" for _, p in group)
-        started = [(pid, p) for pid, p in on_field if wk in p.get("gs", [])]
-        others = [(pid, p) for pid, p in on_field if wk not in p.get("gs", [])]
-        for lbl, group in (("Started", started), ("Also played", others)):
-            if group:
-                h.append(f'<p style="margin:14px 0 0;font-size:14px"><span style="{mute};text-transform:uppercase;letter-spacing:.5px">'
-                         f'{lbl} ({len(group)})</span><br>{e(roster(group))}</p>')
-                t.append(f"\n{lbl} ({len(group)}): {roster(group)}")
+                started = wk in p.get("gs", [])
+                line = full_line(self.lines.get(pid, {}).get(wk), p.get("sn", {}).get(str(wk)))
+                h.append(f'<p style="margin:0 0 5px"><b>{e(p["n"])}</b> <span style="{mute}">{team}</span>'
+                         f'{" " + badge if started else ""}{"<br>" + e(line) if line else ""}</p>')
+                t.append(f"  {p['n']} ({team}){' started' if started else ''}" + (f": {line}" if line else ""))
         h.append("</td></tr>")
         return "".join(h), "\n".join(t)
 

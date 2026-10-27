@@ -1239,6 +1239,24 @@ const RECAP_CATS=[
   {lbl:'Tackles',v:w=>(w.tk||0)+(w.ast||0),tb:w=>w.sk||0,line:w=>{const t=(w.tk||0)+(w.ast||0);return `${t} tackle${t===1?'':'s'}${w.sk?`, ${w.sk} sack${w.sk===1?'':'s'}`:''}`}},
   {lbl:'Interceptions',v:w=>w.dint||0,tb:w=>w.pd||0,line:w=>`${w.dint} INT${w.pd?`, ${w.pd} PD`:''}`},
 ];
+// position groups for the school recap; depth-chart and roster positions fold into them
+const RECAP_GROUPS=[['Quarterbacks',['QB']],['Running backs',['RB','FB','HB']],['Wide receivers',['WR']],['Tight ends',['TE']],
+  ['Offensive line',['OL','T','G','C','OT','OG']],['Defensive line',['DL','DE','DT','NT']],['Linebackers',['LB','OLB','ILB','MLB']],
+  ['Defensive backs',['DB','CB','S','FS','SS']],['Special teams',['K','P','LS']]];
+const recapGroup=p=>{const ps=[posOf(p),p.p];const i=RECAP_GROUPS.findIndex(g=>ps.some(x=>g[1].includes(x)));return i<0?RECAP_GROUPS.length:i};
+// snaps first, then every stat he has, offense to defense to kicking
+function fullLine(w,sn){
+  w=w||{};const n=k=>w[k]||0,pl=(v,word)=>`${v} ${word}${v===1?'':'s'}`,parts=[];
+  if(sn){const od=sn[0]+sn[1],st=sn[2];if(od)parts.push(`${od} snaps${st?` + ${st} ST`:''}`);else if(st)parts.push(`${st} ST snaps`)}
+  if(n('att'))parts.push(`${n('cmp')}/${n('att')}, ${n('py')} pass yds${n('ptd')?`, ${n('ptd')} TD`:''}${n('int')?`, ${n('int')} INT`:''}`);
+  if(n('car'))parts.push(`${n('car')} car, ${n('ry')} rush yds${n('rtd')?`, ${n('rtd')} TD`:''}`);
+  if(n('rec')||n('recy'))parts.push(`${n('rec')} rec, ${n('recy')} yds${n('rectd')?`, ${n('rectd')} TD`:''}`);
+  const d=[],t=n('tk')+n('ast');if(t)d.push(pl(t,'tackle'));if(n('sk'))d.push(pl(n('sk'),'sack'));if(n('dint'))d.push(`${n('dint')} INT`);if(n('pd'))d.push(`${n('pd')} PD`);
+  if(d.length)parts.push(d.join(', '));
+  if(n('fga'))parts.push(`${n('fgm')}/${n('fga')} FG`);if(n('xpm'))parts.push(`${n('xpm')} XP`);
+  return parts.join(' \u00b7 ');
+}
+function schoolBadge(sc){const c=(COLORS.school||{})[sc];return `<span class="badge"${c?` style="background:${c[0]};color:${inkFor(c[0])}"`:''}>${esc(sc)}</span>`}
 function recapLeaders(lines,c,n){
   return lines.filter(l=>c.v(l.w)>0).sort((a,b)=>c.v(b.w)-c.v(a.w)||c.tb(b.w)-c.tb(a.w)||a.p.n.localeCompare(b.p.n)).slice(0,n);
 }
@@ -1247,25 +1265,31 @@ function recapHtml(wk){
   for(const [pid,p] of Object.entries(PLAYERS)){const w=STATS[pid]?.w?.[wk];if(w)lines.push({pid,p,w})}
   if(!lines.length)return '';
   const r1=v=>Math.round(v*10)/10;
-  const row=(l,c,school)=>`<div class="row"><b>${esc(l.p.n)}</b> <span class="hint">${teamFor(l.p,wk)}${school?` · <span style="color:var(--accent)">${esc(school)}</span>`:''}</span><br>${esc(c.line(l.w))}</div>`;
+  const row=(l,c,school)=>`<div class="row"><b>${esc(l.p.n)}</b> <span class="hint">${teamFor(l.p,wk)}</span>${school?` ${schoolBadge(school)}`:''}<br>${esc(c.line(l.w))}</div>`;
   let body='';
   if(sel.length){
     for(const sc of sel){
       const mine=lines.filter(l=>creditSchools(l.p).includes(sc));
-      if(!mine.length){body+=`<p class="hint" style="margin:8px 0">${esc(sc)}: no stat lines this week.</p>`;continue}
       const sum=k=>mine.reduce((a,l)=>a+(l.w[k]||0),0);
       const tds=sum('ptd')+sum('rtd')+sum('rectd');
-      const lead=c=>{const l=recapLeaders(mine,c,1)[0];
-        return l?`<div class="row"><span class="hint">${c.lbl}</span><br><b>${esc(l.p.n)}</b> <span class="hint">${teamFor(l.p,wk)}</span> ${esc(c.line(l.w))}</div>`:''};
-      // offense left, defense right; a school with only one side gets one column, no gap
-      const off=RECAP_CATS.slice(0,3).map(lead).join(''),def=RECAP_CATS.slice(3).map(lead).join('');
-      const leads=off&&def?`<div class="recapgrid"><div>${off}</div><div>${def}</div></div>`:`<div class="recapgrid one"><div>${off||def}</div></div>`;
       // totals list only what happened
       const parts=[[sum('py'),`${sum('py').toLocaleString()} pass yds`],[sum('ry'),`${sum('ry').toLocaleString()} rush yds`],[sum('recy'),`${sum('recy').toLocaleString()} rec yds`],
         [tds,`${tds} TD${tds===1?'':'s'}`],[sum('sk'),`${r1(sum('sk'))} sack${r1(sum('sk'))===1?'':'s'}`],[sum('dint'),`${sum('dint')} INT${sum('dint')===1?'':'s'}`]].filter(x=>x[0]).map(x=>x[1]);
+      // everyone who got on the field, by position: starters first, then most snaps
+      const on=Object.entries(PLAYERS).filter(([pid,p])=>creditSchools(p).includes(sc)&&((p.pw||[]).includes(wk)||(p.gs||[]).includes(wk)));
+      const snOf=p=>(p.sn||{})[wk]||[0,0,0],gsOf=p=>(p.gs||[]).includes(wk);
+      on.sort(([,a],[,b])=>recapGroup(a)-recapGroup(b)||gsOf(b)-gsOf(a)||(snOf(b)[0]+snOf(b)[1])-(snOf(a)[0]+snOf(a)[1])||snOf(b)[2]-snOf(a)[2]||a.n.localeCompare(b.n));
+      if(!on.length){body+=`<p class="hint" style="margin:8px 0">${esc(sc)}: no former players saw the field this week.</p>`;continue}
+      let roster='',lastG=-1;
+      for(const [pid,p] of on){
+        const g=recapGroup(p);
+        if(g!==lastG){roster+=`<p class="hint" style="margin:10px 0 2px;text-transform:uppercase;letter-spacing:.5px">${g<RECAP_GROUPS.length?RECAP_GROUPS[g][0]:'Other'}</p>`;lastG=g}
+        const line=fullLine(STATS[pid]?.w?.[wk]||POST[pid]?.w?.[wk],(p.sn||{})[wk]);
+        roster+=`<div class="row"><b>${esc(p.n)}</b> <span class="hint">${teamFor(p,wk)}</span>${gsOf(p)?` <span class="badge" style="background:var(--accent);color:var(--accent-ink)" title="In the lineup for the first snap">started</span>`:''}${line?`<br>${esc(line)}`:''}</div>`;
+      }
       body+=`<div style="margin:6px 0 12px"><div class="disp" style="font-size:18px">${sw('school',sc)}${esc(sc)}</div>
         ${parts.length?`<p class="sub" style="margin:2px 0 6px">${parts.join(' · ')}</p>`:''}
-        ${leads}</div>`;
+        ${roster}</div>`;
     }
   }else{
     const block=c=>{const top=recapLeaders(lines,c,3);
