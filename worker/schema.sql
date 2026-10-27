@@ -32,3 +32,11 @@ CREATE TABLE IF NOT EXISTS sends (
   count   INTEGER NOT NULL,
   PRIMARY KEY (season, week)
 );
+
+-- per-subscriber options, kept in their own table so this file stays safe to re-run
+-- transfers = 1: also list players who transferred out of a school, not only those who finished there
+CREATE TABLE IF NOT EXISTS prefs (
+  norm              TEXT PRIMARY KEY,   -- subscribers.norm
+  transfers         INTEGER NOT NULL DEFAULT 0,
+  pending_transfers INTEGER            -- waiting on a confirmation click, like pending_schools
+);
