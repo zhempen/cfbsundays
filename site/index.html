@@ -286,7 +286,7 @@ body.egg-on{overflow:hidden}
 <div class="wrap bandin">
 <h1 class="wordmark">CFB Sundays</h1>
 <p class="bandmeta" id="bandMeta"></p>
-<p class="tag">Pick your schools. See where your guys are playing on Sundays.</p>
+<p class="tag">Pick your schools and see who's playing on Sundays.</p>
 </div>
 </header>
 <div class="wrap picker">
@@ -448,11 +448,11 @@ function shortName(school){
   return s.name;
 }
 function guysLabel(){
-  if(!sel.length)return 'your guys';
+  if(!sel.length)return 'pros';
   const sh=sel.map(shortName);
   if(sh.length===1)return sh[0]+' players';
   if(sh.length===2)return sh[0]+' + '+sh[1];
-  return 'your guys';
+  return 'pros';
 }
 // team a player was on in a given week (traded players carry a history in p.tm);
 // weeks after his last game with a known team use his current team
@@ -869,7 +869,7 @@ function gameSides(g){
     const gs=e=>played&&e.p.gs&&e.p.gs.includes(g.wk)?0:1;
     const list=(idx[t]||[]).sort((a,b)=>(a.p.s==='ACT'?0:1)-(b.p.s==='ACT'?0:1)||posRank(a.p)-posRank(b.p)||gs(a)-gs(b)||dr(a)-dr(b)||a.p.n.localeCompare(b.p.n));
     return `<div class="side"><h3>${tmTag(t)}${played?`<span class="pts">${t===g.away?g.as:g.hs}</span>`:''}</h3>`+
-      (list.length?list.map(e=>playerRow(e,g.wk,played)).join(''):'<p class="hint">None of your guys here.</p>')+`</div>`;
+      (list.length?list.map(e=>playerRow(e,g.wk,played)).join(''):'<p class="hint">No pros from your schools in this game.</p>')+`</div>`;
   };
   return side(g.away)+side(g.home);
 }
@@ -995,7 +995,7 @@ function postView(){
           <span class="schooltag">${e.p.t} \u00b7 ${ROUND[inRound[e.p.t]]}</span>
           ${sbTeams.has(e.p.t)?'<span class="badge">Super Bowl</span>':''}
           ${line?`<div class="stat">Playoffs: ${line}</div>`:''}</div>`;
-      }).join('')||'<p class="hint">None of your guys made the playoffs.</p>';
+      }).join('')||'<p class="hint">No pros from your schools made the playoffs.</p>';
       h+='</div>';
     }
   }
