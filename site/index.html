@@ -1285,7 +1285,9 @@ function recapHtml(wk){
         const g=recapGroup(p);
         if(g!==lastG){roster+=`<p class="hint" style="margin:10px 0 2px;text-transform:uppercase;letter-spacing:.5px">${g<RECAP_GROUPS.length?RECAP_GROUPS[g][0]:'Other'}</p>`;lastG=g}
         const line=fullLine(STATS[pid]?.w?.[wk]||POST[pid]?.w?.[wk],(p.sn||{})[wk]);
-        roster+=`<div class="row"><b>${esc(p.n)}</b> <span class="hint">${teamFor(p,wk)}</span>${gsOf(p)?` <span class="badge" style="background:var(--accent);color:var(--accent-ink)" title="In the lineup for the first snap">started</span>`:''}${line?`<br>${esc(line)}`:''}</div>`;
+        // same school badges as the game cards: transfers say where they finished, others where else they played
+        const xb=p.c[0]!==sc?` <span class="badge">finished at ${esc(p.c[0])}</span>`:p.c.length>1?` <span class="badge">also ${esc(p.c.slice(1).join(', '))}</span>`:'';
+        roster+=`<div class="row"><b>${esc(p.n)}</b> <span class="hint">${teamFor(p,wk)}</span>${xb}${gsOf(p)?` <span class="badge" style="background:var(--accent);color:var(--accent-ink)" title="In the lineup for the first snap">started</span>`:''}${line?`<br>${esc(line)}`:''}</div>`;
       }
       body+=`<div style="margin:6px 0 12px"><div class="disp" style="font-size:18px">${sw('school',sc)}${esc(sc)}</div>
         ${parts.length?`<p class="sub" style="margin:2px 0 6px">${parts.join(' · ')}</p>`:''}
