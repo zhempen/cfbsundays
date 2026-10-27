@@ -6,6 +6,7 @@ See which former players from your college teams are in each NFL game this week,
 - `site/` is the whole website: one static HTML page plus small JSON data files. No server, no framework.
 - `scripts/build.py` downloads free, open NFL data (nflverse rosters, weekly stats, snap counts, team depth charts, schedule) and rebuilds the JSON.
 - `.github/workflows/deploy.yml` rebuilds the data on a schedule (daily, plus extra refreshes after game days) and deploys to GitHub Pages.
+- `.github/workflows/keepalive.yml` commits a timestamp on the 1st of each month so GitHub never turns off the schedules (it does that after 60 days with no commits).
 
 ## Run locally
     python3 scripts/build.py
