@@ -1,8 +1,10 @@
 name: Tuesday email
 
-# Runs at 11:07 and 12:07 UTC on Tuesdays; the script sends only in the run
-# that lands at 7 AM New York time (so daylight saving needs no edits), and
-# never sends the same week twice. Push to the "email-sample" branch to send
+# Runs at 11:07 and 12:07 UTC on Tuesdays; the script sends in the first run
+# that starts at or after 7 AM New York time (so daylight saving needs no
+# edits, and a late start still sends), and never sends the same week twice.
+# Run it by hand from the Actions tab to send a missed week; tick "force" only
+# if it's before 7 AM New York time. Push to the "email-sample" branch to send
 # the latest week to the (3 or fewer) test subscribers without recording it.
 on:
   schedule:
@@ -11,6 +13,11 @@ on:
   push:
     branches: [email-sample]
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Send now even if it's before 7 AM New York time (a week already sent still won't resend)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -29,4 +36,5 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           MODE: ${{ github.event_name == 'push' && 'sample' || 'send' }}
+          FORCE: ${{ inputs.force && '1' || '' }}
         run: python3 scripts/send_tuesday.py
