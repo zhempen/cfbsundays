@@ -6,7 +6,7 @@ email from the site's own data files, and sends through Resend's batch API.
 A week is sent once: the `sends` table records it, so re-runs do nothing.
 
 Modes (env MODE):
-  send    scheduled run; only at 7 AM New York time unless FORCE=1
+  send    scheduled run; only from 7 AM New York time on, unless FORCE=1
   sample  send the latest week to every active subscriber without recording
           it; refuses if there are more than 3 (for testing with yourself)
   preview no database, no sending; writes sample HTML for the schools in
@@ -210,8 +210,10 @@ def main():
         print("no finished week yet; nothing to send")
         return
     now = datetime.datetime.now(ZoneInfo("America/New_York"))
-    if MODE == "send" and now.hour != 7 and os.environ.get("FORCE") != "1":
-        print(f"not 7 AM in New York ({now:%H:%M}); skipping")
+    # GitHub often starts scheduled runs late, so any run from 7 AM on counts;
+    # the sends table below keeps the second Tuesday run from sending again.
+    if MODE == "send" and now.hour < 7 and os.environ.get("FORCE") != "1":
+        print(f"before 7 AM in New York ({now:%H:%M}); skipping")
         return
     acct, worker_url = worker_conf()
     if "__" in acct or "__" in worker_url:

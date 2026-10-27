@@ -47,6 +47,7 @@ Rebuild every archived season (after a conference or nickname fix, say) with
   `worker/wrangler.toml` and the Worker's address in `worker/URL` and `SIGNUP_URL` in `site/index.html`.
 - **Send:** `.github/workflows/tuesday.yml`, 7 AM New York time on Tuesdays, runs
   `scripts/send_tuesday.py`. It sends the latest week whose games are all final with stats in, once per
-  week. Push to the `email-sample` branch to send the latest week to 3 or fewer test subscribers.
+  week. A late-starting run still sends; to send a missed week by hand, run the workflow from the
+  Actions tab. Push to the `email-sample` branch to send the latest week to 3 or fewer test subscribers.
 - **Limits:** Resend's free plan sends 100 emails a day; the job warns past 95 subscribers.
 - **Preview:** `MODE=preview DATA=site PREVIEW_SCHOOLS="Georgia,Alabama" python3 scripts/send_tuesday.py`
