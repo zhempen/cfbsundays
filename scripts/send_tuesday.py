@@ -58,6 +58,13 @@ class D1:
 
 # ---------- content ----------
 ROUND = {"WC": "Wild Card round", "DIV": "Divisional round", "CON": "Conference championships", "SB": "Super Bowl"}
+# email palette and type, from DESIGN.md (steel light theme; email clients get one theme)
+GROUND, PANEL, INK, MUTED, LINE = "#cdd5df", "#edf1f6", "#0c1526", "#3d4a5f", "#aeb9c8"
+GOLD, GOLD_INK = "#ffc629", "#1b1400"
+FACE = "Saira,'Arial Narrow',Arial,Helvetica,sans-serif"
+DISPLAY = f"font-family:{FACE};font-weight:800;font-style:italic;text-transform:uppercase;letter-spacing:.02em;line-height:1.05"
+LABEL = f"font-family:{FACE};font-weight:700;font-style:italic;text-transform:uppercase;letter-spacing:.06em;font-size:12px"
+
 # position groups, in the order they appear; roster positions fold into them
 GROUPS = [("Quarterbacks", {"QB"}), ("Running backs", {"RB", "FB", "HB"}), ("Wide receivers", {"WR"}),
           ("Tight ends", {"TE"}), ("Offensive line", {"OL", "T", "G", "C", "OT", "OG"}),
@@ -137,7 +144,6 @@ class Week:
             for pid, s in (src or {}).items():
                 for wk, line in s.get("w", {}).items():
                     self.lines.setdefault(pid, {})[int(wk)] = line
-        self.has_snaps = any("sn" in p for p in self.players.values())
         self.week = self.latest_done_week()
         g = next((g for g in self.games if g["wk"] == self.week), None)
         self.type = g["type"] if g else "REG"
@@ -145,8 +151,9 @@ class Week:
         self.season = self.meta.get("season")
 
     def latest_done_week(self):
-        """Latest week whose games are all final AND have stat lines and snap
-        counts for both teams (so Monday night is in before anything goes out)."""
+        """Latest week whose games are all final AND have stat lines for both
+        teams (so Monday night is in before anything goes out). Snap counts are
+        not waited on: a player with stats but no snaps yet still shows."""
         weeks = sorted({g["wk"] for g in self.games})
         done = []
         for w in weeks:
@@ -157,12 +164,6 @@ class Week:
                      if w in l and pid in self.players}
             if not all(g["away"] in teams and g["home"] in teams for g in gs):
                 continue
-            # snap counts come from a separate feed; wait for them too (only once the
-            # build saves them, so an older players.json doesn't hold the email forever)
-            if self.has_snaps:
-                snapped = {team_for(p, w, None) for p in self.players.values() if str(w) in p.get("sn", {})}
-                if not all(g["away"] in snapped and g["home"] in snapped for g in gs):
-                    continue
             done.append(w)
         return done[-1] if done else None
 
@@ -170,7 +171,7 @@ class Week:
         mine = [(pid, p) for pid, p in self.players.items() if p["c"] and p["c"][0] == sc]
         rows = [(pid, p, self.lines[pid][self.week]) for pid, p in mine
                 if self.week in self.lines.get(pid, {})]
-        col = (self.colors.get("school", {}).get(sc) or ["#a3261e"])[0]
+        col = (self.colors.get("school", {}).get(sc) or ["#1546b8"])[0]
         sums = {k: sum(r[2].get(k, 0) for r in rows) for k in ("py", "ry", "recy", "ptd", "rtd", "rectd", "sk", "dint")}
         tds = sums["ptd"] + sums["rtd"] + sums["rectd"]
         parts = [(sums["py"], f"{sums['py']:,} pass yds"), (sums["ry"], f"{sums['ry']:,} rush yds"),
@@ -178,20 +179,24 @@ class Week:
                  (sums["sk"], f"{fmt(sums['sk'])} sack{'s' if sums['sk'] != 1 else ''}"),
                  (sums["dint"], f"{sums['dint']} INT{'s' if sums['dint'] != 1 else ''}")]
         totals = " · ".join(t for v, t in parts if v)
-        mute = "color:#6e6a60;font-size:13px"
-        h = [f'<tr><td style="padding:22px 0 4px;border-top:1px solid #dedacf">'
-             f'<div style="font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'
-             f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{col};margin-right:8px"></span>{e(sc)}</div>']
+        mute = f"color:{MUTED};font-size:13px"
+        col2 = (self.colors.get("school", {}).get(sc) or [col, col])[-1]
+        h = [f'<tr><td style="padding:22px 0 4px;border-top:1px solid {LINE}">'
+             f'<div style="{DISPLAY};font-size:22px;color:{INK}">'
+             f'<span style="display:inline-block;width:0;height:12px;border-left:7px solid {col};border-right:7px solid {col2};margin-right:9px"></span>{e(sc)}</div>']
         t = [f"\n{sc.upper()}"]
         wk = self.week
         on_field = [(pid, p) for pid, p in mine
                     if wk in p.get("pw", []) or wk in p.get("gs", []) or wk in self.lines.get(pid, {})]
         if not on_field:
-            h.append('<p style="color:#6e6a60;margin:6px 0 0">No former players saw the field this week.</p></td></tr>')
+            h.append(f'<p style="color:{MUTED};margin:6px 0 0">No former players saw the field this week.</p></td></tr>')
             t.append("No former players saw the field this week.")
             return "".join(h), "\n".join(t)
         if totals:
-            h.append(f'<p style="color:#6e6a60;font-size:14px;margin:4px 0 12px">{totals}</p>')
+            # a dark score-bug strip; the numbers are "your numbers", so they get the gold
+            bug = re.sub(r"(\d[\d,.]*)", r'<b style="color:#ffc629">\1</b>', totals)
+            h.append(f'<p style="background:#18264a;border:1px solid #0a1226;border-top-color:#2c3f6e;color:#c9d4ea;font-size:14px;'
+                     f'border-radius:3px;padding:6px 10px;margin:8px 0 12px">{bug}</p>')
             t.append(totals)
         # everyone who got on the field, by position: starters first, then most snaps
         ink = ink_for(col)
@@ -206,15 +211,17 @@ class Week:
             groups.setdefault(group_of(x[1]["p"]), []).append(x)
         for gi in sorted(groups):
             lbl = GROUPS[gi][0] if gi < len(GROUPS) else "Other"
-            h.append(f'<p style="margin:14px 0 2px;{mute};text-transform:uppercase;letter-spacing:.5px">{lbl}</p>')
+            h.append(f'<p style="margin:16px 0 4px;padding-bottom:2px;border-bottom:1px solid {LINE};{LABEL};color:{MUTED}">{lbl}</p>')
             t.append(f"\n{lbl}")
             for pid, p in sorted(groups[gi], key=order):
                 team = team_for(p, wk, None)
                 started = wk in p.get("gs", [])
                 line = full_line(self.lines.get(pid, {}).get(wk), p.get("sn", {}).get(str(wk)))
-                h.append(f'<p style="margin:0 0 5px"><b>{e(p["n"])}</b> <span style="{mute}">{team}</span>'
+                also = (f' <span style="display:inline-block;background:#ffe9a8;color:#5c4300;font-size:11px;font-weight:600;'
+                        f'padding:0 6px;border-radius:2px">also {e(", ".join(p["c"][1:]))}</span>') if len(p["c"]) > 1 else ""
+                h.append(f'<p style="margin:0 0 6px;color:{INK}"><b>{e(p["n"])}</b> <span style="{mute}">{team}</span>{also}'
                          f'{" " + badge if started else ""}{"<br>" + e(line) if line else ""}</p>')
-                t.append(f"  {p['n']} ({team}){' started' if started else ''}" + (f": {line}" if line else ""))
+                t.append(f"  {p['n']} ({team}{', also ' + ', '.join(p['c'][1:]) if len(p['c']) > 1 else ''}){' started' if started else ''}" + (f": {line}" if line else ""))
         h.append("</td></tr>")
         return "".join(h), "\n".join(t)
 
@@ -222,19 +229,29 @@ class Week:
         blocks = [self.school_block(sc) for sc in schools]
         link = f"{SITE}/?s=" + ",".join(urllib.request.quote(s) for s in schools)
         who = schools[0] if len(schools) == 1 else ", ".join(schools[:-1]) + " and " + schools[-1]
-        subject = f"{self.label}: how your {who} guys did"
-        html_doc = f"""<!doctype html><html><body style="margin:0;background:#f6f5f1">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f5f1"><tr><td align="center" style="padding:24px 12px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #dedacf;border-radius:12px;font:16px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1b1b18">
-<tr><td style="padding:24px 24px 8px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>
-<td style="padding-right:12px;vertical-align:middle"><a href="{link}"><img src="{SITE}/icon-180.png" width="44" height="44" alt="CFB Sundays" style="display:block;border:0;border-radius:8px"></a></td>
-<td style="vertical-align:middle"><div style="font-size:24px;font-weight:800;letter-spacing:.5px">CFB SUNDAYS</div></td></tr></table>
-<div style="color:#6e6a60;font-size:14px;padding-top:8px">This email is also <a href="{link}" style="color:#a3261e">a website</a>. {e(self.label)}, {self.season} season.</div></td></tr>
+        subject = f"{self.label}: {who} in the pros"
+        c = self.colors.get("school", {}).get(schools[0]) or ["#1b1e25", "#c3c9d2"]
+        t1, t2 = c[0], c[-1] if len(c) > 1 else "#c3c9d2"
+        tink = ink_for(t1)
+        html_doc = f"""<!doctype html><html><head><meta name="color-scheme" content="light">
+<link href="https://fonts.googleapis.com/css2?family=Saira:ital,wght@1,700;1,800&display=swap" rel="stylesheet"></head>
+<body style="margin:0;background:{GROUND}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{GROUND}"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:{PANEL};border:1px solid {LINE};border-radius:4px;font:16px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:{INK}">
+<tr><td style="padding:0;background:{t1};border-radius:3px 3px 0 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+<td height="80" style="padding:0 18px;vertical-align:middle;height:80px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>
+<td style="padding-right:12px;vertical-align:middle"><a href="{link}"><img src="{SITE}/icon-180.png" width="44" height="44" alt="CFB Sundays" style="display:block;border:0;border-radius:4px"></a></td>
+<td style="vertical-align:middle;{DISPLAY};font-size:30px;color:{tink}">CFB Sundays</td></tr></table></td>
+<td width="64" height="80" style="width:64px;height:80px;padding:0;background:{t2};vertical-align:top;border-radius:0 3px 0 0"><div style="width:0;height:0;border-top:80px solid {t1};border-right:26px solid {t2};font-size:0;line-height:0"></div></td>
+</tr></table></td></tr>
+<tr><td style="height:4px;line-height:4px;font-size:0;background:{GOLD}">&nbsp;</td></tr>
+<tr><td style="padding:12px 24px 4px"><div style="{LABEL};font-size:14px;color:{INK}">{e(self.label)} &middot; {self.season} season</div>
+<div style="color:{MUTED};font-size:14px">This email is also <a href="{link}" style="color:#1546b8">a website</a>.</div></td></tr>
 <tr><td style="padding:0 24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">{''.join(b[0] for b in blocks)}</table></td></tr>
-<tr><td style="padding:20px 24px"><a href="{link}" style="display:inline-block;background:#a3261e;color:#ffffff;text-decoration:none;font-weight:600;padding:10px 20px;border-radius:8px">Every game and player on CFB Sundays</a></td></tr>
-<tr><td style="padding:0 24px 24px;color:#6e6a60;font-size:12px">You signed up for this at cfbsundays.com. To change schools, sign up again there with the same address.
+<tr><td style="padding:20px 24px"><a href="{link}" style="display:inline-block;background:{GOLD};color:{GOLD_INK};text-decoration:none;{DISPLAY};font-size:17px;padding:10px 20px;border-radius:2px;border-bottom:2px solid #c99700">Every game and player &#9656;</a></td></tr>
+<tr><td style="padding:0 24px 24px;color:{MUTED};font-size:12px">You signed up for this at cfbsundays.com. To change schools, sign up again there with the same address.
 Teams are where each player was that week; a start means he was in the lineup for the first snap.<br>
-<a href="{unsub_url}" style="color:#6e6a60">Unsubscribe</a></td></tr>
+<a href="{unsub_url}" style="color:{MUTED}">Unsubscribe</a></td></tr>
 </table></td></tr></table></body></html>"""
         text = (f"CFB SUNDAYS: {self.label}, {self.season} season\nThis email is also a website: {link}\n" + "\n".join(b[1] for b in blocks) +
                 f"\n\nEvery game and player: {link}\n\nUnsubscribe: {unsub_url}\n")
