@@ -175,7 +175,7 @@ class Week:
         blocks = [self.school_block(sc) for sc in schools]
         link = f"{SITE}/?s=" + ",".join(urllib.request.quote(s) for s in schools)
         who = schools[0] if len(schools) == 1 else ", ".join(schools[:-1]) + " and " + schools[-1]
-        subject = f"{self.label}: how your {who} guys did"
+        subject = f"{self.label}: {who} in the pros"
         html_doc = f"""<!doctype html><html><body style="margin:0;background:#f6f5f1">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f5f1"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #dedacf;border-radius:12px;font:16px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1b1b18">
