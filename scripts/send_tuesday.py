@@ -179,15 +179,17 @@ class Week:
         html_doc = f"""<!doctype html><html><body style="margin:0;background:#f6f5f1">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f5f1"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #dedacf;border-radius:12px;font:16px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1b1b18">
-<tr><td style="padding:24px 24px 8px"><div style="font-size:24px;font-weight:800;letter-spacing:.5px">CFB SUNDAYS</div>
-<div style="color:#6e6a60;font-size:14px">This website could have been an email. {e(self.label)}, {self.season} season.</div></td></tr>
+<tr><td style="padding:24px 24px 8px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>
+<td style="padding-right:12px;vertical-align:middle"><a href="{link}"><img src="{SITE}/icon-180.png" width="44" height="44" alt="CFB Sundays" style="display:block;border:0;border-radius:8px"></a></td>
+<td style="vertical-align:middle"><div style="font-size:24px;font-weight:800;letter-spacing:.5px">CFB SUNDAYS</div></td></tr></table>
+<div style="color:#6e6a60;font-size:14px;padding-top:8px">This email is also <a href="{link}" style="color:#a3261e">a website</a>. {e(self.label)}, {self.season} season.</div></td></tr>
 <tr><td style="padding:0 24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">{''.join(b[0] for b in blocks)}</table></td></tr>
 <tr><td style="padding:20px 24px"><a href="{link}" style="display:inline-block;background:#a3261e;color:#ffffff;text-decoration:none;font-weight:600;padding:10px 20px;border-radius:8px">Every game and player on CFB Sundays</a></td></tr>
 <tr><td style="padding:0 24px 24px;color:#6e6a60;font-size:12px">You signed up for this at cfbsundays.com. To change schools, sign up again there with the same address.
 Teams are where each player was that week; a start means he was in the lineup for the first snap.<br>
 <a href="{unsub_url}" style="color:#6e6a60">Unsubscribe</a></td></tr>
 </table></td></tr></table></body></html>"""
-        text = (f"CFB SUNDAYS: {self.label}, {self.season} season\n" + "\n".join(b[1] for b in blocks) +
+        text = (f"CFB SUNDAYS: {self.label}, {self.season} season\nThis email is also a website: {link}\n" + "\n".join(b[1] for b in blocks) +
                 f"\n\nEvery game and player: {link}\n\nUnsubscribe: {unsub_url}\n")
         return subject, html_doc, text
 
