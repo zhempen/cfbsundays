@@ -215,18 +215,39 @@ class Week:
             lbl = GROUPS[gi][0] if gi < len(GROUPS) else "Other"
             h.append(f'<p style="margin:16px 0 4px;padding-bottom:2px;border-bottom:1px solid {LINE};{LABEL};color:{MUTED}">{lbl}</p>')
             t.append(f"\n{lbl}")
+            # players with a stat get a line each; snaps-only players share one paragraph
+            snap_only = []
             for pid, p in sorted(groups[gi], key=order):
                 team = team_for(p, wk, None)
                 started = wk in p.get("gs", [])
-                line = full_line(self.lines.get(pid, {}).get(wk), p.get("sn", {}).get(str(wk)))
+                sn = p.get("sn", {}).get(str(wk))
+                stats = full_line(self.lines.get(pid, {}).get(wk), None)
                 # same school badges as the site: transfers say where they finished, others where else they played
                 note = (f"finished at {p['c'][0]}" if p["c"][0] != sc else
                         f"also {', '.join(p['c'][1:])}" if len(p["c"]) > 1 else "")
                 also = (f' <span style="display:inline-block;background:#ffe9a8;color:#5c4300;font-size:11px;font-weight:600;'
                         f'padding:0 6px;border-radius:2px">{e(note)}</span>') if note else ""
-                h.append(f'<p style="margin:0 0 6px;color:{INK}"><b>{e(p["n"])}</b> <span style="{mute}">{team}</span>{also}'
-                         f'{" " + badge if started else ""}{"<br>" + e(line) if line else ""}</p>')
-                t.append(f"  {p['n']} ({team}{', ' + note if note else ''}){' started' if started else ''}" + (f": {line}" if line else ""))
+                who = f'<b>{e(p["n"])}</b> <span style="{mute}">{team}</span>{also}{" " + badge if started else ""}'
+                who_t = f"{p['n']} ({team}{', ' + note if note else ''}){' started' if started else ''}"
+                if not stats:
+                    od, st = ((sn[0] + sn[1]), sn[2]) if sn else (0, 0)
+                    n = f"{od}" if od else (f"{st} ST" if st else "")
+                    tag = f"{team}{', ' + note if note else ''}"
+                    snap_only.append((started, f'{e(p["n"])} <span style="{mute}">({e(tag)})</span> <b>{n}</b>', f"{p['n']} ({tag}) {n}"))
+                    continue
+                line = full_line(self.lines.get(pid, {}).get(wk), sn)
+                h.append(f'<p style="margin:0 0 6px;color:{INK}">{who}<br>{e(line)}</p>')
+                t.append(f"  {who_t}: {line}")
+            if snap_only:
+                # one short paragraph: snap counts only, starters first
+                parts_h, parts_t = [], []
+                for lbl2, grp in (("Started", [x for x in snap_only if x[0]]), ("Also played", [x for x in snap_only if not x[0]])):
+                    if grp:
+                        parts_h.append(f'<span style="{LABEL};font-size:11px;color:{MUTED}">{lbl2}</span> ' + ", ".join(x[1] for x in grp))
+                        parts_t.append(f"{lbl2}: " + ", ".join(x[2] for x in grp))
+                h.append(f'<p style="margin:2px 0 8px;color:{INK};font-size:14px;line-height:1.55">'
+                         f'<span style="{mute}">Snap counts:</span> ' + ". ".join(parts_h) + '.</p>')
+                t.append("  Snap counts: " + ". ".join(parts_t) + ".")
         h.append("</td></tr>")
         return "".join(h), "\n".join(t)
 
