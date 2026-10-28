@@ -235,6 +235,12 @@ details.recap[open]>summary::before{transform:rotate(90deg)}
 .contact form{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-width:440px}
 .contact textarea,.contact input[type=email]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink);width:100%}
 .foot{color:var(--muted);font-size:12px;margin-top:22px}
+/* accessibility helpers: screen-reader-only text, skip link, buttons inside expandable table rows */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip{position:absolute;left:8px;top:-60px;z-index:200;background:var(--gold);color:var(--gold-ink);padding:8px 14px;border-radius:3px;font-weight:700;text-decoration:none}
+.skip:focus{top:8px}
+#view:focus{outline:none}
+.rkbtn{background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;letter-spacing:inherit;text-align:left;cursor:pointer}
 
 /* the easter egg: a championship screen */
 #egg{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px 16px;text-align:center;
@@ -282,6 +288,7 @@ body.egg-on{overflow:hidden}
 <script data-goatcounter="https://cfbsundays.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
+<a class="skip" href="#view">Skip to results</a>
 <header class="band" id="band">
 <div class="wrap bandin">
 <h1 class="wordmark">CFB Sundays</h1>
@@ -289,17 +296,18 @@ body.egg-on{overflow:hidden}
 <p class="tag">Pick your schools and see who's playing on Sundays.</p>
 </div>
 </header>
+<main id="main">
 <div class="wrap picker">
 <div id="archiveBar" class="card" hidden></div>
 
 <div id="pickerArea">
   <div class="chips" id="selChips"></div>
   <div class="searchwrap">
-    <input type="search" id="schoolSearch" placeholder="Search a school (Miami, OSU, UGA…)" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="schoolResults">
+    <input type="search" id="schoolSearch" placeholder="Search a school (Miami, OSU, UGA…)" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="schoolResults" aria-autocomplete="list" aria-label="Search for a school">
     <div id="schoolResults" class="dropdown" role="listbox" hidden></div>
   </div>
   <p class="hint" id="pickHint"></p>
-  <p class="hint" style="margin-top:8px">Counting:
+  <p class="hint" style="margin-top:8px"><label for="modeSel">Counting:</label>
     <select id="modeSel" class="selmini">
       <option value="fin">Finished at the school (drafted from there)</option>
       <option value="all">Everyone who played there (transfers out too)</option>
@@ -324,7 +332,7 @@ body.egg-on{overflow:hidden}
   <div id="eggAns" hidden></div>
 </div>
 
-<div id="view"></div>
+<div id="view" tabindex="-1"></div>
 <section class="card signup" id="signup">
 <div class="signhead"><h2>This website could have been an email.</h2></div>
 <div class="signbody">
@@ -342,22 +350,27 @@ body.egg-on{overflow:hidden}
 <details class="contact" id="contact">
 <summary>Questions, bugs, or a school nickname I missed? Send me a note</summary>
 <form id="noteForm">
-  <textarea name="message" required rows="4" placeholder="What's up? Bug, missing nickname, idea&hellip;"></textarea>
-  <input type="email" name="email" placeholder="Your email (only if you want a reply)" autocomplete="email">
+  <textarea name="message" required rows="4" aria-label="Message" placeholder="What's up? Bug, missing nickname, idea&hellip;"></textarea>
+  <input type="email" name="email" placeholder="Your email (only if you want a reply)" autocomplete="email" aria-label="Your email, only if you want a reply">
   <input type="checkbox" name="botcheck" tabindex="-1" style="display:none" aria-hidden="true">
-  <div class="formrow"><button type="submit" id="noteSend">Send</button><span class="hint" id="noteStatus"></span></div>
+  <div class="formrow"><button type="submit" id="noteSend">Send</button><span class="hint" id="noteStatus" role="status"></span></div>
 </form>
 </details>
+</div>
+</main>
+<footer class="wrap">
 <p class="hint" style="margin:18px 0 0">Season: <select id="seasonSel" aria-label="Season" class="selmini"></select> Past seasons go back to 2013, the first year of snap counts.</p>
 <p class="foot">Data: nflverse rosters, weekly stats, team depth charts &amp; schedule (free, open NFL data). Starting lineups from ESPN. Position labels like QB1 or LCB2 are the team's own depth chart slot. College history from NFL roster records; the school listed first is where the player finished. Data refreshes automatically every day and after game days.</p>
-</div>
+</footer>
 
 <script>
 let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},POST={},sel=[],curWeek=1,tab='games',openGames=new Set(),rankCat='starters',expanded=null,boardOpen=null;
 let COLORS={nfl:{},school:{}};
 // readable text on a team color
 function inkFor(hex){const m=/^#?([0-9a-f]{6})$/i.exec(hex||'');if(!m)return '#fff';const v=parseInt(m[1],16),r=v>>16&255,g=v>>8&255,b=v&255;
-  const L=x=>{x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)};return (.2126*L(r)+.7152*L(g)+.0722*L(b))>.36?'#0c1526':'#ffffff'}
+  const L=x=>{x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)},lum=.2126*L(r)+.7152*L(g)+.0722*L(b);
+  // white vs the ink color (#0c1526, luminance about .0075), whichever reads better
+  return 1.05/(lum+.05)>=(lum+.05)/.0575?'#ffffff':'#0c1526'}
 function tmTag(t){const c=(COLORS.nfl||{})[t]||['#33405a','#8a96ad'];return `<span class="tm" style="--c1:${c[0]};--c2:${c[1]||c[0]};--ci:${inkFor(c[0])}"><span>${t}</span></span>`}
 // team-select reskin: the band and signup header take the lead school's colors
 let teamKey=null;
@@ -534,7 +547,7 @@ function renderPicker(){
 }
 let ddHits=[],ddAct=0;
 function closeDD(){const box=document.getElementById('schoolResults');box.hidden=true;box.innerHTML='';
-  document.getElementById('schoolSearch').setAttribute('aria-expanded','false');ddHits=[]}
+  const si=document.getElementById('schoolSearch');si.setAttribute('aria-expanded','false');si.removeAttribute('aria-activedescendant');ddHits=[]}
 function pickSchool(name){
   if(!name||sel.includes(name)){closeDD();return}
   sel.push(name);saveSel();
@@ -545,11 +558,12 @@ function drawDD(){
   box.innerHTML=ddHits.length?ddHits.map((s,i)=>{
     const picked=sel.includes(s.name);
     const nick=(s.alias||[]).slice(0,2).join(', ');
-    return `<button type="button" role="option" class="opt${i===ddAct?' act':''}${picked?' picked':''}" data-i="${i}">
+    return `<button type="button" role="option" id="sopt-${i}" aria-selected="${i===ddAct}"${picked?' aria-disabled="true"':''} class="opt${i===ddAct?' act':''}${picked?' picked':''}" data-i="${i}" tabindex="-1">
       <span>${esc(s.name)}${nick?`<span class="nick">${esc(nick)}</span>`:''}</span>
       <span class="cnt">${picked?'\u2713 picked':s.count+' in NFL'}</span></button>`;
   }).join(''):'<div class="none">No school matches. Try a nickname like UGA or Bama.</div>';
-  box.hidden=false;document.getElementById('schoolSearch').setAttribute('aria-expanded','true');
+  box.hidden=false;const si=document.getElementById('schoolSearch');si.setAttribute('aria-expanded','true');
+  if(ddHits.length)si.setAttribute('aria-activedescendant','sopt-'+ddAct);else si.removeAttribute('aria-activedescendant');
   const a=box.querySelector('.opt.act');if(a)a.scrollIntoView({block:'nearest'});
 }
 document.addEventListener('input',e=>{
@@ -597,8 +611,18 @@ document.getElementById('tabs').onclick=e=>{
   if(document.startViewTransition&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.startViewTransition(go);else go();
 };
 
+// re-renders replace #view's HTML; this finds the focused control again so keyboard users keep their place
+function focusKey(el){
+  const v=document.getElementById('view');if(!el||el===v||!v.contains(el))return null;
+  if(el.id)return '#'+CSS.escape(el.id);
+  const tr=el.closest('tr.rk');
+  if(tr)return `tr.rk${tr.dataset.kind?`[data-kind="${CSS.escape(tr.dataset.kind)}"]`:':not([data-kind])'}[data-sc="${CSS.escape(tr.dataset.sc)}"][data-cat="${CSS.escape(tr.dataset.cat)}"] .rkbtn`;
+  for(const a of ['data-w','data-fper','data-fan','data-bo','data-g'])if(el.hasAttribute(a))return `[${a}="${CSS.escape(el.getAttribute(a))}"]`;
+  if(el.classList.contains('addbtn'))return '.addbtn';
+  return null;
+}
 function render(){
-  const v=document.getElementById('view');
+  const v=document.getElementById('view'),fk=focusKey(document.activeElement);
   if(!sel.length)openGames.clear();
   document.querySelectorAll('#tabs button').forEach(x=>{x.classList.toggle('on',x.dataset.v===tab);x.setAttribute('aria-current',x.dataset.v===tab?'page':'false')});
   {const on=document.querySelector('#tabs button.on'),rail=document.getElementById('tabs');if(on&&rail.scrollWidth>rail.clientWidth)rail.scrollTo({left:Math.max(0,on.offsetLeft-24),behavior:'smooth'})}
@@ -612,6 +636,7 @@ function render(){
   else if(tab==='fan')v.innerHTML=addBtn+fanView();
   else v.innerHTML=addBtn+boardsView();
   wire(v);
+  if(fk){const t=v.querySelector(fk);if(t)t.focus({preventScroll:true})}
 }
 function wire(v){
   v.querySelectorAll('.game[data-g]').forEach(el=>el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click()}});
@@ -633,6 +658,13 @@ function wire(v){
   v.querySelectorAll('[data-bo]').forEach(el=>el.onclick=()=>{
     boardOpen=boardOpen===el.dataset.bo?null:el.dataset.bo;render();
   });
+  v.querySelectorAll('[data-w],[data-fper]').forEach(b=>b.setAttribute('aria-pressed',b.classList.contains('on')));
+  v.querySelectorAll('[data-fan]').forEach(b=>b.setAttribute('aria-pressed',b.classList.contains('sel')));
+  v.querySelectorAll('[data-bo]').forEach(b=>b.setAttribute('aria-expanded',b.classList.contains('sel')));
+  // tap-to-expand rows: the label cell (the one with the arrow) becomes a real button
+  v.querySelectorAll('tr.rk').forEach(el=>{const cell=el.querySelector('.chev')?.closest('td');if(!cell)return;
+    const b=document.createElement('button');b.type='button';b.className='rkbtn';b.setAttribute('aria-expanded',el.classList.contains('open'));
+    b.append(...cell.childNodes);cell.append(b)});
   v.querySelectorAll('tr.rk').forEach(el=>el.onclick=()=>{
     const k=(el.dataset.kind?el.dataset.kind+'|':'')+el.dataset.sc+'|'+el.dataset.cat;
     expanded=expanded===k?null:k;render();
@@ -769,7 +801,7 @@ function rankView(){
   const topN=sel.length?10:25;
   if(!sel.length)h+=`<p class="hint" style="margin:0 0 12px">Pick a category to see the top schools. Add schools above to see their full rank cards.</p>`;
   h+=`<div class="card"><h2 style="margin:0 0 8px">Top ${topN} ·
-    <select id="catSel">
+    <select id="catSel" aria-label="Category">
     ${Object.entries(CATS).map(([k,lbl])=>`<option value="${k}" ${k===rankCat?'selected':''}>${lbl}</option>`).join('')}</select></h2>
     <div class="tablewrap"><table>${topList(rankCat,topN)}</table></div></div>`;
   h+=`<p class="hint">Tap a category to see which of your players are behind the number. Ties share a rank (T-1 means tied for first). ${mode==='fin'?'Rankings credit the school a player finished at.':'Rankings credit every school a player played for, so transfers count for each stop.'} A start means he was in his team's lineup for the first snap. At each position on each team, starters are the usual number of most-started players plus anyone else who started at least a quarter of the team's games${ARCH_YR&&SEASON_YR===ARCH_YR?'':' so far'}, so QB splits, benchings and long fill-ins all count. Kickers and punters count after two games.</p>`;
@@ -780,6 +812,7 @@ function splitLabel(g,idx){
   const c={};for(const t of [g.away,g.home])for(const e of idx[t]||[])c[e.school]=(c[e.school]||0)+1;
   return sel.map(sc=>shortName(sc)+' '+(c[sc]||0)).join(' \u00b7 ');
 }
+function weekName(w){const g=GAMES.find(x=>x.wk===w);return g&&g.type!=='REG'?(ROUND[g.type]||g.type):'Week '+w}
 function weekLabel(w){
   const g=GAMES.find(x=>x.wk===w);
   return g&&g.type!=='REG'?(ROUND_SHORT[g.type]||g.type):w;
@@ -796,8 +829,9 @@ function weekView(){
   if(inPlayoffs)wks=wks.filter(w=>{const g=GAMES.find(x=>x.wk===w);return g&&g.type!=='REG'});
   const lbl=guysLabel();
   const cols=wks.length<=6?wks.length:Math.ceil(wks.length/2);
-  let h=`<div class="weekbar" style="--cols:${cols}">`+wks.map(w=>`<button data-w="${w}" class="${w===curWeek?'on':''}"><span>${weekLabel(w)}</span></button>`).join('')+`</div>`;
+  let h=`<div class="weekbar" style="--cols:${cols}">`+wks.map(w=>`<button data-w="${w}" class="${w===curWeek?'on':''}" aria-label="${weekName(w)}"><span>${weekLabel(w)}</span></button>`).join('')+`</div>`;
   h+=recapHtml(curWeek);
+  h+=`<h2 class="sr-only">${weekName(curWeek)} games</h2>`;
   // live and upcoming games first, finished games below; kickoff order within each
   const gs=GAMES.filter(g=>g.wk===curWeek).sort((a,b)=>(a.as!==''?1:0)-(b.as!==''?1:0));
   h+=gs.map(g=>{
@@ -806,7 +840,7 @@ function weekView(){
     const round=g.type!=='REG'?`<span class="badge" style="margin-left:6px">${ROUND[g.type]||g.type}</span>`:'';
     const a=+g.as,hm=+g.hs;
     const open=openGames.has(g.id);
-    return `<div class="game${open?' open':''}" data-g="${g.id}" role="button" tabindex="0" aria-expanded="${open}" aria-controls="gx-${g.id}" aria-label="${g.away} at ${g.home}${played?`, final ${g.as} to ${g.hs}`:''}">
+    return `<div class="game${open?' open':''}" data-g="${g.id}" role="button" tabindex="0" aria-expanded="${open}" aria-controls="gx-${g.id}" aria-label="${g.away} at ${g.home}, ${played?`final ${g.as} to ${g.hs}`:`${fmtDate(g.date)} ${fmtTime(g.time)} ET`}${sel.length?`, ${esc(sel.length>1?splitLabel(g,idx):n+' '+lbl)}`:''}">
       <div class="bug"><div class="line">${tmTag(g.away)}${played?`<span class="pts${a>hm?' win':''}">${g.as}</span>`:''}</div>
       <div class="line">${tmTag(g.home)}${played?`<span class="pts${hm>a?' win':''}">${g.hs}</span>`:''}</div>${round?`<div>${round}</div>`:''}
       <div class="meta">${played?'<span class="final">Final</span> · ':''}${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
@@ -906,7 +940,7 @@ function boardsView(){
       <div class="chips">${topTeams.map(([t,n])=>chip('team',t,n)).join('')}</div>
       ${openList('team')}
       <div class="tablewrap"><table>
-      <tr><th>Season leaders</th><th></th><th class="num">Value</th><th class="num">NFL rank</th></tr>
+      <tr><th>Season leaders</th><th><span class="sr-only">Player</span></th><th class="num">Value</th><th class="num">NFL rank</th></tr>
       ${LEAD_CATS.map(([cat,lbl])=>{
         let best=null,bv=0;
         for(const e of ps){const x=STATV[cat](STATS[e.pid]?.s||{});if(x>bv){bv=x;best=e}}
@@ -1120,7 +1154,7 @@ function confView(){
     list:()=>Object.entries(bySchool[cf]||{}).sort((a,b)=>b[1]-a[1]).map(([sc,x])=>
       `<div class="row"><b${sel.includes(sc)?' style="color:var(--accent)"':''}>${esc(sc)}</b> · ${round(x).toLocaleString()}</div>`).join('')}));
   h+=`<div class="card"><h2 style="margin:0 0 8px">Conferences by
-    <select id="confSel">
+    <select id="confSel" aria-label="Category">
     ${CONF_CATS.map(([k,l])=>`<option value="${k}" ${k===confCat?'selected':''}>${l}</option>`).join('')}</select></h2>
     <div class="tablewrap"><table>${rankRows('CF',rows)}</table></div>
     <p class="hint" style="margin:8px 0 0">Tap a conference to see which schools add up to it.</p></div>
@@ -1196,7 +1230,7 @@ function fanView(){
   const opts=['season',...statWeeks];
   const cols=opts.length<=10?opts.length:Math.ceil(opts.length/2);
   h+=`<div class="weekbar" style="--cols:${cols};margin-bottom:10px">${opts.map(o=>
-    `<button data-fper="${o}" class="${String(o)===String(fanPeriod)?'on':''}">${o==='season'?'Season':weekLabel(o)}</button>`).join('')}</div>`;
+    `<button data-fper="${o}" class="${String(o)===String(fanPeriod)?'on':''}" aria-label="${o==='season'?'Season':weekName(o)}">${o==='season'?'Season':weekLabel(o)}</button>`).join('')}</div>`;
   // school totals for ranking
   const tot={};
   for(const [pid,p] of Object.entries(PLAYERS)){const v=pts(pid);if(!v)continue;for(const sc of creditSchools(p))tot[sc]=(tot[sc]||0)+v}
@@ -1336,7 +1370,7 @@ function h2hHtml(){
     return {g,a,b,score}}).filter(f=>f.score>0).sort((p,q)=>q.score-p.score||(sumv(q.a)+sumv(q.b))-(sumv(p.a)+sumv(p.b))).slice(0,3);
   const fmtSide=c=>Object.entries(c).map(([s,n])=>`${esc(shortName(s))} ${n}`).join(', ')||'none';
   return `<div class="card"><h2 style="margin:0 0 8px">Head to head</h2>
-    <div class="tablewrap"><table><tr><th></th>${S.map(sc=>`<th class="num">${esc(shortName(sc))}</th>`).join('')}</tr>${rows}
+    <div class="tablewrap"><table><tr><th><span class="sr-only">Category</span></th>${S.map(sc=>`<th class="num">${esc(shortName(sc))}</th>`).join('')}</tr>${rows}
     <tr><td><b>Categories won</b></td>${wins.map(w=>`<td class="num"><b>${w}</b></td>`).join('')}</tr></table></div>
     ${faceoffs.length?`<p class="hint" style="margin:12px 0 4px">Biggest matchups in week ${weekLabel(curWeek)}</p>
       <div class="expand" style="padding:0 0 0 4px">${faceoffs.map(f=>`<div class="row"><b>${f.g.away}</b> (${fmtSide(f.a)}) @ <b>${f.g.home}</b> (${fmtSide(f.b)})</div>`).join('')}</div>`:''}
@@ -1367,13 +1401,14 @@ function eggReason(){
   return `Former Dawgs rank ${list} among every school’s NFL alumni`+
     (starters?`, with ${starters.val} of them starting on Sundays`:'')+(ARCH_YR&&SEASON_YR===ARCH_YR?`. In the ${ARCH_YR} season.`:`. Through week ${weekLabel(latestStatWeek())}.`);
 }
+let eggFrom=null;
 function unlockEgg(){
   const egg=document.getElementById('egg');
-  if(!egg.hidden)return;
+  if(!egg.hidden)return;eggFrom=document.activeElement;
   document.getElementById('eggBtn').hidden=false;document.getElementById('eggAns').hidden=true;
   egg.hidden=false;document.body.classList.add('egg-on');document.getElementById('eggBtn').focus();
 }
-function closeEgg(){document.getElementById('egg').hidden=true;document.body.classList.remove('egg-on')}
+function closeEgg(){document.getElementById('egg').hidden=true;document.body.classList.remove('egg-on');if(eggFrom&&eggFrom.focus)eggFrom.focus();eggFrom=null}
 document.getElementById('eggBtn').onclick=()=>{
   const a=document.getElementById('eggAns');
   a.innerHTML=`<div class="lbl">The best team, based on all this</div><div class="big">Georgia</div><p>${esc(eggReason())}</p><button id="eggBack" type="button">Back to the site</button>`;
