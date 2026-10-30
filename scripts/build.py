@@ -663,9 +663,13 @@ def prerender(schools, active, starters, depth):
             by_school[c]["primary" if i == 0 else "also"].append((pid, p))
     urls = [f"{DOMAIN}/"]
     for s in schools:
-        if s["count"] < 5:
+        # Every school with an NFL player gets a page, including one-player
+        # schools. Small schools are where search impressions showed up first.
+        if s["count"] < 1:
             continue
         name = s["name"]
+        n = s["count"]
+        players = "player" if n == 1 else "players"
         slug = slugify(name)
         e = html.escape
         alias = ", ".join(s.get("alias", [])[:3])
@@ -692,20 +696,26 @@ def prerender(schools, active, starters, depth):
         desc = (f"All {s['count']} NFL players in {SEASON} with no college listed, mostly "
                 f"International Pathway players: teams, positions and depth chart spots. Updated daily."
                 if nc else
-                f"All {s['count']} {name}{' (' + alias + ')' if alias else ''} players "
-                f"in the NFL in {SEASON}: current teams, positions, depth chart spots, "
-                f"and who transferred in or out. Updated daily.")
+                f"All {n} {name}{' (' + alias + ')' if alias else ''} "
+                f"players in the NFL in {SEASON}: current teams, positions, depth chart spots, "
+                f"and who transferred in or out. Updated daily." if n > 1 else
+                (lambda p: f"{p['name']} ({p['pos']}, {p['team']}) is the only "
+                 f"{name} player in the NFL in {SEASON}. Team, position and depth chart spot, "
+                 f"updated daily." if p else f"The {name} player in the NFL in {SEASON}. Updated daily.")(
+                    next((p for _, p in by_school[name]["primary"] + by_school[name]["also"]), None)))
         intro = (f"<strong>{s['count']}</strong> players in the NFL in {SEASON} have no college "
                  f"listed in NFL roster records, including practice squads and injured reserve. "
                  f"Most came through the International Pathway; a few may simply be missing "
                  f"from the records. Updated {today}." if nc else
-                 f"{e(name)}{' (' + e(alias) + ')' if alias else ''} has <strong>{s['count']}</strong> players\n"
+                 f"{e(name)}{' (' + e(alias) + ')' if alias else ''} has <strong>{n}</strong> {players}\n"
                  f"in the NFL in {SEASON}, including practice squads and injured reserve.\n"
                  f"Finished their college career at {e(name)}: <strong>{s['primary']}</strong>.\n"
                  f"Updated {today} from NFL roster data.")
         page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="96x96" href="/icon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <title>{e(title)} - CFB Sundays</title>
 <meta name="description" content="{e(desc)}">
@@ -722,7 +732,7 @@ h1{{font-style:oblique 9deg;text-transform:uppercase;line-height:1.1}}</style>
 <header><a href="/">&larr; CFB Sundays: see these players by NFL game, live stats and rankings</a></header>
 <h1>{e(title)}</h1>
 <p>{intro}</p>
-<h2>{'Players' if nc else 'Players who finished at ' + e(name)}</h2><ul>{''.join(rows)}</ul>
+{'<h2>' + ('Players' if nc else 'Players who finished at ' + e(name)) + '</h2><ul>' + ''.join(rows) + '</ul>' if rows else ''}
 {'<h2>Played at ' + e(name) + ', finished elsewhere</h2><ul>' + ''.join(also) + '</ul>' if also else ''}
 <p><a href="/">Track {'these' if nc else e(name)} players game by game on CFB Sundays</a>. Pick your schools
 and see who is in each NFL game this week with per-game and season stats.</p>
