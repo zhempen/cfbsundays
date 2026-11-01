@@ -50,7 +50,8 @@ jobs:
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
+          GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
         run: |
-          python3 -c "import json,os; print(json.dumps({k: os.environ[k] for k in ('RESEND_API_KEY','TURNSTILE_SECRET')}))" > secrets.json
+          python3 -c "import json,os; print(json.dumps({k: os.environ[k] for k in ('RESEND_API_KEY','TURNSTILE_SECRET','GH_DISPATCH_TOKEN') if os.environ.get(k)}))" > secrets.json
           $WRANGLER secret bulk secrets.json
           rm secrets.json

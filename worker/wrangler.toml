@@ -11,6 +11,13 @@ account_id = "ff4796ba0079d854581dba41b741217c"
 [observability]
 enabled = true
 
+# Site rebuilds (UTC). Every morning, then on the half hour through Sunday
+# (and late-season Saturday) games and after Monday and Thursday night games.
+# In Eastern standard time: 6:15 AM daily; 4:30 PM to 1:30 AM Sat/Sun;
+# 11:30 PM to 1:30 AM Mon/Thu nights. An hour later on the clock during daylight time.
+[triggers]
+crons = ["15 11 * * *", "30 21-23 * * 0,6", "30 0-6 * * 0,1", "30 4-6 * * 2,5"]
+
 [vars]
 SITE = "https://cfbsundays.com"
 ORIGINS = "https://cfbsundays.com,https://www.cfbsundays.com"

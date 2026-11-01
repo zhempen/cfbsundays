@@ -184,7 +184,28 @@ async function unsubscribe(req, url, env) {
 <form method="post"><button type="submit">Unsubscribe</button></form>`);
 }
 
+// Game-day refreshes. GitHub's own schedules start hours late, so Cloudflare's
+// cron (on time) asks GitHub to run the site build. Needs GH_DISPATCH_TOKEN, a
+// fine-grained token for this repo with Actions: read and write.
+async function dispatchBuild(env) {
+  if (!env.GH_DISPATCH_TOKEN) return;
+  const r = await fetch("https://api.github.com/repos/zhempen/cfbsundays/actions/workflows/deploy.yml/dispatches", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.GH_DISPATCH_TOKEN}`,
+      Accept: "application/vnd.github+json",
+      "User-Agent": "cfbsundays-worker",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+    body: JSON.stringify({ ref: "main" }),
+  });
+  if (!r.ok) console.error("build dispatch failed", r.status, await r.text());
+}
+
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(dispatchBuild(env));
+  },
   async fetch(req, env) {
     const url = new URL(req.url);
     const cors = corsHeaders(req, env);

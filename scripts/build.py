@@ -65,6 +65,67 @@ def espn_starts(games_rows, cache):
     print(f"ESPN starters: fetched {len(todo)} lineups, {failed} short", file=sys.stderr)
     return out
 
+ESPN_SUMMARY = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event={e}"
+ESPN_ABBR = {"LAR": "LA", "WSH": "WAS"}
+
+def _num(v):
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return 0
+    return int(f) if f == int(f) else f
+
+def espn_box(eid):
+    """{espn athlete id: (team, stat line)} from ESPN's box score for one game,
+    in the same field names as the nflverse lines. Used for finished games that
+    nflverse hasn't processed yet (it usually catches up overnight)."""
+    d = fetch_json(ESPN_SUMMARY.format(e=eid))
+    out = {}
+    for side in d.get("boxscore", {}).get("players", []):
+        team = side["team"]["abbreviation"]
+        team = ESPN_ABBR.get(team, team)
+        for cat in side.get("statistics", []):
+            keys = cat.get("keys", [])
+            for a in cat.get("athletes", []):
+                v = dict(zip(keys, a.get("stats", [])))
+                line = out.setdefault(str(a["athlete"]["id"]), (team, {}))[1]
+                name = cat.get("name")
+                if name == "passing":
+                    c, att = (v.get("completions/passingAttempts", "0/0") + "/0").split("/")[:2]
+                    line.update(cmp=_num(c), att=_num(att), py=_num(v.get("passingYards")),
+                                ptd=_num(v.get("passingTouchdowns")), int=_num(v.get("interceptions")))
+                elif name == "rushing":
+                    line.update(car=_num(v.get("rushingAttempts")), ry=_num(v.get("rushingYards")),
+                                rtd=_num(v.get("rushingTouchdowns")))
+                elif name == "receiving":
+                    line.update(rec=_num(v.get("receptions")), recy=_num(v.get("receivingYards")),
+                                rectd=_num(v.get("receivingTouchdowns")), tgt=_num(v.get("receivingTargets")))
+                elif name == "fumbles":
+                    line["_fl"] = _num(v.get("fumblesLost"))
+                elif name == "defensive":
+                    tot, solo = _num(v.get("totalTackles")), _num(v.get("soloTackles"))
+                    line.update(tk=solo, ast=tot - solo, sk=_num(v.get("sacks")), pd=_num(v.get("passesDefended")))
+                elif name == "interceptions":
+                    line["dint"] = _num(v.get("interceptions"))
+                elif name in ("kickReturns", "puntReturns"):
+                    line["_rettd"] = line.get("_rettd", 0) + _num(v.get(name[:-1] + "Touchdowns"))
+                elif name == "kicking":
+                    fg = (v.get("fieldGoalsMade/fieldGoalAttempts", "0/0") + "/0").split("/")
+                    xp = (v.get("extraPointsMade/extraPointAttempts", "0/0") + "/0").split("/")
+                    line.update(fgm=_num(fg[0]), fga=_num(fg[1]), xpm=_num(xp[0]))
+    for team, line in out.values():
+        g = line.get
+        fs = (g("py", 0) * 0.04 + g("ptd", 0) * 4 - g("int", 0) * 2 + g("ry", 0) * 0.1 + g("rtd", 0) * 6
+              + g("recy", 0) * 0.1 + g("rectd", 0) * 6 + g("_rettd", 0) * 6 - g("_fl", 0) * 2)
+        line.pop("_fl", None); line.pop("_rettd", None)
+        if fs:
+            line["fs"] = round(fs, 2)
+        if fs or g("rec"):
+            line["fp"] = round(fs + g("rec", 0), 2)
+        for k in [k for k, x in line.items() if not x]:
+            del line[k]
+    return out
+
 _CACHE = {}
 def fetch_cached(url):
     if url not in _CACHE:
@@ -421,6 +482,35 @@ def main(yr=SEASON, archive=False):
         if r.get("team"):
             wk_team[pid][int(r["week"])] = r["team"]
         wk_map[pid][int(r["week"])] = line
+
+    # ---- games nflverse hasn't processed yet: fill from ESPN box scores ----
+    # nflverse posts player stats overnight, so on game days the finished games'
+    # lines come from ESPN until nflverse catches up and replaces them.
+    if not archive and not os.environ.get("NO_ESPN"):
+        have = {(int(r["week"]), r["team"]) for r in stats_rows if r.get("team")}
+        todo = [r for r in games_rows if r["season"] == str(yr) and r["away_score"] and r.get("espn")
+                and not ((int(r["week"]), r["away_team"]) in have or (int(r["week"]), r["home_team"]) in have)]
+        filled = 0
+        for r in todo:
+            post = r["game_type"] != "REG"
+            wk_map, sn_map = (post_weekly, post_season) if post else (weekly, season)
+            wk = int(r["week"])
+            try:
+                box = espn_box(r["espn"])
+            except Exception as e:
+                print(f"ESPN box score {r['game_id']} failed: {e}", file=sys.stderr)
+                continue
+            for eid, (team, line) in box.items():
+                pid = espn_to_pid.get(eid)
+                if team not in (r["away_team"], r["home_team"]) or not pid or pid not in active or wk in wk_map[pid]:
+                    continue
+                for k, v in line.items():
+                    sn_map[pid][k] += v
+                line["opp"] = r["home_team"] if team == r["away_team"] else r["away_team"]
+                wk_team[pid][wk] = team
+                wk_map[pid][wk] = line
+            filled += 1
+        print(f"ESPN box scores: {filled} of {len(todo)} games nflverse hasn't posted yet", file=sys.stderr)
 
     # ---- starters from snap counts; specialists count by games played ----
     snap_acc = defaultdict(lambda: {"off": [], "def": []})

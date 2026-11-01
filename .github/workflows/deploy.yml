@@ -8,6 +8,10 @@ on:
     # (Sun/Mon/Thu nights ET land on 00:00-09:00 UTC Mon/Tue/Fri).
     - cron: "17 10 * * *"
     - cron: "17 2 * * 1,2,5"
+    # Backup game-day runs. GitHub often starts these hours late; the on-time
+    # ones come from the Cloudflare Worker's cron (worker/wrangler.toml).
+    - cron: "47 21-23 * * 0"
+    - cron: "47 0-5 * * 1"
   workflow_dispatch:
 
 permissions:
