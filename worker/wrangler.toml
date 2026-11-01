@@ -16,7 +16,7 @@ enabled = true
 # In Eastern standard time: 6:15 AM daily; 4:30 PM to 1:30 AM Sat/Sun;
 # 11:30 PM to 1:30 AM Mon/Thu nights. An hour later on the clock during daylight time.
 [triggers]
-crons = ["15 11 * * *", "30 21-23 * * 0,6", "30 0-6 * * 0,1", "30 4-6 * * 2,5"]
+crons = ["15 11 * * *", "30 21-23 * * SAT,SUN", "30 0-6 * * SUN,MON", "30 4-6 * * TUE,FRI"]
 
 [vars]
 SITE = "https://cfbsundays.com"

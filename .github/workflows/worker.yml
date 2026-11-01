@@ -44,7 +44,14 @@ jobs:
           $WRANGLER d1 execute cfbsundays --remote --file schema.sql -y
       - name: Deploy
         if: env.SKIP != '1'
-        run: $WRANGLER deploy
+        run: |
+          # on failure, surface wrangler's last lines as an annotation (readable without log access)
+          if ! $WRANGLER deploy > deploy.log 2>&1; then
+            cat deploy.log
+            tail -n 12 deploy.log | tr '\n' ' ' | sed 's/^/::error::/'; echo
+            exit 1
+          fi
+          cat deploy.log
       - name: Secrets
         if: env.SKIP != '1'
         env:
