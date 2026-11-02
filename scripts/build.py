@@ -615,9 +615,12 @@ def main(yr=SEASON, archive=False):
 
     # ---- players.json ----
     pout = {}
+    pid_to_espn = {} if archive else {v: k for k, v in espn_to_pid.items()}   # for live stats in the page
     for pid, p in active.items():
         row = {"n": p["name"], "t": p["team"], "p": p["pos"], "s": p["status"],
                "j": p["jersey"], "c": p["colleges"]}
+        if pid in pid_to_espn:
+            row["e"] = pid_to_espn[pid]
         if pid in starters:
             row["st"] = 1
         if game_starts.get(pid):
@@ -670,7 +673,8 @@ def main(yr=SEASON, archive=False):
     games = [{"id": r["game_id"], "wk": int(r["week"]), "type": r["game_type"],
               "date": r["gameday"], "time": r["gametime"],
               "away": r["away_team"], "home": r["home_team"],
-              "as": r["away_score"], "hs": r["home_score"]}
+              "as": r["away_score"], "hs": r["home_score"],
+              **({"espn": r["espn"]} if r.get("espn") and not archive else {})}
              for r in games_rows if r["season"] == str(yr)]
     games.sort(key=lambda g: (g["wk"], g["date"], g["time"]))
 

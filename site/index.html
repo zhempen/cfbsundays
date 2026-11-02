@@ -24,7 +24,7 @@
   --bg:#cdd5df; --surface:#edf1f6; --ink:#0c1526; --muted:#3d4a5f; --line:#aeb9c8;
   --accent:#1546b8; --accent-ink:#ffffff; --chip:#dde3eb;
   --gold:#ffc629; --gold-ink:#1b1400; --rail:#0e1830; --rail-ink:#c7d2e8;
-  --badge:#5c4300; --badge-bg:#ffe9a8;
+  --badge:#5c4300; --badge-bg:#ffe9a8; --live:#b3261e;
   --team1:#1b1e25; --team2:#c3c9d2; --team-ink:#ffffff; --team2-ink:#0c1526;
   --lift:inset 0 1px 0 rgba(255,255,255,.75),0 1px 2px rgba(12,21,38,.08),0 8px 18px -10px rgba(12,21,38,.35);
   --disp:"Saira",system-ui,sans-serif;
@@ -33,14 +33,14 @@
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#090f1d; --surface:#111a2e; --ink:#e7edf8; --muted:#97a6c0; --line:#24314b;
   --accent:#6f9bff; --accent-ink:#06102a; --chip:#1a2540;
-  --rail:#050a16; --rail-ink:#b9c6df; --badge:#ffd65c; --badge-bg:#3a2e08;
+  --rail:#050a16; --rail-ink:#b9c6df; --badge:#ffd65c; --badge-bg:#3a2e08; --live:#ff7b72;
   --lift:inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.4),0 10px 22px -12px rgba(0,0,0,.8);
   color-scheme:dark
 }}
 :root[data-theme="dark"]{
   --bg:#090f1d; --surface:#111a2e; --ink:#e7edf8; --muted:#97a6c0; --line:#24314b;
   --accent:#6f9bff; --accent-ink:#06102a; --chip:#1a2540;
-  --rail:#050a16; --rail-ink:#b9c6df; --badge:#ffd65c; --badge-bg:#3a2e08;
+  --rail:#050a16; --rail-ink:#b9c6df; --badge:#ffd65c; --badge-bg:#3a2e08; --live:#ff7b72;
   --lift:inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.4),0 10px 22px -12px rgba(0,0,0,.8);
   color-scheme:dark
 }
@@ -137,6 +137,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .game:hover,.game:focus-visible{outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 2px var(--gold),0 6px 14px -6px rgba(0,0,0,.5);transform:translateX(3px)}
 .game .meta{color:#a9b6d0}
 .game .final{color:#c9d4ea}
+.game .live{color:#ff7b72}
 .game .pts{color:#9fb0cf}
 .game .pts.win{color:#fff}
 .bug{flex:1;min-width:0;padding:9px 12px}
@@ -164,6 +165,8 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .card .pts{color:var(--ink)}
 .game .meta{font-size:12.5px;margin-top:4px}
 .final{font-family:var(--disp);font-stretch:72%;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:12px;color:var(--muted)}
+.live{font-family:var(--disp);font-stretch:72%;font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:12px;color:var(--live)}
+.live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:5px;vertical-align:1px}
 .game .mine{margin-left:auto;text-align:center;flex-shrink:0;min-width:86px;padding:8px 10px;display:flex;flex-direction:column;justify-content:center;
   background:#070d1c;color:var(--rail-ink);box-shadow:inset 1px 0 0 rgba(255,255,255,.08)}
 .count{font-family:var(--disp);font-stretch:70%;font-weight:800;font-size:26px;line-height:1;color:var(--gold)}
@@ -366,6 +369,7 @@ body.egg-on{overflow:hidden}
 </footer>
 
 <script>
+let LIVE={},LIVE_LINES={},LIVE_ON=false;
 let SCHOOLS=[],PLAYERS={},GAMES=[],STATS={},RANKS={},POST={},sel=[],curWeek=1,tab='games',openGames=new Set(),rankCat='starters',expanded=null,boardOpen=null;
 let COLORS={nfl:{},school:{}};
 // readable text on a team color
@@ -436,6 +440,60 @@ async function boot(){
   if([...document.querySelectorAll('#tabs button')].some(b=>b.dataset.v===h&&!b.hidden))tab=h;
   renderPicker();render();
   if(!sel.length&&matchMedia('(pointer:fine)').matches)document.getElementById('schoolSearch').focus();
+  if(!isArch)startLive();
+}
+
+// ---- live games: score, clock and player lines from ESPN's public scoreboard while a game is on.
+// Unofficial feed; if it fails the page just shows kickoff times until the next build.
+const ESPN_SB='https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=';
+const ESPN_SUM='https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=';
+const ESPN_ABBR={LAR:'LA',WSH:'WAS'};
+function etStamp(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return {date:`${p.year}-${p.month}-${p.day}`,hm:`${p.hour}:${p.minute}`}}
+function prevDay(d){const t=new Date(d+'T12:00:00Z');t.setUTCDate(t.getUTCDate()-1);return t.toISOString().slice(0,10)}
+// games that have kicked off and aren't final in our data: today's, or last night's after midnight
+function liveCandidates(){const n=etStamp(),y=prevDay(n.date);
+  return GAMES.filter(g=>g.as===''&&g.espn&&((g.date===n.date&&g.time<=n.hm)||(g.date===y&&n.hm<'05:00')))}
+function boxLines(d){const out={};
+  for(const side of d?.boxscore?.players||[])for(const cat of side.statistics||[])for(const a of cat.athletes||[]){
+    const v=Object.fromEntries((cat.keys||[]).map((k,i)=>[k,a.stats[i]])),n=x=>+x||0,o=out[a.athlete.id]||(out[a.athlete.id]={});
+    if(cat.name==='passing'){const [c,t]=(v['completions/passingAttempts']||'0/0').split('/');Object.assign(o,{cmp:n(c),att:n(t),py:n(v.passingYards),ptd:n(v.passingTouchdowns),int:n(v.interceptions)})}
+    else if(cat.name==='rushing')Object.assign(o,{car:n(v.rushingAttempts),ry:n(v.rushingYards),rtd:n(v.rushingTouchdowns)});
+    else if(cat.name==='receiving')Object.assign(o,{rec:n(v.receptions),recy:n(v.receivingYards),rectd:n(v.receivingTouchdowns)});
+    else if(cat.name==='defensive')Object.assign(o,{tk:n(v.soloTackles),ast:n(v.totalTackles)-n(v.soloTackles),sk:n(v.sacks),pd:n(v.passesDefended)});
+    else if(cat.name==='interceptions')o.dint=n(v.interceptions);
+    else if(cat.name==='kicking'){const [m,t]=(v['fieldGoalsMade/fieldGoalAttempts']||'0/0').split('/');Object.assign(o,{fgm:n(m),fga:n(t)})}
+  }
+  for(const o of Object.values(out))for(const k of Object.keys(o))if(!o[k]&&k!=='fgm')delete o[k];
+  for(const o of Object.values(out))if(o.fgm===0&&!o.fga)delete o.fgm;
+  return out}
+let ESPN2PID=null;
+async function liveTick(){
+  if(document.visibilityState!=='visible')return;
+  const cand=liveCandidates();
+  if(!cand.length){if(Object.keys(LIVE).length){LIVE={};LIVE_LINES={};if(tab==='games')render()}return}
+  if(!ESPN2PID){ESPN2PID={};for(const [pid,p] of Object.entries(PLAYERS))if(p.e)ESPN2PID[p.e]=pid}
+  const before=JSON.stringify([LIVE,LIVE_LINES]);
+  try{
+    const dates=[...new Set(cand.map(g=>g.date.replaceAll('-','')))];
+    const evs=(await Promise.all(dates.map(d=>fetch(ESPN_SB+d).then(r=>r.json())))).flatMap(x=>x.events||[]);
+    const live={},lines={};
+    for(const g of cand){const ev=evs.find(e=>e.id===g.espn);if(!ev)continue;
+      const st=ev.status?.type||{};if(st.state==='pre')continue;
+      const comp=ev.competitions?.[0]?.competitors||[],sc=t=>{const c=comp.find(c=>(ESPN_ABBR[c.team?.abbreviation]||c.team?.abbreviation)===t);return c?c.score:''};
+      live[g.id]={as:sc(g.away),hs:sc(g.home),detail:st.shortDetail||'',state:st.state};
+      const idx=teamIndex(g.wk);
+      if(!(idx[g.away]||[]).length&&!(idx[g.home]||[]).length)continue;   // none of your players: skip the box score
+      const box=boxLines(await fetch(ESPN_SUM+g.espn).then(r=>r.json()));
+      for(const [eid,line] of Object.entries(box)){const pid=ESPN2PID[eid];if(pid&&Object.keys(line).length)lines[pid]={wk:g.wk,line}}
+    }
+    LIVE=live;LIVE_LINES=lines;
+  }catch(e){return}
+  if(tab==='games'&&JSON.stringify([LIVE,LIVE_LINES])!==before)render();
+}
+function startLive(){
+  if(LIVE_ON)return;LIVE_ON=true;
+  liveTick();setInterval(liveTick,60000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')liveTick()});
 }
 
 // lowercases, turns & into 'and', drops punctuation and filler words so
@@ -838,14 +896,14 @@ function weekView(){
   const gs=GAMES.filter(g=>g.wk===curWeek).sort((a,b)=>(a.as!==''?1:0)-(b.as!==''?1:0));
   h+=gs.map(g=>{
     const n=(idx[g.away]||[]).length+(idx[g.home]||[]).length;
-    const played=g.as!=='';
+    const played=g.as!=='',lv=!played&&LIVE[g.id];
     const round=g.type!=='REG'?`<span class="badge" style="margin-left:6px">${ROUND[g.type]||g.type}</span>`:'';
     const a=+g.as,hm=+g.hs;
     const open=openGames.has(g.id);
-    return `<div class="game${open?' open':''}" data-g="${g.id}" role="button" tabindex="0" aria-expanded="${open}" aria-controls="gx-${g.id}" aria-label="${g.away} at ${g.home}, ${played?`final ${g.as} to ${g.hs}`:`${fmtDate(g.date)} ${fmtTime(g.time)} ET`}${sel.length?`, ${esc(sel.length>1?splitLabel(g,idx):n+' '+lbl)}`:''}">
-      <div class="bug"><div class="line">${tmTag(g.away)}${played?`<span class="pts${a>hm?' win':''}">${g.as}</span>`:''}</div>
-      <div class="line">${tmTag(g.home)}${played?`<span class="pts${hm>a?' win':''}">${g.hs}</span>`:''}</div>${round?`<div>${round}</div>`:''}
-      <div class="meta">${played?'<span class="final">Final</span> · ':''}${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
+    return `<div class="game${open?' open':''}" data-g="${g.id}" role="button" tabindex="0" aria-expanded="${open}" aria-controls="gx-${g.id}" aria-label="${g.away} at ${g.home}, ${played?`final ${g.as} to ${g.hs}`:lv?`live, ${lv.as} to ${lv.hs}, ${esc(lv.detail)}`:`${fmtDate(g.date)} ${fmtTime(g.time)} ET`}${sel.length?`, ${esc(sel.length>1?splitLabel(g,idx):n+' '+lbl)}`:''}">
+      <div class="bug"><div class="line">${tmTag(g.away)}${played?`<span class="pts${a>hm?' win':''}">${g.as}</span>`:lv?`<span class="pts">${lv.as}</span>`:''}</div>
+      <div class="line">${tmTag(g.home)}${played?`<span class="pts${hm>a?' win':''}">${g.hs}</span>`:lv?`<span class="pts">${lv.hs}</span>`:''}</div>${round?`<div>${round}</div>`:''}
+      <div class="meta">${played?'<span class="final">Final</span> · ':lv?`<span class="live">${lv.state==='post'?'Final':'Live'}</span> · ${esc(lv.state==='post'?'stats updating':lv.detail)} · `:''}${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
       <div class="mine">${sel.length
         ?`<div class="count ${n?'':'zero'}">${n}</div><div class="countlbl">${esc(sel.length>1?splitLabel(g,idx):lbl)}</div>`
         :`<div class="addcol">+ Add a college</div>`}</div>
@@ -858,8 +916,9 @@ function fmtDate(d){const dt=new Date(d+'T12:00:00');return dt.toLocaleDateStrin
 function fmtTime(t){if(!t)return'';const[h,m]=t.split(':').map(Number);const ap=h>=12?'PM':'AM';return`${((h+11)%12)+1}:${String(m).padStart(2,'0')} ${ap}`}
 
 function statLine(pid,wk,played){
-  const st=STATS[pid];if(!st)return'';
-  const w=played?st.w[wk]:null,s=st.s,g=st.g;
+  const lv=!played&&LIVE_LINES[pid]&&LIVE_LINES[pid].wk===wk?LIVE_LINES[pid].line:null;
+  const st=STATS[pid]||(lv?{w:{},s:null,g:0}:null);if(!st)return'';
+  const w=played?st.w[wk]:lv,s=st.s,g=st.g;
   const f=(o,pre)=>{if(!o)return'';const parts=[];
     if(o.py)parts.push(`<b>${o.py}</b> pass yds, ${o.ptd||0} TD${o.int?`, ${o.int} INT`:''}`);
     if(o.ry)parts.push(`<b>${o.ry}</b> rush yds${o.rtd?`, ${o.rtd} TD`:''}`);
@@ -870,7 +929,7 @@ function statLine(pid,wk,played){
     if(o.fgm!==undefined)parts.push(`<b>${o.fgm}/${o.fga||0}</b> FG`);
     return parts.length?pre+parts.join(' · '):'';
   };
-  const gm=w?f(w,'This game: '):'';
+  const gm=w?f(w,lv?'<span class="live">Live</span> ':'This game: '):'';
   const sn=f(s,`Season (${g} gm): `);
   if(!gm&&!sn)return'';
   return `<div class="stat">${gm}${gm&&sn?'<br>':''}${sn}</div>`;
