@@ -403,7 +403,7 @@ function saveSel(){try{localStorage.setItem('schools',JSON.stringify(sel))}catch
 // past seasons live in archive/YYYY/ and load only when picked (?season=YYYY)
 const ARCH_YR=+(new URLSearchParams(location.search).get('season')||0);
 async function boot(){
-  const [meta,archived,cols]=await Promise.all([fetch('data/meta.json').then(r=>r.json()).catch(()=>({})),
+  const [meta,archived,cols]=await Promise.all([fetch('data/meta.json',{cache:'no-cache'}).then(r=>r.json()).catch(()=>({})),
     fetch('archive/seasons.json').then(r=>r.json()).catch(()=>[]),fetch('colors.json').then(r=>r.json()).catch(()=>null)]);
   if(cols&&cols.nfl)COLORS=cols;
   const curYr=meta.season||SEASON_YR;
@@ -411,7 +411,7 @@ async function boot(){
   SEASON_YR=isArch?ARCH_YR:curYr;
   const base=isArch?'archive/'+ARCH_YR+'/':'data/';
   // rankings are computed in the page (buildRanks), so archived seasons skip that file
-  const [s,p,g,st,rk,po]=await Promise.all(['schools','players','games','stats',isArch?null:'rankings','playoffs'].map(n=>n?fetch(base+n+'.json').then(r=>r.json()).catch(()=>({})):({})));
+  const [s,p,g,st,rk,po]=await Promise.all(['schools','players','games','stats',isArch?null:'rankings','playoffs'].map(n=>n?fetch(base+n+'.json',{cache:isArch?'default':'no-cache'}).then(r=>r.json()).catch(()=>({})):({})));
   const ss=document.getElementById('seasonSel');
   ss.innerHTML=[curYr,...archived.filter(y=>y!==curYr)].map(y=>`<option value="${y}" ${y===SEASON_YR?'selected':''}>${y}${y===curYr?' (current)':''}</option>`).join('');
   ss.onchange=()=>{const y=+ss.value;location.href=location.pathname+(y===curYr?'':'?season='+y)+location.hash};
