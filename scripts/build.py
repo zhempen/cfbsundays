@@ -786,6 +786,7 @@ def prerender(schools, active, starters, depth):
                 for pid, p in sorted(by_school[name]["also"], key=lambda x: x[1]["name"])]
         nc = name == NO_COLLEGE
         title = (f"NFL players who didn't play college football ({SEASON})" if nc
+                 else f"All {n} {name} players in the NFL ({SEASON})" if n > 1
                  else f"{name} players in the NFL ({SEASON})")
         desc = (f"All {s['count']} NFL players in {SEASON} with no college listed, mostly "
                 f"International Pathway players: teams, positions and depth chart spots. Updated daily."
