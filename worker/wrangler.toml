@@ -11,12 +11,12 @@ account_id = "ff4796ba0079d854581dba41b741217c"
 [observability]
 enabled = true
 
-# Site rebuilds (UTC). Every morning, then every half hour through Sunday
-# (and late-season Saturday) games and after Monday and Thursday night games.
-# In Eastern standard time: 6:15 AM daily; 4 PM to 1:30 AM Sat/Sun;
-# 11 PM to 1:30 AM Mon/Thu nights. An hour later on the clock during daylight time.
+# Site rebuilds. Fires every 5 minutes; src/index.js (BUILD_TIMES) decides in
+# New York time whether a build is due: 6:15 AM daily, at each Sunday (and
+# late-season Saturday) kickoff window plus 30 minutes, and midnight plus 12:30
+# after Sunday, Monday and Thursday night games.
 [triggers]
-crons = ["15 11 * * *", "0,30 21-23 * * SAT,SUN", "0,30 0-6 * * SUN,MON", "0,30 4-6 * * TUE,FRI"]
+crons = ["*/5 * * * *"]
 
 [vars]
 SITE = "https://cfbsundays.com"

@@ -202,9 +202,29 @@ async function dispatchBuild(env) {
   if (!r.ok) console.error("build dispatch failed", r.status, await r.text());
 }
 
+// When to rebuild, in New York time (so daylight saving is handled). Stats only
+// arrive for finished games, so the site rebuilds when the next window kicks off
+// (the earlier games are over) and 30 minutes later in case of overtime, then at
+// midnight and 12:30 after the night game. Keys are the New York weekday.
+const BUILD_TIMES = {
+  daily: ["06:15"],
+  Sun: ["00:00", "00:30", "13:00", "13:30", "16:25", "16:55", "20:20", "20:50"], // 00:xx = Saturday night game
+  Mon: ["00:00", "00:30"],   // Sunday night game
+  Tue: ["00:00", "00:30"],   // Monday night game
+  Fri: ["00:00", "00:30"],   // Thursday night game
+  Sat: ["13:00", "13:30", "16:25", "16:55", "20:20", "20:50"],   // late-season Saturdays
+};
+function buildDue(ms) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
+  const hm = `${p.hour}:${p.minute}`;
+  return BUILD_TIMES.daily.includes(hm) || (BUILD_TIMES[p.weekday] || []).includes(hm);
+}
+
 export default {
+  // the cron fires every 5 minutes; this only asks GitHub for a build at the times above
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(dispatchBuild(env));
+    if (buildDue(event.scheduledTime)) ctx.waitUntil(dispatchBuild(env));
   },
   async fetch(req, env) {
     const url = new URL(req.url);
