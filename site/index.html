@@ -1353,7 +1353,7 @@ const RECAP_GROUPS=[['Quarterbacks',['QB']],['Running backs',['RB','FB','HB']],[
   ['Offensive line',['OL','T','G','C','OT','OG']],['Defensive line',['DL','DE','DT','NT']],['Linebackers',['LB','OLB','ILB','MLB']],
   ['Defensive backs',['DB','CB','S','FS','SS']],['Special teams',['K','P','LS']]];
 const recapGroup=p=>{const ps=[posOf(p),p.p];const i=RECAP_GROUPS.findIndex(g=>ps.some(x=>g[1].includes(x)));return i<0?RECAP_GROUPS.length:i};
-// snaps first, then every stat he has, offense to defense to kicking
+// every stat he has, offense to defense to kicking (or just his snap counts when given only sn)
 function fullLine(w,sn){
   w=w||{};const n=k=>w[k]||0,pl=(v,word)=>`${v} ${word}${v===1?'':'s'}`,parts=[];
   if(sn){const od=sn[0]+sn[1],st=sn[2];if(od)parts.push(`${od} snaps${st?` + ${st} ST`:''}`);else if(st)parts.push(`${st} ST snaps`)}
@@ -1393,10 +1393,11 @@ function recapHtml(wk){
       for(const [pid,p] of on){
         const g=recapGroup(p);
         if(g!==lastG){roster+=`<p class="hint" style="margin:10px 0 2px;text-transform:uppercase;letter-spacing:.5px">${g<RECAP_GROUPS.length?RECAP_GROUPS[g][0]:'Other'}</p>`;lastG=g}
-        const line=fullLine(STATS[pid]?.w?.[wk]||POST[pid]?.w?.[wk],(p.sn||{})[wk]);
+        // stats first; snap counts (least important) on their own line under them
+        const line=fullLine(STATS[pid]?.w?.[wk]||POST[pid]?.w?.[wk],null),snl=fullLine(null,(p.sn||{})[wk]);
         // same school badges as the game cards: transfers say where they finished, others where else they played
         const xb=p.c[0]!==sc?` <span class="badge">finished at ${esc(p.c[0])}</span>`:p.c.length>1?` <span class="badge">also ${esc(p.c.slice(1).join(', '))}</span>`:'';
-        roster+=`<div class="row"><b>${esc(p.n)}</b> <span class="hint">${teamFor(p,wk)}</span>${xb}${gsOf(p)?` <span class="badge" style="background:var(--accent);color:var(--accent-ink)" title="In the lineup for the first snap">started</span>`:''}${line?`<br>${esc(line)}`:''}</div>`;
+        roster+=`<div class="row"><b>${esc(p.n)}</b> <span class="hint">${teamFor(p,wk)}</span>${xb}${gsOf(p)?` <span class="badge" style="background:var(--accent);color:var(--accent-ink)" title="In the lineup for the first snap">started</span>`:''}${line?`<br>${esc(line)}`:''}${snl?`<br><span class="hint">${esc(snl)}</span>`:''}</div>`;
       }
       body+=`<div style="margin:6px 0 12px"><div class="disp" style="font-size:18px">${sw('school',sc)}${esc(sc)}</div>
         ${parts.length?`<p class="sub" style="margin:2px 0 6px">${parts.join(' · ')}</p>`:''}

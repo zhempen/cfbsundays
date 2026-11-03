@@ -83,7 +83,7 @@ def snap_part(sn):
     return f"{st} ST snaps" if st else ""
 
 def full_line(w, sn):
-    """Snaps first, then every stat he has, offense to defense to kicking."""
+    """Every stat he has, offense to defense to kicking, after his snaps when sn is given."""
     w = w or {}
     n = lambda k: w.get(k, 0)
     s = lambda v, word: f"{fmt(v)} {word}{'' if v == 1 else 's'}"
@@ -235,9 +235,11 @@ class Week:
                     tag = f"{team}{', ' + note if note else ''}"
                     snap_only.append((started, f'{e(p["n"])} <span style="{mute}">({e(tag)})</span> <b>{n}</b>', f"{p['n']} ({tag}) {n}"))
                     continue
-                line = full_line(self.lines.get(pid, {}).get(wk), sn)
-                h.append(f'<p style="margin:0 0 6px;color:{INK}">{who}<br>{e(line)}</p>')
-                t.append(f"  {who_t}: {line}")
+                # stats first; snap counts (least important) on a second, quieter line
+                snaps = snap_part(sn)
+                h.append(f'<p style="margin:0 0 6px;color:{INK}">{who}<br>{e(stats)}'
+                         + (f'<br><span style="{mute}">{e(snaps)}</span>' if snaps else '') + '</p>')
+                t.append(f"  {who_t}: {stats}" + (f" ({snaps})" if snaps else ""))
             if snap_only:
                 # one short paragraph: snap counts only, starters first
                 parts_h, parts_t = [], []
