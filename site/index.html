@@ -147,6 +147,8 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .game.open{margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 2px var(--gold)}
 .gamex{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:0 0 3px 3px;padding:2px 14px 10px;margin:0 0 12px;box-shadow:var(--lift)}
 .gamex .side h3{margin:12px 0 4px}
+.gamex .watch{grid-column:1/-1;margin:10px 0 0;font-size:14px;color:var(--muted)}
+.gamex .watch a{color:var(--accent);font-weight:700;text-underline-offset:3px}
 .gamex .side h3 .pts{font-size:20px}
 @media (min-width:760px){.gamex{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}}
 @media (min-width:641px){
@@ -903,7 +905,7 @@ function weekView(){
     return `<div class="game${open?' open':''}" data-g="${g.id}" role="button" tabindex="0" aria-expanded="${open}" aria-controls="gx-${g.id}" aria-label="${g.away} at ${g.home}, ${played?`final ${g.as} to ${g.hs}`:lv?`live, ${lv.as} to ${lv.hs}, ${esc(lv.detail)}`:`${fmtDate(g.date)} ${fmtTime(g.time)} ET`}${sel.length?`, ${esc(sel.length>1?splitLabel(g,idx):n+' '+lbl)}`:''}">
       <div class="bug"><div class="line">${tmTag(g.away)}${played?`<span class="pts${a>hm?' win':''}">${g.as}</span>`:lv?`<span class="pts">${lv.as}</span>`:''}</div>
       <div class="line">${tmTag(g.home)}${played?`<span class="pts${hm>a?' win':''}">${g.hs}</span>`:lv?`<span class="pts">${lv.hs}</span>`:''}</div>${round?`<div>${round}</div>`:''}
-      <div class="meta">${played?'<span class="final">Final</span> · ':lv?`<span class="live">${lv.state==='post'?'Final':'Live'}</span> · ${esc(lv.state==='post'?'stats updating':lv.detail)} · `:''}${fmtDate(g.date)} · ${fmtTime(g.time)} ET</div></div>
+      <div class="meta">${played?'<span class="final">Final</span> · ':lv?`<span class="live">${lv.state==='post'?'Final':'Live'}</span> · ${esc(lv.state==='post'?'stats updating':lv.detail)} · `:''}${fmtDate(g.date)} · ${fmtTime(g.time)} ET${g.tv&&!played?` · ${esc(g.tv.replaceAll('/',', '))}`:''}</div></div>
       <div class="mine">${sel.length
         ?`<div class="count ${n?'':'zero'}">${n}</div><div class="countlbl">${esc(sel.length>1?splitLabel(g,idx):lbl)}</div>`
         :`<div class="addcol">+ Add a college</div>`}</div>
@@ -960,6 +962,15 @@ function playerRow(e,wk,played){
   </div>`;
 }
 
+// where to watch: each network's own live page
+const TV_LINK={ESPN:'https://www.espn.com/watch/',ESPN2:'https://www.espn.com/watch/','ESPN+':'https://www.espn.com/watch/',ABC:'https://www.espn.com/watch/',
+  CBS:'https://www.cbs.com/live-tv/stream/',FOX:'https://www.fox.com/',NBC:'https://www.nbc.com/live',Peacock:'https://www.peacocktv.com/',
+  'Prime Video':'https://www.amazon.com/tnf',Netflix:'https://www.netflix.com/','NFL Network':'https://www.nfl.com/network/watch',YouTube:'https://www.youtube.com/@NFL'};
+function watchRow(g){
+  if(!g.tv||g.as!=='')return'';
+  const nets=g.tv.split('/').map(n=>TV_LINK[n]?`<a href="${TV_LINK[n]}" target="_blank" rel="noopener">${esc(n)}</a>`:esc(n));
+  return `<p class="watch">Watch on ${nets.join(' or ')}</p>`;
+}
 function gameSides(g){
   const idx=teamIndex(g.wk),played=g.as!=='';
   const side=t=>{
@@ -969,7 +980,7 @@ function gameSides(g){
     return `<div class="side"><h3>${tmTag(t)}${played?`<span class="pts">${t===g.away?g.as:g.hs}</span>`:''}</h3>`+
       (list.length?list.map(e=>playerRow(e,g.wk,played)).join(''):'<p class="hint">No pros from your schools in this game.</p>')+`</div>`;
   };
-  return side(g.away)+side(g.home);
+  return watchRow(g)+side(g.away)+side(g.home);
 }
 
 function boardsView(){

@@ -75,6 +75,37 @@ def _num(v):
         return 0
     return int(f) if f == int(f) else f
 
+ESPN_WEEK = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype={t}&week={w}&dates={y}"
+# streaming add-ons dropped when a TV network carries the game; Tubi is never shown
+TV_EXTRA = {"Disney+", "Peacock", "ESPN+", "Paramount+", "FOX One", "Fox One", "NFL+"}
+TV_NAME = {"NFL Net": "NFL Network", "Fox": "FOX"}
+
+def espn_tv(season):
+    """{espn event id: "ESPN/ABC"} for the season's games, from ESPN's weekly scoreboards."""
+    from concurrent.futures import ThreadPoolExecutor
+    jobs = [(2, w) for w in range(1, 19)] + [(3, w) for w in (1, 2, 3, 5)]
+    def one(job):
+        try:
+            return fetch_json(ESPN_WEEK.format(t=job[0], w=job[1], y=season)).get("events", [])
+        except Exception:
+            return []
+    out = {}
+    with ThreadPoolExecutor(6) as ex:
+        for evs in ex.map(one, jobs):
+            for e in evs:
+                names = []
+                for b in (e.get("competitions") or [{}])[0].get("broadcasts", []):
+                    if b.get("market", "national") != "national":
+                        continue
+                    for n in b.get("names", []):
+                        n = TV_NAME.get(n, n)
+                        if n.lower() != "tubi" and n not in names:
+                            names.append(n)
+                main = [n for n in names if n not in TV_EXTRA]
+                if main or names:
+                    out[str(e["id"])] = "/".join(main or names)
+    return out
+
 def espn_box(eid):
     """{espn athlete id: (team, stat line)} from ESPN's box score for one game,
     in the same field names as the nflverse lines. Used for finished games that
@@ -677,6 +708,18 @@ def main(yr=SEASON, archive=False):
               **({"espn": r["espn"]} if r.get("espn") and not archive else {})}
              for r in games_rows if r["season"] == str(yr)]
     games.sort(key=lambda g: (g["wk"], g["date"], g["time"]))
+    # TV network for each game (current season), from ESPN; keeps the last build's value if ESPN fails
+    if not archive and not os.environ.get("NO_ESPN"):
+        tv = espn_tv(yr)
+        try:
+            prev = {g["id"]: g.get("tv") for g in fetch_json(f"{DOMAIN}/data/games.json") if g.get("tv")}
+        except Exception:
+            prev = {}
+        for g in games:
+            t = tv.get(g.get("espn", "")) or prev.get(g["id"])
+            if t:
+                g["tv"] = t
+        print(f"TV networks: {sum(1 for g in games if g.get('tv'))} of {len(games)} games", file=sys.stderr)
 
     # ---- rankings.json (credit = school player finished at) ----
     rank = defaultdict(lambda: defaultdict(float))
