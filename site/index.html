@@ -401,6 +401,7 @@ const CATS={active:'Active players',total:'In the league (incl. IR/PS)',starters
   start_QB:'Starting QBs',start_RB:'Starting RBs',start_WR:'Starting WRs',start_TE:'Starting TEs',
   start_OL:'Starting OL',start_DL:'Starting DL',start_LB:'Starting LBs',start_DB:'Starting DBs',
   start_K:'Starting kickers',start_P:'Starting punters',
+  vet:'Active 8th-year+ players',udfa:'Undrafted starters',hit:'Draft hit rate',
   py:'Pass yds',ry:'Rush yds',recy:'Rec yds',ptd:'Pass TDs',rtd:'Rush TDs',rectd:'Rec TDs',tds:'Rush + Rec TDs',sk:'Sacks',tkl:'Tackles',dint:'INTs',fgm:'FG made'};
 
 function loadSel(){try{const s=JSON.parse(localStorage.getItem('schools')||'[]');if(Array.isArray(s))sel=s}catch(e){}}
@@ -742,7 +743,15 @@ function rankLabel(rows,i){
   const rk=compRank(rows,i);
   return (tiedAt(rows,rows[i][1]).length>1?'T-':'#')+rk;
 }
-let RANK_MODE=null;
+const ordinal=n=>{const x=['th','st','nd','rd'],v=n%100;return n+(x[(v-20)%10]||x[v]||x[0])};
+let RANK_MODE=null,HITS=null,HITS_LOADING=false;
+const isVet=p=>p.ey&&SEASON_YR-p.ey>=7;   // in his 8th NFL season or later
+const fmtVal=(cat,v)=>cat==='hit'?v+'%':v.toLocaleString();
+// the hit-rate file is only needed on School rankings, so it loads the first time that tab opens
+function loadHits(){
+  if(HITS||HITS_LOADING||ARCH_YR&&ARCH_YR===SEASON_YR)return;   // past seasons skip itHITS_LOADING=true;
+  fetch('data/hits.json',{cache:'no-cache'}).then(r=>r.json()).then(h=>{HITS=h;RANK_MODE=null;if(tab==='rank')render()}).catch(()=>{});
+}
 function creditSchools(p){return mode==='fin'?[p.c[0]]:[...new Set(p.c)]}
 function buildRanks(){
   if(RANK_MODE===mode)return;
@@ -756,10 +765,14 @@ function buildRanks(){
       if(p.s==='ACT'){
         add('active',sc,1);add('pos_'+g,sc,1);
         if(p.st){add('starters',sc,1);add('start_'+g,sc,1)}
+        if(isVet(p))add('vet',sc,1);
+        if(p.st&&!p.dr)add('udfa',sc,1);
       }
       for(const k in STATV)add(k,sc,STATV[k](s));
     }
   }
+  // hit rate: share of the school's draft picks who became a season starter (10+ picks to rank)
+  if(HITS)for(const [sc,[n,st]] of Object.entries(HITS.schools))if(n>=10)(acc.hit=acc.hit||{})[sc]=Math.round(100*st/n);
   RANKS={};
   for(const cat in acc){
     RANKS[cat]=Object.entries(acc[cat]).map(([sc,v])=>[sc,Math.round(v*10)/10])
@@ -772,12 +785,12 @@ function rankOf(cat,school){
   if(i<0)return null;
   return {rows:r,i,rank:compRank(r,i),val:r[i][1],label:rankLabel(r,i)};
 }
-function leaderCtx(rows){
+function leaderCtx(rows,cat){
   if(!rows.length)return'–';
   const tops=tiedAt(rows,rows[0][1]);
-  if(tops.length===1)return `#1: ${esc(tops[0][0])} · ${tops[0][1].toLocaleString()}`;
+  if(tops.length===1)return `#1: ${esc(tops[0][0])} · ${fmtVal(cat,tops[0][1])}`;
   const names=tops.slice(0,3).map(x=>esc(x[0])).join(', ');
-  return `T-1: ${names}${tops.length>3?` +${tops.length-3} more`:''} · ${tops[0][1].toLocaleString()}`;
+  return `T-1: ${names}${tops.length>3?` +${tops.length-3} more`:''} · ${fmtVal(cat,tops[0][1])}`;
 }
 function topList(cat,n){
   const rows=RANKS[cat]||[];
@@ -786,7 +799,7 @@ function topList(cat,n){
   cut=Math.min(cut,n+8);
   return rows.slice(0,cut).map((x,i)=>{
     const open=expanded==='TOP|'+x[0]+'|'+cat;
-    return `<tr class="rk${open?' open':''}" data-kind="TOP" data-sc="${esc(x[0])}" data-cat="${cat}"${sel.includes(x[0])?' style="color:var(--accent);font-weight:600"':''}><td style="width:46px;white-space:nowrap">${rankLabel(rows,i)}</td><td><span class="chev">\u25b8</span>${esc(x[0])}</td><td class="num">${x[1].toLocaleString()}</td></tr>`+
+    return `<tr class="rk${open?' open':''}" data-kind="TOP" data-sc="${esc(x[0])}" data-cat="${cat}"${sel.includes(x[0])?' style="color:var(--accent);font-weight:600"':''}><td style="width:46px;white-space:nowrap">${rankLabel(rows,i)}</td><td><span class="chev">\u25b8</span>${esc(x[0])}</td><td class="num">${fmtVal(cat,x[1])}</td></tr>`+
       (open?`<tr><td colspan="3" class="expand">${expandHtml(cat,x[0])}</td></tr>`:'');
   }).join('');
 }
@@ -817,6 +830,8 @@ function catPlayers(cat,school){
     if(p.s!=='ACT')continue;
     if(cat==='active'){out.push({p});continue}
     if(cat==='starters'){if(p.st)out.push({p});continue}
+    if(cat==='vet'){if(isVet(p))out.push({p,v:SEASON_YR-p.ey+1});continue}
+    if(cat==='udfa'){if(p.st&&!p.dr)out.push({p});continue}
     const m=cat.match(/^(pos|start)_(.+)$/);
     if(m&&GRP(p.p)===m[2]&&(m[1]==='pos'||p.st))out.push({p});
   }
@@ -824,6 +839,14 @@ function catPlayers(cat,school){
   return out;
 }
 function expandHtml(cat,school){
+  if(cat==='hit'){
+    const h=HITS?.schools?.[school];if(!h)return '<div class="row">Fewer than 10 draft picks since 2013.</div>';
+    const [n,st,on,picks]=h,yes=picks.filter(x=>x[3]),no=picks.filter(x=>!x[3]);
+    const nm=x=>`${esc(x[0])} <span class="hint">(${x[1]} rd ${x[2]}${x[4]?', active':''})</span>`;
+    return `<div class="row">${st} of ${n} picks from the ${HITS.from} to ${HITS.to} drafts became season starters. ${on} are still active.</div>`+
+      `<div class="row"><b>Became starters:</b> ${yes.map(nm).join(', ')||'none'}</div>`+
+      `<div class="row"><b>Did not:</b> ${no.map(nm).join(', ')||'none'}</div>`;
+  }
   const list=catPlayers(cat,school);
   if(!list.length)return '<div class="row">Nobody qualifies.</div>';
   return list.map(({p,v,pid})=>{
@@ -833,28 +856,30 @@ function expandHtml(cat,school){
     let split='';
     if(cat==='tds'){const st=STATS[pid]?.s||{};split=` (${st.rtd||0} Rush, ${st.rectd||0} Rec)`}
     const nr=STATV[cat]&&v!==undefined?` <span class="nflrk">NFL ${nflRank(cat,v)}</span>`:'';
+    if(cat==='vet')return `<div class="row"><b>${esc(p.n)}</b> (${esc(bits.filter(Boolean).join(', '))}) · ${ordinal(v)} season</div>`;
+    if(cat==='udfa')return `<div class="row"><b>${esc(p.n)}</b> (${esc(bits.filter(Boolean).join(', '))}) · undrafted, ${p.ey}</div>`;
     return `<div class="row"><b>${esc(p.n)}</b> (${esc(bits.filter(Boolean).join(', '))})${v!==undefined?` · ${v.toLocaleString()}${split}`:''}${nr}</div>`;
   }).join('');
 }
 function rankView(){
-  buildRanks();
+  loadHits();buildRanks();
   let h='';
   for(const sc of sel){
-    const rows=Object.keys(CATS).map(cat=>{
+    const rows=Object.keys(CATS).filter(c=>c!=='hit'||HITS).map(cat=>{
       const r=rankOf(cat,sc);
       const open=expanded===sc+'|'+cat;
       const exp=open?`<tr><td colspan="4" class="expand">${expandHtml(cat,sc)}</td></tr>`:'';
       const click=`class="rk${open?' open':''}" data-cat="${cat}" data-sc="${esc(sc)}"`;
       const chev='<svg class="chev" viewBox="0 0 10 10" aria-hidden="true"><path d="M3.5 2l3.5 3-3.5 3"/></svg>';
-      if(!r)return `<tr ${click}><td>${chev}${CATS[cat]}</td><td class="num">–</td><td class="num">0</td><td class="hint">${leaderCtx(RANKS[cat]||[])}</td></tr>`+exp;
+      if(!r)return `<tr ${click}><td>${chev}${CATS[cat]}</td><td class="num">–</td><td class="num">0</td><td class="hint">${leaderCtx(RANKS[cat]||[],cat)}</td></tr>`+exp;
       const tops=tiedAt(r.rows,r.rows[0][1]);
       let ctx;
       if(r.rank===1){
         const co=tops.filter(x=>x[0]!==sc);
         ctx=co.length?`tied with ${co.slice(0,3).map(x=>esc(x[0])).join(', ')}${co.length>3?` +${co.length-3} more`:''}`
-          :(r.rows[tops.length]?`then ${esc(r.rows[tops.length][0])} · ${r.rows[tops.length][1].toLocaleString()}`:'');
-      }else ctx=leaderCtx(r.rows);
-      return `<tr ${click}><td>${chev}${CATS[cat]}</td><td class="num"><b>${r.label}</b></td><td class="num">${r.val.toLocaleString()}</td><td class="hint">${ctx}</td></tr>`+exp;
+          :(r.rows[tops.length]?`then ${esc(r.rows[tops.length][0])} · ${fmtVal(cat,r.rows[tops.length][1])}`:'');
+      }else ctx=leaderCtx(r.rows,cat);
+      return `<tr ${click}><td>${chev}${CATS[cat]}</td><td class="num"><b>${r.label}</b></td><td class="num">${fmtVal(cat,r.val)}</td><td class="hint">${ctx}</td></tr>`+exp;
     }).join('');
     h+=`<div class="card"><h2 style="margin:0 0 8px">${esc(sc)}</h2>
       <div class="tablewrap"><table>
@@ -864,9 +889,9 @@ function rankView(){
   if(!sel.length)h+=`<p class="hint" style="margin:0 0 12px">Pick a category to see the top schools. Add schools above to see their full rank cards.</p>`;
   h+=`<div class="card"><h2 style="margin:0 0 8px">Top ${topN} ·
     <select id="catSel" aria-label="Category">
-    ${Object.entries(CATS).map(([k,lbl])=>`<option value="${k}" ${k===rankCat?'selected':''}>${lbl}</option>`).join('')}</select></h2>
+    ${Object.entries(CATS).filter(([k])=>k!=='hit'||HITS).map(([k,lbl])=>`<option value="${k}" ${k===rankCat?'selected':''}>${lbl}</option>`).join('')}</select></h2>
     <div class="tablewrap"><table>${topList(rankCat,topN)}</table></div></div>`;
-  h+=`<p class="hint">Tap a category to see which of your players are behind the number. Ties share a rank (T-1 means tied for first). ${mode==='fin'?'Rankings credit the school a player finished at.':'Rankings credit every school a player played for, so transfers count for each stop.'} A start means he was in his team's lineup for the first snap. At each position on each team, starters are the usual number of most-started players plus anyone else who started at least a quarter of the team's games${ARCH_YR&&SEASON_YR===ARCH_YR?'':' so far'}, so QB splits, benchings and long fill-ins all count. Kickers and punters count after two games.</p>`;
+  h+=`<p class="hint">Tap a category to see which of your players are behind the number. Ties share a rank (T-1 means tied for first). ${mode==='fin'?'Rankings credit the school a player finished at.':'Rankings credit every school a player played for, so transfers count for each stop.'} A start means he was in his team's lineup for the first snap. At each position on each team, starters are the usual number of most-started players plus anyone else who started at least a quarter of the team's games${ARCH_YR&&SEASON_YR===ARCH_YR?'':' so far'}, so QB splits, benchings and long fill-ins all count. Kickers and punters count after two games. Draft hit rate is the share of a school's picks from the ${HITS?`${HITS.from} to ${HITS.to}`:'2013 to recent'} drafts who became a season starter in any season since (schools with 10+ picks); it credits the school he was drafted from. Undrafted starters are this season's starters who were never drafted. 8th-year+ counts active players in at least their eighth NFL season.</p>`;
   return h;
 }
 

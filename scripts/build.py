@@ -8,7 +8,7 @@ Run from the repo root: python3 scripts/build.py
 import csv, html, io, json, os, re, statistics, sys, urllib.request
 sys.path.insert(0, os.path.dirname(__file__))
 from conferences import conference
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 # Current season. Change this each summer before week 1, then archive the
 # season that just ended:  python3 scripts/build.py --archive 2026
@@ -721,6 +721,47 @@ def main(yr=SEASON, archive=False):
                 g["tv"] = t
         print(f"TV networks: {sum(1 for g in games if g.get('tv'))} of {len(games)} games", file=sys.stderr)
 
+    # ---- hits.json: draft hit rate (picks who became a season starter) ----
+    # Classes 2013 to three seasons ago, so every pick has had time to win a job.
+    # Starter seasons come from the archived seasons plus this one so far.
+    hits = None
+    if not archive:
+        last_class = yr - 3
+        ever_st, act_now = set(starters), {pid for pid, p in active.items() if p["status"] == "ACT"}
+        school_of = {pid: p["colleges"][0] for pid, p in active.items()}   # our name for his school
+        for y in range(FIRST_ARCHIVE, yr):
+            try:
+                ap = json.load(open(os.path.join(ARCHIVE, str(y), "players.json")))
+            except OSError:
+                continue
+            ever_st |= {pid for pid, r in ap.items() if r.get("st")}
+            for pid, r in ap.items():
+                school_of.setdefault(pid, r["c"][0])
+        # the draft file spells schools its own way ("Ohio St.", "Miami (FL)"): learn the mapping
+        # from picks we can match to a player, then apply it to every pick from that school
+        seen = defaultdict(Counter)
+        for r in draft_rows:
+            if r.get("gsis_id") in school_of and r.get("college"):
+                seen[r["college"]][school_of[r["gsis_id"]]] += 1
+        name_map = {dc: cnt.most_common(1)[0][0] for dc, cnt in seen.items()}
+        hs = defaultdict(lambda: [0, 0, 0, []])   # picks, became starters, still active, list
+        for r in draft_rows:
+            y = int(r["season"] or 0)
+            if not (FIRST_ARCHIVE <= y <= last_class):
+                continue
+            dc = r.get("college") or ""
+            c = school_of.get(r.get("gsis_id") or "") or name_map.get(dc) or RENAME.get(html.unescape(dc).strip(), html.unescape(dc).strip())
+            if not c:
+                continue
+            pid = r.get("gsis_id") or ""
+            got, on = int(pid in ever_st), int(pid in act_now)
+            row = hs[c]
+            row[0] += 1; row[1] += got; row[2] += on
+            row[3].append([r.get("pfr_player_name") or r.get("player_name") or "", y, int(r["round"]), got, on])
+        for row in hs.values():
+            row[3].sort(key=lambda x: (-x[3], x[1], x[2]))
+        hits = {"from": FIRST_ARCHIVE, "to": last_class, "schools": hs}
+
     # ---- rankings.json (credit = school player finished at) ----
     rank = defaultdict(lambda: defaultdict(float))
     for pid, p in active.items():
@@ -771,7 +812,9 @@ def main(yr=SEASON, archive=False):
 
     for name, obj in [("schools", schools), ("players", pout), ("games", games),
                       ("stats", stats_out), ("rankings", rk_out), ("playoffs", post_out),
-                      ("starts", starts_raw)]:
+                      ("starts", starts_raw), ("hits", hits)]:
+        if obj is None:
+            continue
         path = os.path.join(OUT, f"{name}.json")
         json.dump(obj, open(path, "w"), separators=(",", ":"))
         print(f"{name}.json {os.path.getsize(path)//1024} KB", file=sys.stderr)
