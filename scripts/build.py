@@ -5,9 +5,9 @@ Downloads free nflverse data (rosters, weekly stats, snap counts, depth
 charts, schedule) and writes the small JSON files the static site reads.
 Run from the repo root: python3 scripts/build.py
 """
-import csv, html, io, json, os, re, statistics, sys, urllib.request
+import csv, hashlib, html, io, json, os, re, statistics, sys, urllib.request
 sys.path.insert(0, os.path.dirname(__file__))
-from conferences import conference
+from conferences import conference, FCS
 from collections import defaultdict, Counter
 
 # Current season. Change this each summer before week 1, then archive the
@@ -842,6 +842,26 @@ def prerender(schools, active, starters, depth):
         for i, c in enumerate(p["colleges"]):
             by_school[c]["primary" if i == 0 else "also"].append((pid, p))
     urls = [f"{DOMAIN}/"]
+    # Page fingerprints for the sitemap. The build date is stripped so a rebuild with
+    # no new data doesn't count as a change.
+    fingerprint = lambda *parts: hashlib.sha1("".join(parts).replace(today, "").encode()).hexdigest()[:12]
+    # The home page is a fixed shell filled from games.json, so both count.
+    with open(os.path.join(OUT, "..", "index.html")) as f, open(os.path.join(OUT, "games.json")) as g:
+        hashes = {urls[0]: fingerprint(f.read(), g.read())}
+    # Internal links, so crawlers can reach school pages without the sitemap. Peers are
+    # alphabetical so a shift in player counts doesn't change every page.
+    listed = [s for s in schools if s["count"] >= 1]
+    conf_of = {s["name"]: conference(s["name"], SEASON) for s in listed}
+    peers = defaultdict(list)
+    for name in sorted(conf_of):
+        peers[conf_of[name]].append(name)
+    def related(name):
+        """Conference-mates, or the alphabetical neighbors for schools outside FBS."""
+        group = peers[conf_of[name]]
+        if conf_of[name] != FCS:
+            return [n for n in group if n != name]
+        i = group.index(name)
+        return [group[(i + d) % len(group)] for d in (-4, -3, -2, -1, 1, 2, 3, 4)]
     for s in schools:
         # Every school with an NFL player gets a page, including one-player
         # schools. Small schools are where search impressions showed up first.
@@ -915,6 +935,8 @@ h1{{font-style:oblique 9deg;text-transform:uppercase;line-height:1.1}}</style>
 <p>{intro}</p>
 {'<h2>' + ('Players' if nc else 'Players who finished at ' + e(name)) + '</h2><ul>' + ''.join(rows) + '</ul>' if rows else ''}
 {'<h2>Played at ' + e(name) + ', finished elsewhere</h2><ul>' + ''.join(also) + '</ul>' if also else ''}
+{'<h2>' + (e('More ' + conf_of[name] + ' schools') if conf_of[name] != FCS else 'More schools') + '</h2><p>' + ', '.join(f'<a href="/s/{slugify(n)}.html">{e(n)}</a>' for n in related(name)) + '</p>' if related(name) else ''}
+<p><a href="/s/">All schools with NFL players</a></p>
 <p><a href="/">Track {'these' if nc else e(name)} players game by game on CFB Sundays</a>. Pick your schools
 and see who is in each NFL game this week with per-game and season stats.</p>
 <p>Data: nflverse (free, open NFL data) and ESPN starting lineups. A starter is one of the most-started
@@ -922,7 +944,62 @@ players at his position on his team this season, or started at least a quarter o
 </body></html>"""
         open(os.path.join(sdir, f"{slug}.html"), "w").write(page)
         urls.append(f"{DOMAIN}/s/{slug}.html")
-    sm = "\n".join(f"<url><loc>{u}</loc><lastmod>{today}</lastmod></url>" for u in urls)
+        hashes[urls[-1]] = fingerprint(page)
+    # The all-schools index at /s/, grouped by conference, biggest groups first.
+    e = html.escape
+    size = {s["name"]: s["count"] for s in listed}
+    order = sorted(peers, key=lambda c: (c in (FCS, NO_COLLEGE), c == NO_COLLEGE, -sum(size[n] for n in peers[c])))
+    groups = "\n".join(
+        f"<h2>{e('FCS and lower' if c == FCS else c)}</h2><ul>"
+        + "".join(f'<li><a href="/s/{slugify(n)}.html">{e(n)}</a> ({size[n]})</li>' for n in peers[c])
+        + "</ul>" for c in order)
+    index_title = f"NFL players by college: all {len(listed)} schools ({SEASON})"
+    index_desc = f"Every college with a player in the NFL in {SEASON}, by conference, with player counts. Updated daily."
+    index_page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="96x96" href="/icon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<title>{e(index_title)} - CFB Sundays</title>
+<meta name="description" content="{e(index_desc)}">
+<link rel="canonical" href="{DOMAIN}/s/">
+<meta property="og:title" content="{e(index_title)}">
+<meta property="og:description" content="{e(index_desc)}">
+<style>body{{font:16px/1.6 system-ui,sans-serif;max-width:680px;margin:0 auto;padding:0 16px 32px;color:#0c1526;background:#e4e9f0}}
+@media(prefers-color-scheme:dark){{body{{color:#e7edf8;background:#090f1d}}a{{color:#6f9bff}}}}
+a{{color:#1546b8;text-underline-offset:3px}}li{{margin:4px 0}}
+header{{margin:0 -16px 16px;padding:14px 16px;background:#1546b8;border-bottom:3px solid #ffc629}}
+header a{{color:#fff;font-weight:700}}
+h1{{font-style:oblique 9deg;text-transform:uppercase;line-height:1.1}}</style>
+<script data-goatcounter="https://cfbsundays.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script></head><body>
+<header><a href="/">&larr; CFB Sundays: see these players by NFL game, live stats and rankings</a></header>
+<h1>{e(index_title)}</h1>
+<p>Each school links to its current NFL players. The number is how many are in the league in {SEASON}, including practice squads and injured reserve.</p>
+{groups}
+</body></html>"""
+    open(os.path.join(sdir, "index.html"), "w").write(index_page)
+    urls.insert(1, f"{DOMAIN}/s/")
+    hashes[f"{DOMAIN}/s/"] = fingerprint(index_page)
+    # lastmod is the date a page last really changed. The build keeps no state of
+    # its own, so the url -> {hash, date} map is published and read back next build.
+    try:
+        seen = fetch_json(f"{DOMAIN}/data/lastmod.json")
+    except Exception as err:
+        print("no lastmod history:", err, file=sys.stderr)
+        seen = {}
+    lastmod = {}
+    for u in urls:
+        h = hashes[u]
+        old = seen.get(u)
+        if old and old["h"] == h:
+            d = old["d"]              # unchanged, keep the date it last changed
+        else:
+            d = today if seen else None   # no history yet: no date beats a made-up one
+        lastmod[u] = {"h": h, "d": d}
+    json.dump(lastmod, open(os.path.join(OUT, "lastmod.json"), "w"), separators=(",", ":"))
+    sm = "\n".join(f"<url><loc>{u}</loc>" + (f"<lastmod>{lastmod[u]['d']}</lastmod>" if lastmod[u]["d"] else "")
+                   + "</url>" for u in urls)
     open(os.path.join(OUT, "..", "sitemap.xml"), "w").write(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + sm + "\n</urlset>")
@@ -933,7 +1010,7 @@ players at his position on his team this season, or started at least a quarter o
         f"User-agent: Googlebot\nUser-agent: Bingbot\nAllow: /\n\n"
         f"User-agent: *\nDisallow: /data/\nDisallow: /archive/\nAllow: /\n\n"
         f"Sitemap: {DOMAIN}/sitemap.xml\n")
-    print(f"prerendered {len(urls)-1} school pages + sitemap", file=sys.stderr)
+    print(f"prerendered {len(urls)-2} school pages + index + sitemap", file=sys.stderr)
 def write_season_list():
     yrs = sorted((int(d) for d in os.listdir(ARCHIVE) if d.isdigit()), reverse=True) \
         if os.path.isdir(ARCHIVE) else []
