@@ -833,7 +833,7 @@ def prerender(schools, active, starters, depth):
     """Static, crawlable page per school + sitemap. Targets searches like
     'georgia players in the NFL'. The app page stays the product; these
     pages exist for search engines and deep links."""
-    import datetime, html
+    import datetime, html, urllib.parse
     sdir = os.path.join(OUT, "..", "s")
     os.makedirs(sdir, exist_ok=True)
     today = datetime.date.today().isoformat()
@@ -912,6 +912,12 @@ def prerender(schools, active, starters, depth):
                  f"in the NFL in {SEASON}, including practice squads and injured reserve.\n"
                  f"Finished their college career at {e(name)}: <strong>{s['primary']}</strong>.\n"
                  f"Updated {today} from NFL roster data.")
+        # Links into the app open with this school added to the visitor's list, and
+        # each is a named GoatCounter click event (no cookies).
+        app = "/?add=" + urllib.parse.quote(name, safe="")
+        track = lambda spot: f'data-goatcounter-click="to-app/{spot}/{slug}"'
+        cta = ("See these players" if nc else f"See {e(name)} players" if n > 1
+               else f"See the {e(name)} player") + " in this week's NFL games"
         page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -928,16 +934,18 @@ def prerender(schools, active, starters, depth):
 a{{color:#1546b8;text-underline-offset:3px}}li{{margin:4px 0}}
 header{{margin:0 -16px 16px;padding:14px 16px;background:#1546b8;border-bottom:3px solid #ffc629}}
 header a{{color:#fff;font-weight:700}}
+.cta{{display:inline-block;padding:10px 14px;background:#ffc629;color:#1b1400;font-weight:700;text-decoration:none;border-radius:3px}}
 h1{{font-style:oblique 9deg;text-transform:uppercase;line-height:1.1}}</style>
 <script data-goatcounter="https://cfbsundays.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script></head><body>
-<header><a href="/">&larr; CFB Sundays: see these players by NFL game, live stats and rankings</a></header>
+<header><a href="{app}" {track('header')}>&larr; CFB Sundays: see these players by NFL game, live stats and rankings</a></header>
 <h1>{e(title)}</h1>
 <p>{intro}</p>
+<p><a class="cta" href="{app}" {track('top')}>{cta}</a></p>
 {'<h2>' + ('Players' if nc else 'Players who finished at ' + e(name)) + '</h2><ul>' + ''.join(rows) + '</ul>' if rows else ''}
 {'<h2>Played at ' + e(name) + ', finished elsewhere</h2><ul>' + ''.join(also) + '</ul>' if also else ''}
 {'<h2>' + (e('More ' + conf_of[name] + ' schools') if conf_of[name] != FCS else 'More schools') + '</h2><p>' + ', '.join(f'<a href="/s/{slugify(n)}.html">{e(n)}</a>' for n in related(name)) + '</p>' if related(name) else ''}
 <p><a href="/s/">All schools with NFL players</a></p>
-<p><a href="/">Track {'these' if nc else e(name)} players game by game on CFB Sundays</a>. Pick your schools
+<p><a href="{app}" {track('bottom')}>Track {'these' if nc else e(name)} players game by game on CFB Sundays</a>. Pick your schools
 and see who is in each NFL game this week with per-game and season stats.</p>
 <p>Data: nflverse (free, open NFL data) and ESPN starting lineups. A starter is one of the most-started
 players at his position on his team this season, or started at least a quarter of its games.</p>

@@ -434,6 +434,9 @@ async function boot(){
   const qs=new URLSearchParams(location.search);
   if(qs.get('s')){const want=qs.get('s').split(',').map(x=>x.trim()).filter(n=>SCHOOLS.some(x=>x.name===n)).slice(0,10);
     if(want.length){sel=want;saveSel()}qs.delete('s');history.replaceState(null,'',location.pathname+(qs.toString()?'?'+qs:'')+location.hash)}
+  // ?add=Georgia (links on the school pages) adds a school and keeps the visitor's saved ones
+  if(qs.get('add')){const n=qs.get('add').trim();if(SCHOOLS.some(x=>x.name===n)&&!sel.includes(n)){sel.push(n);saveSel()}
+    qs.delete('add');history.replaceState(null,'',location.pathname+(qs.toString()?'?'+qs:'')+location.hash)}
   // A week stays the default until 7 AM ET the day after its last game (when the Tuesday email goes out)
   const now=etNow(),wks=[...new Set(GAMES.map(g=>g.wk))].sort((a,b)=>a-b);
   const flip=w=>nextDay(GAMES.filter(x=>x.wk===w).map(x=>x.date).sort().pop())+' 07';
