@@ -818,6 +818,7 @@ def main(yr=SEASON, archive=False):
         path = os.path.join(OUT, f"{name}.json")
         json.dump(obj, open(path, "w"), separators=(",", ":"))
         print(f"{name}.json {os.path.getsize(path)//1024} KB", file=sys.stderr)
+    home_schools(schools)
     prerender(schools, active, starters, depth)
     print(f"players={len(active)} starters={len(starters)} games={len(games)}",
           file=sys.stderr)
@@ -825,6 +826,75 @@ def main(yr=SEASON, archive=False):
 
 
 DOMAIN = "https://cfbsundays.com"
+
+# Team names for school page titles, so "Iowa Hawkeyes in the NFL" matches how
+# people search. Schools not listed keep the plain title.
+MASCOT = {
+    "Air Force": "Falcons", "Akron": "Zips", "Alabama": "Crimson Tide", "App State": "Mountaineers",
+    "Arizona": "Wildcats", "Arizona State": "Sun Devils", "Arkansas": "Razorbacks",
+    "Arkansas State": "Red Wolves", "Army": "Black Knights", "Auburn": "Tigers", "Ball State": "Cardinals",
+    "Baylor": "Bears", "Boise State": "Broncos", "Boston College": "Eagles", "Bowling Green": "Falcons",
+    "Buffalo": "Bulls", "BYU": "Cougars", "Cal": "Golden Bears", "Central Michigan": "Chippewas",
+    "Charlotte": "49ers", "Cincinnati": "Bearcats", "Clemson": "Tigers", "Coastal Carolina": "Chanticleers",
+    "Colorado": "Buffaloes", "Colorado State": "Rams", "Duke": "Blue Devils", "East Carolina": "Pirates",
+    "Eastern Michigan": "Eagles", "FAU": "Owls", "FIU": "Panthers", "Florida": "Gators",
+    "Florida State": "Seminoles", "Fresno State": "Bulldogs", "Georgia": "Bulldogs",
+    "Georgia Southern": "Eagles", "Georgia State": "Panthers", "Georgia Tech": "Yellow Jackets",
+    "Hawaii": "Rainbow Warriors", "Houston": "Cougars", "Illinois": "Fighting Illini", "Indiana": "Hoosiers",
+    "Iowa": "Hawkeyes", "Iowa State": "Cyclones", "Jacksonville State": "Gamecocks",
+    "James Madison": "Dukes", "Kansas": "Jayhawks", "Kansas State": "Wildcats", "Kent State": "Golden Flashes",
+    "Kentucky": "Wildcats", "Liberty": "Flames", "Louisiana": "Ragin' Cajuns", "Louisiana Tech": "Bulldogs",
+    "Louisville": "Cardinals", "LSU": "Tigers", "Marshall": "Thundering Herd", "Maryland": "Terrapins",
+    "Memphis": "Tigers", "Miami": "Hurricanes", "Miami (OH)": "RedHawks", "Michigan": "Wolverines",
+    "Michigan State": "Spartans", "Middle Tennessee": "Blue Raiders", "Minnesota": "Golden Gophers",
+    "Mississippi State": "Bulldogs", "Missouri": "Tigers", "Navy": "Midshipmen", "NC State": "Wolfpack",
+    "Nebraska": "Cornhuskers", "Nevada": "Wolf Pack", "New Mexico": "Lobos", "New Mexico State": "Aggies",
+    "North Carolina": "Tar Heels", "North Texas": "Mean Green", "Northern Illinois": "Huskies",
+    "Northwestern": "Wildcats", "Notre Dame": "Fighting Irish", "Ohio": "Bobcats", "Ohio State": "Buckeyes",
+    "Oklahoma": "Sooners", "Oklahoma State": "Cowboys", "Old Dominion": "Monarchs", "Ole Miss": "Rebels",
+    "Oregon": "Ducks", "Oregon State": "Beavers", "Penn State": "Nittany Lions", "Pitt": "Panthers",
+    "Purdue": "Boilermakers", "Rice": "Owls", "Rutgers": "Scarlet Knights", "Sam Houston State": "Bearkats",
+    "San Diego State": "Aztecs", "San Jose State": "Spartans", "SMU": "Mustangs",
+    "South Alabama": "Jaguars", "South Carolina": "Gamecocks", "South Florida": "Bulls",
+    "Southern Miss": "Golden Eagles", "Stanford": "Cardinal", "Syracuse": "Orange", "TCU": "Horned Frogs",
+    "Temple": "Owls", "Tennessee": "Volunteers", "Texas": "Longhorns", "Texas A&M": "Aggies",
+    "Texas State": "Bobcats", "Texas Tech": "Red Raiders", "Toledo": "Rockets", "Troy": "Trojans",
+    "Tulane": "Green Wave", "Tulsa": "Golden Hurricane", "UAB": "Blazers", "UCF": "Knights",
+    "UCLA": "Bruins", "UConn": "Huskies", "UMass": "Minutemen", "UNLV": "Rebels", "USC": "Trojans",
+    "Utah": "Utes", "Utah State": "Aggies", "UTEP": "Miners", "UTSA": "Roadrunners",
+    "Vanderbilt": "Commodores", "Virginia": "Cavaliers", "Virginia Tech": "Hokies",
+    "Wake Forest": "Demon Deacons", "Washington": "Huskies", "Washington State": "Cougars",
+    "West Virginia": "Mountaineers", "Western Kentucky": "Hilltoppers", "Western Michigan": "Broncos",
+    "Wisconsin": "Badgers", "Wyoming": "Cowboys",
+    # FCS schools that showed up in search
+    "Maine": "Black Bears", "Montana": "Grizzlies", "Montana State": "Bobcats",
+    "North Dakota State": "Bison", "South Dakota State": "Jackrabbits", "Yale": "Bulldogs",
+    "Idaho": "Vandals", "William & Mary": "Tribe", "Jackson State": "Tigers",
+}
+
+HOME_TOP = 25
+
+def home_schools(schools):
+    """Write a plain list of the schools with the most NFL players into the home page,
+    between the top-schools markers. The app is built by script, so this gives search
+    engines text to read and links into the school pages. Safe to run every build."""
+    path = os.path.join(OUT, "..", "index.html")
+    page = open(path).read()
+    listed = [s for s in schools if s["count"] >= 1 and s["name"] != NO_COLLEGE]
+    e = html.escape
+    links = ", ".join(f'<a href="/s/{slugify(s["name"])}.html">{e(s["name"])}</a> ({s["count"]})'
+                      for s in listed[:HOME_TOP])
+    block = (f'<!--top-schools-->\n<section class="foot" style="margin:18px 0 0" aria-labelledby="topSchoolsH">\n'
+             f'<h2 id="topSchoolsH" style="font-size:13px;margin:0 0 4px">Colleges with the most NFL players, {SEASON}</h2>\n'
+             f'<p style="margin:0">{links}</p>\n'
+             f'<p style="margin:6px 0 0"><a href="/s/">All {len(listed)} colleges with NFL players</a></p>\n'
+             f'</section>\n<!--/top-schools-->')
+    new, n = re.subn(r"<!--top-schools-->.*?<!--/top-schools-->", lambda m: block, page, flags=re.S)
+    if n != 1:
+        print("home page: top-schools markers not found, list not written", file=sys.stderr)
+        return
+    if new != page:
+        open(path, "w").write(new)
 
 def slugify(name):
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", name.lower())).strip("-")
@@ -891,7 +961,10 @@ def prerender(schools, active, starters, depth):
                 f"finished at {e(p['colleges'][0])}</li>"
                 for pid, p in sorted(by_school[name]["also"], key=lambda x: x[1]["name"])]
         nc = name == NO_COLLEGE
+        team = f"{name} {MASCOT[name]}" if name in MASCOT else None
         title = (f"NFL players who didn't play college football ({SEASON})" if nc
+                 else f"{team} in the NFL: all {n} players ({SEASON})" if team and n > 1
+                 else f"{team} in the NFL ({SEASON})" if team
                  else f"All {n} {name} players in the NFL ({SEASON})" if n > 1
                  else f"{name} players in the NFL ({SEASON})")
         desc = (f"All {s['count']} NFL players in {SEASON} with no college listed, mostly "
