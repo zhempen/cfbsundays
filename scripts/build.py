@@ -1010,18 +1010,18 @@ header a{{color:#fff;font-weight:700}}
 .cta{{display:inline-block;padding:10px 14px;background:#ffc629;color:#1b1400;font-weight:700;text-decoration:none;border-radius:3px}}
 h1{{font-style:oblique 9deg;text-transform:uppercase;line-height:1.1}}</style>
 <script data-goatcounter="https://cfbsundays.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script></head><body>
-<header><a href="{app}" {track('header')}>&larr; CFB Sundays: see these players by NFL game, live stats and rankings</a></header>
+<header><a href="{app}" rel="nofollow" {track('header')}>&larr; CFB Sundays: see these players by NFL game, live stats and rankings</a></header>
 <h1>{e(title)}</h1>
 <p>{intro}</p>
-<p><a class="cta" href="{app}" {track('top')}>{cta}</a></p>
+<p><a class="cta" href="{app}" rel="nofollow" {track('top')}>{cta}</a></p>
 {'<h2>' + ('Players' if nc else 'Players who finished at ' + e(name)) + '</h2><ul>' + ''.join(rows) + '</ul>' if rows else ''}
 {'<h2>Played at ' + e(name) + ', finished elsewhere</h2><ul>' + ''.join(also) + '</ul>' if also else ''}
 {'<h2>' + (e('More ' + conf_of[name] + ' schools') if conf_of[name] != FCS else 'More schools') + '</h2><p>' + ', '.join(f'<a href="/s/{slugify(n)}.html">{e(n)}</a>' for n in related(name)) + '</p>' if related(name) else ''}
 <p><a href="/s/">All schools with NFL players</a></p>
-<p><a href="{app}" {track('bottom')}>Track {'these' if nc else e(name)} players game by game on CFB Sundays</a>. Pick your schools
+<p><a href="{app}" rel="nofollow" {track('bottom')}>Track {'these' if nc else e(name)} players game by game on CFB Sundays</a>. Pick your schools
 and see who is in each NFL game this week with per-game and season stats.</p>
-<p>Data: nflverse (free, open NFL data) and ESPN starting lineups. A starter is one of the most-started
-players at his position on his team this season, or started at least a quarter of its games.</p>
+<p>A starter is one of the most-started players at his position on his team this season, or started
+at least a quarter of its games. NFL data from nflverse (CC BY 4.0).</p>
 </body></html>"""
         open(os.path.join(sdir, f"{slug}.html"), "w").write(page)
         urls.append(f"{DOMAIN}/s/{slug}.html")
