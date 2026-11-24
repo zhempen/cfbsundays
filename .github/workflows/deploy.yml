@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Build data files
@@ -37,5 +37,14 @@ jobs:
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site
+      # deploy-pages sometimes finds no artifact right after the upload finishes
+      # ("Found 0 artifact(s)", Nov 2026). If the first try fails, wait and try once more.
       - id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - name: Wait before retrying deploy
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 30
+      - id: deployment_retry
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
